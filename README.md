@@ -1,2 +1,2 @@
 # tsltools
-Tools for processing the TSL specifcation format
+Library and tools for the TSL specification format
