@@ -399,7 +399,7 @@ prTerm' cfm@CFM{..} t =
   "      " ++ prWire cfm (termOutputWire t) ++ " <- " ++
   (case reverse $ termInputWires t of
      []     ->
-       "arr (\\() -> " ++
+       "arr (const " ++
        (if isPredicate t then "p_" else "f_") ++
        termName t ++
        ") -< ()\n"
