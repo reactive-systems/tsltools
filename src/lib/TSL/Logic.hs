@@ -143,7 +143,9 @@ instance Arbitrary a => Arbitrary (FunctionTerm a) where
 -- | Represenation of TSL predicate terms.
 
 data PredicateTerm a =
-    BooleanInput a
+    BooleanTrue
+  | BooleanFalse
+  | BooleanInput a
   | PredicateSymbol a
   | PApplied (PredicateTerm a) (SignalTerm a)
   deriving (Eq, Ord, Show)
@@ -152,22 +154,27 @@ data PredicateTerm a =
 
 instance Functor PredicateTerm where
   fmap f = \case
+    BooleanTrue       -> BooleanTrue
+    BooleanFalse      -> BooleanFalse
     BooleanInput s    -> BooleanInput $ f s
     PredicateSymbol s -> PredicateSymbol $ f s
     PApplied t t'     -> PApplied (fmap f t) (fmap f t')
 
 instance Foldable PredicateTerm where
   foldr f a = \case
-    BooleanInput  s   -> f s a
+    BooleanTrue       -> a
+    BooleanFalse      -> a
+    BooleanInput s    -> f s a
     PredicateSymbol s -> f s a
     PApplied t t'     -> foldr f (foldr f a t) t'
 
 instance Arbitrary a => Arbitrary (PredicateTerm a) where
-  arbitrary = do
-    i <- choose (0 :: Int, 2 :: Int)
-    case i of
-      0 -> BooleanInput <$> arbitrary
-      1 -> PredicateSymbol <$> arbitrary
+  arbitrary =
+    choose (0 :: Int, 4 :: Int) >>= \case
+      0 -> return BooleanTrue
+      1 -> return BooleanFalse
+      2 -> BooleanInput <$> arbitrary
+      3 -> PredicateSymbol <$> arbitrary
       _ -> PApplied <$> arbitrary <*> arbitrary
 
 -----------------------------------------------------------------------------
@@ -324,6 +331,8 @@ tlsfPredicate
   :: PredicateTerm String -> String
 
 tlsfPredicate = \case
+  BooleanTrue       -> "bt"
+  BooleanFalse      -> "bf"
   BooleanInput s    -> "b0" ++ escape s
   PredicateSymbol s -> "p0" ++ escape s
   PApplied t t'     -> tlsfPredicate t ++ "0" ++ tlsfSignal t'
@@ -471,8 +480,12 @@ predicateParser =
       <|> (Signal <$> identParser)
 
     identParser' =
-          (string "b0" >> BooleanInput <$> identParser)
-      <|> (string "p0" >> PredicateSymbol <$> identParser)
+      ( char 'b' >>
+        (    (char 't' >> return BooleanTrue)
+         <|> (char 'f' >> return BooleanFalse)
+         <|> (char '0' >> BooleanInput <$> identParser)
+        )
+      ) <|> (string "p0" >> PredicateSymbol <$> identParser)
 
 -----------------------------------------------------------------------------
 

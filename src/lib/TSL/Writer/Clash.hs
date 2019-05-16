@@ -14,6 +14,7 @@
   , LambdaCase
   , FlexibleContexts
   , ViewPatterns
+  , MultiWayIf
 
   #-}
 
@@ -297,15 +298,37 @@ prCircuitImpl Circuit{..} =
     , concatMap prLatch latches
       ++ concatMap prGate gates
       ++ prOutputs
-    , ""
-    , "  where"
-    , "    _not_ = fmap complement"
-    , "    _and_ = liftA2 (.&.)"
-    , "    _lat_ = register low"
-    , ""
+    , let
+        hasLatches   = not $ null $ latches
+        hasGates     = not $ null $ gates
+        hasInverters =
+            any isNeg (map outputWire outputs)
+          || any isNeg (map latchInput latches)
+          || any isNeg (map gateInputA gates)
+          || any isNeg (map gateInputB gates)
+      in
+        if hasLatches || hasGates || hasInverters
+        then
+          "\n  where" ++
+          (if hasLatches
+           then "\n    _lat_ = register low"
+           else "") ++
+          (if hasGates
+           then "\n    _and_ = liftA2 (.&.)"
+           else "") ++
+          (if hasInverters
+           then "\n    _not_ = fmap complement"
+           else "") ++
+          "\n"
+        else ""
     ]
 
   where
+    isNeg = \case
+      Positive _                  -> False
+      Negative (Circuit.wire -> 0) -> False
+      Negative _                  -> True
+
     prWire' x
       | Circuit.wire x <= length inputs = "(fmap (! " ++ show (Circuit.wire x - 1) ++ ") cin)"
       | otherwise                      = 'w' : show x
@@ -375,10 +398,12 @@ prTerm' cfm@CFM{..} t =
   "    " ++ prWire cfm (termOutputWire t) ++ " = " ++
   (case reverse $ termInputWires t of
      []     ->
-       "pure " ++
-       (if isPredicate t then "p_" else "f_") ++
-       termName t ++
-       "\n"
+       ("pure " ++) $ (++ "\n") $
+       if
+         | termName t == "true"  -> "True"
+         | termName t == "false" -> "False"
+         | isPredicate t        -> "p_" ++ termName t
+         | otherwise            -> "f_" ++ termName t
      (x:xr) ->
        (if isPredicate t
         then if null xr

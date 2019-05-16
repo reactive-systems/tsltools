@@ -14,6 +14,7 @@
   , LambdaCase
   , FlexibleContexts
   , ViewPatterns
+  , MultiWayIf
 
   #-}
 
@@ -299,14 +300,33 @@ prCircuitImpl Circuit{..} =
     , concatMap prLatch latches
     , indent 6 "let"
     , concatMap prGate gates ++ prOutputs
-    , ""
-    , "  where"
-    , "    _lat_ = cell False"
-    , "    _not_ = arr not"
-    , ""
+    , let
+        hasLatches   = not $ null $ latches
+        hasInverters =
+            any isNeg (map outputWire outputs)
+          || any isNeg (map latchInput latches)
+          || any isNeg (map gateInputA gates)
+          || any isNeg (map gateInputB gates)
+      in
+        if hasLatches || hasInverters
+        then
+          "\n  where" ++
+          (if hasLatches
+           then "\n    _lat_ = cell False"
+           else "") ++
+          (if hasInverters
+           then "\n    _not_ = arr not"
+           else "") ++
+          "\n"
+        else ""
     ]
 
   where
+    isNeg = \case
+      Positive _                  -> False
+      Negative (Circuit.wire -> 0) -> False
+      Negative _                  -> True
+
     prWire' x
       | Circuit.wire x <= length inputs = "cin" ++ show (Circuit.wire x - 1)
       | otherwise                      = 'w' : show x
@@ -399,10 +419,12 @@ prTerm' cfm@CFM{..} t =
   "      " ++ prWire cfm (termOutputWire t) ++ " <- " ++
   (case reverse $ termInputWires t of
      []     ->
-       "arr (const " ++
-       (if isPredicate t then "p_" else "f_") ++
-       termName t ++
-       ") -< ()\n"
+       ("arr (const " ++) $ (++ ") -< ()\n") $
+       if
+         | termName t == "true"  -> "True"
+         | termName t == "false" -> "False"
+         | isPredicate t        -> "p_" ++ termName t
+         | otherwise            -> "f_" ++ termName t
      (x:xr) ->
        "arr " ++
        (iterate (("(uncurry " ++) . (++ ")"))

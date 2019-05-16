@@ -267,9 +267,9 @@ inferType
   :: ExprType -> Expression -> TypeCheck ()
 
 inferType t e = case expr e of
-  BaseWild         -> checkExprType e t TPattern
   BaseTrue         -> checkExprType e t TBoolean
   BaseFalse        -> checkExprType e t TBoolean
+  BaseWild         -> checkExprType e t TPattern
   BaseOtherwise    -> checkExprType e t TBoolean
   BaseCon {}       -> checkExprType e t TNumber
 
@@ -522,6 +522,13 @@ vt :: ExprType          -> ExprType           -> TypeCheck (Maybe ExprType)
 
 vt (TPoly i)           t                    = updParent i t
 vt t                   (TPoly j)            = updCurrent j t
+
+
+vt (TSignal TBoolean)  TBoolean             = return $ Just $ TSignal TBoolean
+vt (TSignal (TPoly i)) TBoolean             = updParent i TBoolean >>= \case
+  Nothing -> return Nothing
+  Just t  -> return $ Just $ liftS t
+
 
 vt (TSignal t)         (TSignal t')         = vt t t' >>= \case
   Nothing -> return Nothing

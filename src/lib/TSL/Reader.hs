@@ -290,8 +290,8 @@ symtable RD.Specification{..} =
           , idType     = t
           , idDeps     = if
               | member i so -> case IM.lookup i oa of
-                  Just xs ->  i : xs
-                  Nothing -> error $ show (i,names IM.! i,so,oa)
+                  Just xs -> i : xs
+                  Nothing -> ds
               | otherwise   -> ds
           , idKind     = case IM.lookup i scopes of
               Just ()          -> Internal

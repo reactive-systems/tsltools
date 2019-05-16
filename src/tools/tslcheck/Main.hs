@@ -65,12 +65,13 @@ main = do
   args <- getArgs
 
   if null args
-  then mapM_ checkFile args
-  else do
+  then do
     cError Yellow "Usage: "
     cErrorLn White "tslcheck <files>"
     resetColors
     exitFailure
+  else
+    mapM_ checkFile args
 
   where
     checkFile file = do

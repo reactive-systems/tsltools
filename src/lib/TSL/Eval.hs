@@ -192,10 +192,12 @@ evalExpression s a e =
       _         -> assert False undefined
     BaseUpd x i      ->
       evalE x >>= \case
-        VSTerm x' -> return $ VTSL $ Update i x'
-        VFTerm x' -> return $ VTSL $ Update i $ FunctionTerm x'
-        VPTerm x' -> return $ VTSL $ Update i $ PredicateTerm x'
-        _         -> assert False undefined
+        VSTerm x'      -> return $ VTSL $ Update i x'
+        VFTerm x'      -> return $ VTSL $ Update i $ FunctionTerm x'
+        VPTerm x'      -> return $ VTSL $ Update i $ PredicateTerm x'
+        VBoolean True  -> return $ VTSL $ Update i $ PredicateTerm BooleanTrue
+        VBoolean False -> return $ VTSL $ Update i $ PredicateTerm BooleanFalse
+        _              -> assert False undefined
     BaseConFn i      -> case stType s i of
       TSignal (TPoly _) -> return $ VFTerm $ FunctionSymbol i
       TSignal TBoolean  -> return $ VPTerm $ PredicateSymbol i

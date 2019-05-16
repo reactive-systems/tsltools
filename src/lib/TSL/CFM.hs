@@ -409,12 +409,14 @@ csvSymbolTable cfm@CFM{..} =
       []     -> toList is
       (x:xr) -> case wireSource x of
         Left i  ->  transitive (insert (sourceId (Left i)) is) (insert x ws) xr
-        Right t ->
-          let ti = fromList $ termInputWires t
-          in transitive
-               (insert (sourceId (Right t)) is)
-               (insert x ws)
-               (toList $ difference (ti `union` fromList xr) ws)
+        Right t
+          | termName t == "true" || termName t == "false" -> transitive is ws xr
+          | otherwise ->
+            let ti = fromList $ termInputWires t
+            in transitive
+                 (insert (sourceId (Right t)) is)
+                 (insert x ws)
+                 (toList $ difference (ti `union` fromList xr) ws)
 
 
     -- | Updates the term ids to redirect the removed, redundant
@@ -426,8 +428,10 @@ csvSymbolTable cfm@CFM{..} =
       $ concatMap
           ((\xs -> map (, head xs) xs) . map (sourceId . Right))
       $ groupBy ((==) `on` termName)
-      $ sortBy (compare `on` termName) terms
-
+      $ sortBy (compare `on` termName)
+      $ filter ((/= "false") . termName)
+      $ filter ((/= "true") . termName)
+        terms
 
     -- | Updates ids to appear in sorted order
 
@@ -612,10 +616,8 @@ fromCircuit circuit = do
     -- | Extracts the arguments of a predicate term.
 
     ptArgs a = \case
-      BooleanInput {}    -> reverse a
-      PredicateSymbol {} -> reverse a
       PApplied p x       -> ptArgs (x:a) p
-
+      _                  -> reverse a
 
     -- | Extracts the name of a function or predicate term wrapped
     -- into the 'SignalTerm' constructor.
@@ -636,6 +638,8 @@ fromCircuit circuit = do
     -- | Extracts the name of a predicate term.
 
     ptName = \case
+      BooleanTrue       -> "true"
+      BooleanFalse      -> "false"
       BooleanInput x    -> x
       PredicateSymbol x -> x
       PApplied p _      -> ptName p
@@ -675,9 +679,8 @@ fromCircuit circuit = do
       FApplied f x     -> subTermsF (subTerms a x) f
 
     subTermsP a = \case
-      BooleanInput _    -> a
-      PredicateSymbol _ -> a
       PApplied f x      -> subTermsP (subTerms a x) f
+      _                 -> a
 
     -- | Classifies function terms int pure signals and larger
     -- constructed terms.
@@ -820,6 +823,11 @@ inferTypes cfm@CFM{..} = do
          -- update circuit inputs by a Boolean type
          mapM_ (\i -> writeArray a (wire $ controlInputWire i) Boolean)
            $ Circuit.inputs control
+         -- check whether the constants 'true' and 'false' are used and
+         -- assign them a boolean type
+         mapM_ (\i -> writeArray a (wire $ termOutputWire i) Boolean)
+           $ filter knownConstant terms
+
          -- update the type assignment until we reach a fixpoint, which
          -- must exist as we always join equally typed wires to the
          -- minimal type; note that it suffices to iterate over the terms
@@ -828,6 +836,13 @@ inferTypes cfm@CFM{..} = do
          infer a $ fromList wires
          -- compress the index range
          compressed a
+
+
+    -- | Indicates that a given term is one of the known constants
+    -- (true, false)
+
+    knownConstant t =
+      null (termInputWires t) && (termName t == "true") || (termName t == "false")
 
 
     -- | Compresses the index range and reorders it according to the
@@ -973,6 +988,8 @@ constants CFM{..} =
     map head
   $ groupBy ((==) `on` termName)
   $ sortBy (compare `on` termName)
+  $ filter ((/= "false") . termName)
+  $ filter ((/= "true") . termName)
   $ filter (null . termInputWires) terms
 
 -----------------------------------------------------------------------------
