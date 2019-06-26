@@ -742,13 +742,13 @@ vAsSoonAs (VBoolean False) (VPTerm y)       = VTSL $ Globally $ Not $
 vAsSoonAs (VBoolean False) (VTSL y)         = VTSL $ Globally $ Not y
 vAsSoonAs (VPTerm x)       (VBoolean True)  = VTSL $ Check x
 vAsSoonAs (VTSL x)         (VBoolean True)  = VTSL x
-vAsSoonAs (VTSL x)         (VTSL y)         = VTSL $ Weak (Not x) $
+vAsSoonAs (VTSL x)         (VTSL y)         = VTSL $ Weak (Not y) $
                                                 And [x, y]
-vAsSoonAs (VPTerm x)       (VTSL y)         = VTSL $ Weak (Not $ Check x) $
+vAsSoonAs (VPTerm x)       (VTSL y)         = VTSL $ Weak (Not $ y) $
                                                 And [Check x, y]
-vAsSoonAs (VTSL x)         (VPTerm y)       = VTSL $ Weak (Not x) $ And
+vAsSoonAs (VTSL x)         (VPTerm y)       = VTSL $ Weak (Not $ Check y) $ And
                                                 [x, Check y]
-vAsSoonAs (VPTerm x)       (VPTerm y)       = VTSL $ Weak (Not $ Check x) $
+vAsSoonAs (VPTerm x)       (VPTerm y)       = VTSL $ Weak (Not $ Check y) $
                                                 And [Check x, Check y]
 vAsSoonAs _                _                = assert False undefined
 
