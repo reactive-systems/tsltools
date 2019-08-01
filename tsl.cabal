@@ -57,6 +57,7 @@ library
     TSL.Writer.Applicative
     TSL.Writer.Arrow
     TSL.Writer.Monadic
+    TSL.Writer.RxKotlin
     TSL.Aiger
     TSL.Logic
     TSL.Eval
