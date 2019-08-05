@@ -61,23 +61,18 @@ implement
 implement mName fName cfm@CFM{..} =
   let ?bounds = cfm in
   unlines
-    [ replicate 77 '-'
-    , "// |"
-    , "// Module : " ++ mName
+    [ "// Module : " ++ mName
     , "//"
-    , "// Arrow Interface for " ++ fName ++ "."
+    , "// Rxlotlin Interface for " ++ fName ++ "."
     , "//"
-    , replicate 77 '-'
     , ""
-    , "{-# LANGUAGE Rank2Types, Arrows #-}"
-    , ""
-    , replicate 77 '-'
+    , replicate 77 '/'
     , ""
     , "module " ++ mName
     , "  ( " ++ fName
     , "  ) where"
     , ""
-    , replicate 77 '-'
+    , replicate 77 '/'
     , ""
     , "import Control.Arrow"
     , "  ( Arrow"
