@@ -4,8 +4,8 @@ synopsis:            Library and tools for the TSL specification format
 description:         Library and tools for the TSL specification format
 license:             OtherLicense
 license-file:        LICENSE
-author:              Felix Klein
-                     Mark Santolucito
+author:              Felix Klein <Klein@ProjectJARVIS.de>
+                     Mark Santolucito <mark.santolucito@yale.edu>
 maintainer:          Klein@ProjectJARVIS.de
 category:            Synthesis
 build-type:          Simple
