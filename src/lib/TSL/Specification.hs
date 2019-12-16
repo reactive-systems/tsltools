@@ -8,7 +8,8 @@
 -----------------------------------------------------------------------------
 
 module TSL.Specification
-  ( Specification(..)
+  ( Specification(..),
+    TSLSpecification(..)
   ) where
 
 -----------------------------------------------------------------------------
@@ -32,3 +33,15 @@ data Specification =
     }
 
 -----------------------------------------------------------------------------
+
+data TSLSpecification = 
+  TSLSpecification
+    { 
+      -- | List of TSL formulas that are assumed
+      assumptions :: [Formula Int]
+    , -- | List of TSL formulas that should be guaranteed
+      guarantees :: [Formula Int]
+    , -- | symbol table containing information about identifiers
+      tslSymboltable :: SymbolTable
+    }
+      
