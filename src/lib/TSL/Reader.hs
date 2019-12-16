@@ -19,7 +19,8 @@
 -----------------------------------------------------------------------------
 
 module TSL.Reader
-  ( fromTSL
+  ( fromTSL,
+    fromTSLtoTSLSpec 
   ) where
 
 -----------------------------------------------------------------------------
@@ -42,6 +43,7 @@ import TSL.SymbolTable
 
 import TSL.Specification
   ( Specification(..)
+  , TSLSpecification(..)
   )
 
 import TSL.Reader.Sugar
@@ -170,6 +172,45 @@ fromTSL str =
       , symboltable = st
       }
 
+--------------------------------------------------------------------------------
+
+-- | Parses a TSL specification and output another kind of specifcation
+
+fromTSLtoTSLSpec
+  :: String -> Either Error TSLSpecification
+
+fromTSLtoTSLSpec str = 
+  -- parse the input
+  parse str >>=
+
+  -- replace variable names by a unique identifier
+  abstract >>=
+
+  -- replace syntactic sugar constructs for later converison
+  replaceSugar >>=
+
+  -- retrieve the bindings of expression variables
+  specBindings >>=
+
+  -- infer types and typecheck
+  inferTypes >>=
+
+  -- lift reader specification to specification parts
+  \s@RD.Specification{..} -> do
+    let st = symtable s
+    es <- eval st $ map snd sections
+    return TSLSpecification
+      { assumptions    = [ initiate (st, f) | (st, f)<- zip (map fst sections) es, assumption st ]
+      , guarantees     = [ initiate (st, f) | (st, f)<- zip (map fst sections) es, not (assumption st) ]
+      , tslSymboltable = st
+      }
+  where
+
+    assumption = \case
+      InitiallyAssume -> True
+      Assume {}       -> True
+      AlwaysAssume {} -> True
+      _               -> False
 -----------------------------------------------------------------------------
 
 join
