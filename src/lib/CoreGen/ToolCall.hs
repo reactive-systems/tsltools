@@ -16,13 +16,11 @@ module CoreGen.ToolCall
   ) where
 
 -----------------------------------------------------------------------------
-import CoreGen.CoreGen (Query(..), genQuery, getCores)
-import TSL.Error
+import CoreGen.CoreGen (Query(..), getCores)
 import TSL.Reader (fromTSLtoTSLSpec)
 import TSL.Specification (TSLSpecification)
 import TSL.ToString (tslSpecToString)
 
-import System.Exit
 import System.IO
 import System.Process
 
@@ -42,7 +40,7 @@ execCMD cmd stdIn = do
   hClose i
   sout <- hGetContents o
   serr <- hGetContents e
-  length sout `seq` waitForProcess p
+  _ <- length sout `seq` waitForProcess p
   return (sout, serr)
 
 -----------------------------------------------------------------------------
@@ -86,7 +84,7 @@ satisfiable tlsf = do
   (ltl, _) <- execCMD "syfco -f trp -in" tlsf
   writeFile "tmp133742.tmp" ltl
   (out, _) <- execCMD "trp++uc -f ltl -q tmp133742.tmp" ""
-  execCMD "rm tmp133742.tmp" ""
+  _ <- execCMD "rm tmp133742.tmp" ""
   return (not $ isInfixOf "Unsatisfiable" out)
 
 -----------------------------------------------------------------------------
@@ -116,7 +114,7 @@ generateCore tsl = do
         then return (Unsat $ potCore q)
         else do
           rel <- realizable $ synthSpec q
-          if rel
+          if not rel
             then return (Unrez $ potCore q)
             else do
               genCore' qr
