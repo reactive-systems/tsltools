@@ -10,7 +10,6 @@
 
 -- TODO
 -- - fix to right core gen
--- - finish to string methods
 -----------------------------------------------------------------------------
 module CoreGen.CoreGen
   ( Query(..)
@@ -51,7 +50,7 @@ powerSetB :: Int -> Int -> [Set Int]
 powerSetB n bound
   | n < 1 = []
   | n == 1 = [fromList [i] | i <- [0 .. bound - 1]]
-  | n > 1 =
+  | otherwise =
     let sub = powerSetB (n - 1) bound
         subNew =
           concatMap
