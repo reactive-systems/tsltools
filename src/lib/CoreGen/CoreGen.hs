@@ -8,8 +8,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
 
--- TODO
--- - fix to right core gen
 -----------------------------------------------------------------------------
 module CoreGen.CoreGen
   ( Query(..)
@@ -19,9 +17,10 @@ module CoreGen.CoreGen
 
 -----------------------------------------------------------------------------
 import Data.Set
+import TSL.FormulaUtils (getOutputs, getPossibleUpdates, getUpdates)
+import TSL.Logic (Formula(..))
 import TSL.Specification (TSLSpecification(..), tslSpecToSpec)
 import TSL.TLSF (toTLSF)
-import TSL.ToString (tslSpecToString)
 
 -----------------------------------------------------------------------------
 --
@@ -54,8 +53,17 @@ getCores tsl@TSLSpecification {guarantees = g} =
     (\indices -> genQuery $ tsl {guarantees = choose indices})
     (sortedPowerSet $ length g)
   where
-    choose indices =
-      fmap snd $ Prelude.filter (\(a, _) -> member a indices) $ zip [0 ..] g
+    choose indices = choosen ++ [otherUpdates]
+      where
+        choosen =
+          fmap snd $ Prelude.filter (\(a, _) -> member a indices) $ zip [0 ..] g
+        otherUpdates =
+          Or $
+          TTrue :
+          (Data.Set.toList $
+           Data.Set.difference
+             (getPossibleUpdates (And g) (unions $ fmap getOutputs choosen))
+             (getUpdates (And g)))
 
 -----------------------------------------------------------------------------
 --
