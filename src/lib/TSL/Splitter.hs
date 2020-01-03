@@ -41,14 +41,15 @@ import TSL.Logic
   , exactlyOne
   )
 
-import Data.Map.Strict 
+import Data.Map.Strict as Map
   ( Map
   , fromListWith
   , (!)
-  , delete as mapDelete
+  , delete
+  , keys
   )
 
-import Data.Set
+import Data.Set as Set
   ( Set
   , empty
   , insert
@@ -57,11 +58,13 @@ import Data.Set
   , union
   , difference
   , toList
+  , isSubsetOf
   )
 
 import Data.Array
   ( Array
   , elems
+  , assocs
   )
 -----------------------------------------------------------------------------
 
@@ -73,36 +76,55 @@ split
 split TSLSpecification{..} = []
   where
     
+    guarParts = splitGuarantees guarantees parts
 
-
+    parts = connectedParts graph
 
     graph = fromListWith union $ concat $ foldl (\xs -> \x -> makeNodes (dependents x):xs) []  guarantees
 
 
 
-    inputs = foldl (\xs -> \x -> if idKind x == Input then x:xs else xs) [] $ symtable tslSymboltable
+--    inputs = foldl (\xs -> \(i, x) -> if idKind x == Input then i:xs else xs) [] $ assocs $ symtable tslSymboltable
 
-    outputs = foldl (\xs -> \x -> if idKind x == Input then x:xs else xs) [] $ symtable tslSymboltable
+--    outputs = foldl (\xs -> \(i, x) -> if idKind x == Output then i:xs else xs) [] $ assocs $ symtable tslSymboltable
+
     makeNodes :: Set Int -> [(Int, Set Int)]
-    makeNodes deps = if size deps <= 1 then [] else foldl (\xs -> \x -> (x, delete x deps):xs) [] deps
+    makeNodes deps = if size deps <= 1 then [] else foldl (\xs -> \x -> (x, Set.delete x deps):xs) [] deps
 
 -----------------------------------------------------------------------------
 
 -- | 
 
-connectedParts
-  :: Map Int (Set Int) -> [Set Int]
-connectedParts graph = if null graph then [] else parts
-    where
-    part = (explore [hd keys graph] empty graph)
-    parts = part:connectedParts (foldr mapDelete graph part)
+splitGuarantees
+  :: [Formula Int] -> [Set Int] -> [[Formula Int]]
+splitGuarantees guars parts = map fst guarParts
+  where
+    guarParts = foldr insertGuarantee zippedParts guars
+    zippedParts = foldl (\xs -> \s -> ([],s):xs) [] parts
+
+insertGuarantee
+ :: Formula Int -> [([Formula Int], Set Int)] -> [([Formula Int], Set Int)]
+insertGuarantee fml [(fs,s)]    = [(fml:fs,s)]
+insertGuarantee fml ((fs,s):xr) = if isSubsetOf (dependents fml) s then (fml:fs,s):xr else (fs,s):insertGuarantee fml xr
+-- use of dependents inefficient
 
 -----------------------------------------------------------------------------
 
--- | Does DFS on a Graph represented as a Map and returns the reachable states
+-- | Uses exploration to extract unconnected parts from the graph, returns sets of connected nodes
+
+connectedParts
+  :: Map.Map Int (Set Int) -> [Set Int]
+connectedParts graph = if null graph then [] else parts
+    where
+    part = (explore [head (keys graph)] empty graph)
+    parts = part:connectedParts (foldr Map.delete graph part)
+
+-----------------------------------------------------------------------------
+
+-- | Does DFS on a Graph represented as a Map and returns the reachable nodes
 
 explore
-  :: [Int] -> Set Int -> Map Int (Set Int) -> Set Int
+  :: [Int] -> Set Int -> Map.Map Int (Set Int) -> Set Int
 explore []      explored graph  = explored
 explore (x:xr)  explored graph  = explore (toList (difference (graph ! x) explored) ++ xr)
                                             (insert x explored) graph
