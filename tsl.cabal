@@ -53,6 +53,7 @@ library
     TSL.Reader.Data
     TSL.Reader.InferType
     TSL.Reader.Sugar
+    TSL.Splitter
     TSL.Writer.Clash
     TSL.Writer.Applicative
     TSL.Writer.Arrow
