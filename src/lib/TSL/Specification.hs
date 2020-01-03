@@ -5,43 +5,45 @@
 --
 -- Internal data structure of a specification.
 --
------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+{-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
 
+-----------------------------------------------------------------------------
 module TSL.Specification
-  ( Specification(..),
-    TSLSpecification(..)
+  ( Specification(..)
+  , TSLSpecification(..)
+  , tslSpecToSpec
   ) where
 
 -----------------------------------------------------------------------------
+import TSL.Logic (Formula(..))
 
-import TSL.Logic
-  ( Formula
-  )
-
-import TSL.SymbolTable
-  ( SymbolTable
-  )
+import TSL.SymbolTable (SymbolTable)
 
 -----------------------------------------------------------------------------
-
 data Specification =
   Specification
-    { -- | TSL formula
-      formula :: Formula Int
-    , -- | symbol table containing information about identifiers
-      symboltable :: SymbolTable
+      -- | TSL formula
+    { formula :: Formula Int
+      -- | symbol table containing information about identifiers
+    , symboltable :: SymbolTable
     }
 
 -----------------------------------------------------------------------------
-
-data TSLSpecification = 
+data TSLSpecification =
   TSLSpecification
-    { 
       -- | List of TSL formulas that are assumed
-      assumptions :: [Formula Int]
-    , -- | List of TSL formulas that should be guaranteed
-      guarantees :: [Formula Int]
-    , -- | symbol table containing information about identifiers
-      tslSymboltable :: SymbolTable
+    { assumptions :: [Formula Int]
+      -- | List of TSL formulas that should be guaranteed
+    , guarantees :: [Formula Int]
+      -- | symbol table containing information about identifiers
+    , tslSymboltable :: SymbolTable
     }
-      
+
+-----------------------------------------------------------------------------
+tslSpecToSpec :: TSLSpecification -> Specification
+tslSpecToSpec TSLSpecification {..} =
+  Specification
+    { formula = Implies (And assumptions) (And guarantees)
+    , symboltable = tslSymboltable
+    }

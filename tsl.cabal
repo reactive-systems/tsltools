@@ -29,6 +29,7 @@ library
     , mtl >=2.2 && <2.3
     , containers >=0.5 && <0.7
     , QuickCheck
+    , process >= 1.6.3.0
 
   exposed-modules:
     TSL
