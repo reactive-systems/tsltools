@@ -10,11 +10,27 @@
 
 -----------------------------------------------------------------------------
 module Simulator.Core
-  (
+  ( NormCircuit(inputs, outputs, latches, inputName, outputName,
+            latchName)
+  , State
+  , Input
+  , Output
+  , normalize
+  , simStep
   ) where
 
 -----------------------------------------------------------------------------
-import TSL.Aiger (Circuit(..), Input(..), Latch(..), Output(..))
+import TSL.Aiger as Aiger
+  ( Circuit(..)
+  , Gate
+  , Input
+  , Invertible(..)
+  , Latch
+  , Output
+  , Wire
+  )
+
+import Data.List (find)
 
 -----------------------------------------------------------------------------
 --
@@ -41,9 +57,53 @@ data NormCircuit =
 -----------------------------------------------------------------------------
 -- 
 -- Transform a circuit into a normalized circuit
+-- ASSUMPTIONS: 
+-- - The aiger circuit contains no logic loops
+-- - The aiger circuit has no unbound wires
 --
 normalize :: Circuit -> NormCircuit
-normalize _ = undefined --TODO
+normalize aig =
+  NormCircuit
+    { inputs = Aiger.inputs aig
+    , outputs = Aiger.outputs aig
+    , latches = Aiger.latches aig
+    , outputCir = \o -> iwire2ct $ Aiger.outputWire aig o
+    , latchCir = \l -> iwire2ct $ Aiger.latchInput aig l
+    , inputName = Aiger.inputName aig
+    , outputName = Aiger.outputName aig
+    , latchName = Aiger.latchName aig
+    }
+  where
+    iwire2ct :: Invertible Wire -> CircuitTree
+    iwire2ct =
+      \case
+        Positive w -> wire2ct w
+        Negative w -> NG $ wire2ct w
+    --
+    wire2ct :: Wire -> CircuitTree
+    wire2ct w =
+      case isGateOutput w of
+        Just g ->
+          AG
+            (iwire2ct $ Aiger.gateInputA aig g)
+            (iwire2ct $ Aiger.gateInputB aig g)
+        Nothing ->
+          case isInputWire w of
+            Just i -> Inp i
+            Nothing ->
+              case isLatchOutput w of
+                Just l -> InpL l
+                Nothing -> error "ASSERTION ERROR: Latch has unconncerted wire" --TODO: Change to real asserion
+    --
+    isInputWire :: Wire -> Maybe Input
+    isInputWire w = find (\i -> w == Aiger.inputWire aig i) (Aiger.inputs aig)
+    --
+    isGateOutput :: Wire -> Maybe Gate
+    isGateOutput w = find (\g -> w == Aiger.gateOutput aig g) (Aiger.gates aig)
+    -- 
+    isLatchOutput :: Wire -> Maybe Latch
+    isLatchOutput w =
+      find (\l -> w == Aiger.latchOutput aig l) (Aiger.latches aig)
 
 -----------------------------------------------------------------------------
 --
