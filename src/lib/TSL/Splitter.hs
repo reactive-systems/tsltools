@@ -93,6 +93,18 @@ split TSLSpecification{..} = []
 
 -----------------------------------------------------------------------------
 
+-- | Create symboltable for specification part
+
+fixSymboltable
+  :: TSLSpecification -> TSLSpecification
+fixSymboltable TSLSpecification{..} = TSLSpecification {assumptions = fmap ((!) newSymbols) assumptions, guarantees = fmap ((!) newSymbols) guarantees, tslSymboltable = } 
+  where
+    vars = toAscList $ foldl Set.insert (foldl Set.insert Set.empty assumptions) guarantees
+    newSymbols  = fromDescList $ snd $ foldl (\(i, xs) -> \x -> (i+1,(x,i):xs)) (1,[]) vars
+    -- TODO adapt symboltable
+
+-----------------------------------------------------------------------------
+
 -- | 
 
 splitGuarantees
