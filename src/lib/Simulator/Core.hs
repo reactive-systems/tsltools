@@ -10,8 +10,7 @@
 
 -----------------------------------------------------------------------------
 module Simulator.Core
-  ( NormCircuit(inputs, outputs, latches, inputName, outputName,
-            latchName)
+  ( NormCircuit(inputs, outputs, latches, inputName, outputName)
   , State
   , Input
   , Output
@@ -42,16 +41,15 @@ data CircuitTree
   | AG CircuitTree CircuitTree
   | NG CircuitTree
 
-data NormCircuit =
+data NormCircuit i o =
   NormCircuit
     { inputs :: [Input]
     , outputs :: [Output]
     , latches :: [Latch]
     , outputCir :: Output -> CircuitTree
     , latchCir :: Latch -> CircuitTree
-    , inputName :: Input -> String
-    , outputName :: Output -> String
-    , latchName :: Latch -> String
+    , inputName :: Input -> i
+    , outputName :: Output -> o
     }
 
 -----------------------------------------------------------------------------
@@ -61,17 +59,16 @@ data NormCircuit =
 -- - The aiger circuit contains no logic loops
 -- - The aiger circuit has no unbound wires
 --
-normalize :: Circuit -> NormCircuit
-normalize aig =
+normalize :: (String -> i) -> (String -> o) -> Circuit -> NormCircuit i o
+normalize renameInput renameOutput aig =
   NormCircuit
     { inputs = Aiger.inputs aig
     , outputs = Aiger.outputs aig
     , latches = Aiger.latches aig
     , outputCir = \o -> iwire2ct $ Aiger.outputWire aig o
     , latchCir = \l -> iwire2ct $ Aiger.latchInput aig l
-    , inputName = Aiger.inputName aig
-    , outputName = Aiger.outputName aig
-    , latchName = Aiger.latchName aig
+    , inputName = renameInput . (Aiger.inputName aig)
+    , outputName = renameOutput . (Aiger.outputName aig)
     }
   where
     iwire2ct :: Invertible Wire -> CircuitTree
@@ -128,6 +125,6 @@ eval ct state inpt =
     AG x y -> eval x state inpt && eval y state inpt
     NG x -> not $ eval x state inpt
 
-simStep :: NormCircuit -> State -> Inputs -> (State, Outputs)
+simStep :: NormCircuit i o -> State -> Inputs -> (State, Outputs)
 simStep NormCircuit {..} state inpt =
   (\l -> eval (latchCir l) state inpt, \o -> eval (outputCir o) state inpt)
