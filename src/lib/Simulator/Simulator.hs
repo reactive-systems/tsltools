@@ -10,6 +10,7 @@
 -----------------------------------------------------------------------------
 module Simulator.Simulator
   ( Simulation
+  , Option
   , createSimulation
   , step
   , Simulator.Simulator.rewind

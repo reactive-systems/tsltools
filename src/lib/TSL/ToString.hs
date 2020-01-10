@@ -12,6 +12,9 @@
 module TSL.ToString
   ( tslSpecToString
   , specToString
+  , formulaToString
+  , predicateTermToString
+  , signalTermToString
   ) where
 
 import TSL.Specification (Specification(..), TSLSpecification(..))
