@@ -8,25 +8,40 @@
 {-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
 
 -----------------------------------------------------------------------------
-module Simulator.Simulator where
+module Simulator.Simulator
+  ( Simulation
+  , createSimulation
+  , step
+  , Simulator.Simulator.rewind
+  , options
+  ) where
 
 -----------------------------------------------------------------------------
+import Data.List as List (filter)
+import Data.Set as Set (filter, fromList, map, powerSet, toList)
 import TSL.Aiger (Circuit)
 
 import Simulator.Core
-  ( NormCircuit(inputName, inputs, latches, outputName, outputs)
+  ( NormCircuit(inputName, inputs, outputName, outputs)
   , State
   , normalize
   , simStep
   )
 
-import TSL.Logic (Formula, PredicateTerm, SignalTerm, readInput, readOutput)
+import TSL.Logic
+  ( Formula(..)
+  , PredicateTerm
+  , SignalTerm(Signal)
+  , SignalTerm
+  , readInput
+  , readOutput
+  )
 
 import TSL.Error (Error)
 
 import TSL.Specification
   ( TSLSpecification
-  , TSLStringSpecification
+  , TSLStringSpecification(..)
   , tslSpecToTSLStrSpec
   )
 
@@ -84,20 +99,75 @@ createSimulation aag spec =
 -- that would be violated
 --
 options :: Simulation -> [(Option, Witness)]
-options _ = undefined --TODO
+options sim@Simulation {counterStrategy = ct, specification = spec} =
+  zip options witnesses
+  where
+    options = possibleOptions ct
+    posFinTraces = fmap (\o -> trace $ fst $step sim o) options
+    witnesses = fmap (violatedGuarantees spec) posFinTraces
+
+possibleOptions :: CounterStrategy -> [Option]
+possibleOptions cst = fmap extendUpdates filteredCombinations
+  where
+    allUpdates = [inputName cst i | i <- inputs cst]
+    cells = toList $ fromList $ fmap fst allUpdates
+    --
+    allCombinations = Set.map toList $ powerSet $ fromList allUpdates
+    filteredCombinations =
+      toList $ Set.filter (unique . (fmap fst)) $ allCombinations
+    --
+    unique [] = True
+    unique (c:cr) = (not (elem c cr)) && unique cr
+    --
+    extendUpdates updates =
+      foldl
+        (\upds c ->
+           if all ((/= c) . fst) upds
+             then (c, Signal c) : upds
+             else upds)
+        updates
+        cells
+
+violatedGuarantees :: TSLStringSpecification -> FiniteTrace String -> Witness
+violatedGuarantees TSLStringSpecification { assumptionsStr = assmpt
+                                          , guaranteesStr = gar
+                                          } trace =
+  List.filter (\f -> not (trace |= Implies (And assmpt) f)) gar
 
 -----------------------------------------------------------------------------
 --
 --  Given an possible action option, simulate one step and calculate the
 --  predicate evaluations
+--  ASSUMPTION: The option should be complete, i.e. on a higher level
+--  for every cell in the formula, the circuit can update on of these cells
 --
 step :: Simulation -> Option -> (Simulation, [(PredicateTerm String, Bool)])
-step sim@Simulation {..} _ =
+step sim@Simulation {..} updates =
   (sim {stateStack = q : stateStack, trace = newTrace}, eval)
   where
-    q = undefined --TODO
-    newTrace = undefined --TODO
-    eval = undefined --TODO
+    input = \i -> elem (inputName counterStrategy i) updates -- The input for the c-strat circuit
+    --
+    (q, output) = simStep counterStrategy (head stateStack) input -- The c-strat simulation step
+    --
+    eval =
+      [(outputName counterStrategy o, output o) | o <- outputs counterStrategy] --The predicate evaluation generated out of the output
+    --
+    newTrace =
+      append
+        trace
+        (\c -> findFirst "Simulator.step: Assumption violated" (== c) updates)
+        (\p ->
+           findFirst
+             "Simulator.step: Ouput should contain all predicates"
+             (== p)
+             eval)
+    --
+    findFirst :: String -> (a -> Bool) -> [(a, b)] -> b
+    findFirst msg _ [] = error msg
+    findFirst msg p ((a, b):xr) =
+      if p a
+        then b
+        else findFirst msg p xr
 
 -----------------------------------------------------------------------------
 --
