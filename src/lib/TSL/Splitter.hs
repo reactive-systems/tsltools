@@ -17,7 +17,7 @@
 -----------------------------------------------------------------------------
 
 module TSL.Splitter
-  ( --split
+  ( split
   ) where
 
 -----------------------------------------------------------------------------
@@ -25,7 +25,6 @@ module TSL.Splitter
 import TSL.SymbolTable
   ( SymbolTable(..)
   , IdRec(..)
-  , Kind(..)
   )
 
 import TSL.Specification
@@ -34,11 +33,6 @@ import TSL.Specification
 
 import TSL.Logic
   ( Formula(..)
-  , SignalTerm(..)
-  , tlsfFormula
-  , tlsfPredicates
-  , tlsfUpdates
-  , exactlyOne
   )
 
 import Data.Map.Strict as Map
@@ -47,6 +41,7 @@ import Data.Map.Strict as Map
   , (!)
   , delete
   , keys
+  , fromDescList
   )
 
 import Data.Set as Set
@@ -59,29 +54,29 @@ import Data.Set as Set
   , difference
   , toList
   , isSubsetOf
+  , toAscList
   )
 
-import Data.Array
-  ( Array
-  , elems
-  , assocs
+import Data.Array as Ar
+  ( listArray
+  , (!)
   )
 -----------------------------------------------------------------------------
 
--- | Creates separate specifications for independant specification parts
+-- | Creates separate specifications for independent specification parts
 
 split
   :: TSLSpecification -> [TSLSpecification]
 
-split TSLSpecification{..} = []
+split spec = fmap fixSymboltable $ fmap filterAssumptions $ foldl (\xs -> \x -> spec{guarantees = x}:xs) [] guarParts
   where
     
-    guarParts = splitGuarantees guarantees parts
+    guarParts = splitGuarantees (guarantees spec) parts
 
     parts = connectedParts graph
 
-    graph = fromListWith union $ concat $ foldl (\xs -> \x -> makeNodes (dependents x):xs) []  guarantees
-
+    graph = fromListWith union $ concat $ foldl (\xs -> \x -> makeNodes (dependents x):xs) [] (guarantees spec)
+ 
 
 
 --    inputs = foldl (\xs -> \(i, x) -> if idKind x == Input then i:xs else xs) [] $ assocs $ symtable tslSymboltable
@@ -93,15 +88,38 @@ split TSLSpecification{..} = []
 
 -----------------------------------------------------------------------------
 
+-- | Filter Assumptions according to guarantees
+
+filterAssumptions
+ :: TSLSpecification -> TSLSpecification
+filterAssumptions TSLSpecification{..} = TSLSpecification{guarantees = guarantees, assumptions = filteredAssumptions, tslSymboltable = tslSymboltable}
+  where
+    filteredAssumptions = filter (\x -> Set.isSubsetOf ((foldr Set.insert) Set.empty x) vars) assumptions
+    vars = foldl (foldr Set.insert) Set.empty guarantees 
+    
+    
+-----------------------------------------------------------------------------
+
 -- | Create symboltable for specification part
 
 fixSymboltable
   :: TSLSpecification -> TSLSpecification
-fixSymboltable TSLSpecification{..} = TSLSpecification {assumptions = fmap ((!) newSymbols) assumptions, guarantees = fmap ((!) newSymbols) guarantees, tslSymboltable = } 
+fixSymboltable TSLSpecification{..} = TSLSpecification {assumptions = fmap (fmap ((Map.!) newSymbols)) assumptions, guarantees = fmap (fmap ((Map.!) newSymbols)) guarantees, tslSymboltable = SymbolTable{symtable=table}} 
   where
-    vars = toAscList $ foldl Set.insert (foldl Set.insert Set.empty assumptions) guarantees
-    newSymbols  = fromDescList $ snd $ foldl (\(i, xs) -> \x -> (i+1,(x,i):xs)) (1,[]) vars
-    -- TODO adapt symboltable
+    assVars = (foldl (foldr Set.insert) Set.empty assumptions)
+    vars = toAscList $ foldl (foldr Set.insert) assVars guarantees -- Baumfaltung ftw
+    newSymbols  = fromDescList $ mapping
+    mapping = snd $ foldl (\(i, xs) -> \x -> (i+1,(x,i):xs)) (1,[]) vars
+    oldNewArr = listArray (1,fst $ head mapping) $ reverse $ fmap snd mapping
+    table = fmap (\x -> updateRec ((Map.!) newSymbols) ((symtable tslSymboltable) Ar.! x)) oldNewArr
+
+-----------------------------------------------------------------------------
+
+-- | Update the identifiers in one symboltable record 
+-- TODO update Bindings
+updateRec
+  :: (Int -> Int) -> IdRec -> IdRec
+updateRec dict rec = rec{idArgs = fmap dict $ idArgs rec, idDeps = fmap dict $ idDeps rec}
 
 -----------------------------------------------------------------------------
 
@@ -137,8 +155,8 @@ connectedParts graph = if null graph then [] else parts
 
 explore
   :: [Int] -> Set Int -> Map.Map Int (Set Int) -> Set Int
-explore []      explored graph  = explored
-explore (x:xr)  explored graph  = explore (toList (difference (graph ! x) explored) ++ xr)
+explore []      explored   _    = explored
+explore (x:xr)  explored graph  = explore (toList (difference (graph Map.! x) explored) ++ xr)
                                             (insert x explored) graph
     
 
