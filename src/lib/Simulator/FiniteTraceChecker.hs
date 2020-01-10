@@ -15,6 +15,8 @@
 module Simulator.FiniteTraceChecker
   ( FiniteTrace
   , append
+  , rewind
+  , emptyTrace
   , (|=)
   ) where
 
@@ -25,7 +27,8 @@ import TSL.Logic as Logic (Formula(..), PredicateTerm, SignalTerm)
 -----------------------------------------------------------------------------
 --
 -- A Finite Trace is List of updates and predicate evalutations 
--- (which are partial functions), a finite trace can be extended by append
+-- (which are partial functions), a finite trace can be extended by append,
+-- or rewind
 --
 newtype FiniteTrace c =
   FiniteTrace [(c -> SignalTerm c, PredicateTerm c -> Bool)]
@@ -36,7 +39,16 @@ append ::
   -> (PredicateTerm c -> Bool)
   -> FiniteTrace c
 append (FiniteTrace tr) updates predicates =
-  FiniteTrace $ (updates, predicates) : tr
+  FiniteTrace $ tr ++ [(updates, predicates)]
+
+rewind :: FiniteTrace c -> FiniteTrace c
+rewind (FiniteTrace ts) =
+  case reverse ts of
+    [] -> FiniteTrace []
+    (_:tr) -> FiniteTrace (reverse tr)
+
+emptyTrace :: FiniteTrace c
+emptyTrace = FiniteTrace []
 
 -----------------------------------------------------------------------------
 --
