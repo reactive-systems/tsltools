@@ -23,7 +23,7 @@ import TSL.Logic
   , SignalTerm(..)
   )
 
-import TSL.SymbolTable (SymbolTable, stName)
+import TSL.SymbolTable (stName)
 
 -----------------------------------------------------------------------------
 -----------------------------------------------------------------------------
@@ -32,63 +32,62 @@ insertInside [] _ = []
 insertInside [x] _ = [x]
 insertInside (x:xr) a = x : a : insertInside xr a
 
-signalTermToString :: SymbolTable -> SignalTerm Int -> String
-signalTermToString sym =
+signalTermToString :: (a -> String) -> SignalTerm a -> String
+signalTermToString env =
   \case
-    Signal a -> stName sym a
-    FunctionTerm ft -> functionTermToString sym ft
-    PredicateTerm pt -> predicateTermToString sym pt
+    Signal a -> env a
+    FunctionTerm ft -> functionTermToString env ft
+    PredicateTerm pt -> predicateTermToString env pt
 
-functionTermToString :: SymbolTable -> FunctionTerm Int -> String
-functionTermToString sym =
+functionTermToString :: (a -> String) -> FunctionTerm a -> String
+functionTermToString env =
   \case
-    FunctionSymbol a -> stName sym a
+    FunctionSymbol a -> env a
     FApplied ft st ->
       "(" ++
-      functionTermToString sym ft ++ " " ++ signalTermToString sym st ++ ")"
+      functionTermToString env ft ++ " " ++ signalTermToString env st ++ ")"
 
-predicateTermToString :: SymbolTable -> PredicateTerm Int -> String
-predicateTermToString sym =
+predicateTermToString :: (a -> String) -> PredicateTerm a -> String
+predicateTermToString env =
   \case
     BooleanTrue -> "true"
     BooleanFalse -> "false"
-    BooleanInput a -> stName sym a
-    PredicateSymbol a -> stName sym a
+    BooleanInput a -> env a
+    PredicateSymbol a -> env a
     PApplied pt st ->
       "(" ++
-      predicateTermToString sym pt ++ " " ++ signalTermToString sym st ++ ")"
+      predicateTermToString env pt ++ " " ++ signalTermToString env st ++ ")"
 
-formulaToString :: SymbolTable -> (Formula Int) -> String
-formulaToString sym =
+formulaToString :: (a -> String) -> (Formula a) -> String
+formulaToString env =
   \case
     TTrue -> "true"
     FFalse -> "false"
-    Check pt -> predicateTermToString sym pt
-    Update c st ->
-      "[" ++ stName sym c ++ " <- " ++ signalTermToString sym st ++ "]"
-    Not f -> "(! " ++ formulaToString sym f ++ ")"
+    Check pt -> predicateTermToString env pt
+    Update c st -> "[" ++ env c ++ " <- " ++ signalTermToString env st ++ "]"
+    Not f -> "(! " ++ formulaToString env f ++ ")"
     Implies f g ->
-      "(" ++ formulaToString sym f ++ " -> " ++ formulaToString sym g ++ ")"
+      "(" ++ formulaToString env f ++ " -> " ++ formulaToString env g ++ ")"
     Equiv f g ->
-      "(" ++ formulaToString sym f ++ " <-> " ++ formulaToString sym g ++ ")"
+      "(" ++ formulaToString env f ++ " <-> " ++ formulaToString env g ++ ")"
     And xs ->
-      "(" ++ concat (insertInside (map (formulaToString sym) xs) " && ") ++ ")"
+      "(" ++ concat (insertInside (map (formulaToString env) xs) " && ") ++ ")"
     Or xs ->
-      "(" ++ concat (insertInside (map (formulaToString sym) xs) " || ") ++ ")"
-    Next f -> "(X " ++ formulaToString sym f ++ ")"
-    Globally f -> "(G " ++ formulaToString sym f ++ ")"
-    Finally f -> "(F " ++ formulaToString sym f ++ ")"
+      "(" ++ concat (insertInside (map (formulaToString env) xs) " || ") ++ ")"
+    Next f -> "(X " ++ formulaToString env f ++ ")"
+    Globally f -> "(G " ++ formulaToString env f ++ ")"
+    Finally f -> "(F " ++ formulaToString env f ++ ")"
     Until f g ->
-      "(" ++ formulaToString sym f ++ " U " ++ formulaToString sym g ++ ")"
+      "(" ++ formulaToString env f ++ " U " ++ formulaToString env g ++ ")"
     Release f g ->
-      "(" ++ formulaToString sym f ++ " R " ++ formulaToString sym g ++ ")"
+      "(" ++ formulaToString env f ++ " R " ++ formulaToString env g ++ ")"
     Weak f g ->
-      "(" ++ formulaToString sym f ++ " W " ++ formulaToString sym g ++ ")"
+      "(" ++ formulaToString env f ++ " W " ++ formulaToString env g ++ ")"
 
 -----------------------------------------------------------------------------
 specToString :: Specification -> String
 specToString Specification {..} =
-  "initially guarantee {" ++ formulaToString symboltable formula ++ "}"
+  "initially guarantee {" ++ formulaToString (stName symboltable) formula ++ "}"
 
 tslSpecToString :: TSLSpecification -> String
 tslSpecToString TSLSpecification {..} =
@@ -97,4 +96,6 @@ tslSpecToString TSLSpecification {..} =
   where
     help :: [Formula Int] -> String
     help xs =
-      concatMap (\f -> "  " ++ formulaToString tslSymboltable f ++ ";\n") xs
+      concatMap
+        (\f -> "  " ++ formulaToString (stName tslSymboltable) f ++ ";\n")
+        xs
