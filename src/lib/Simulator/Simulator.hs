@@ -19,7 +19,18 @@ module Simulator.Simulator
 
 -----------------------------------------------------------------------------
 import Data.List as List (filter)
-import Data.Set as Set (filter, fromList, map, powerSet, toList)
+import Data.Set as Set
+  ( Set
+  , difference
+  , empty
+  , filter
+  , fromList
+  , isSubsetOf
+  , map
+  , powerSet
+  , toList
+  , unions
+  )
 import TSL.Aiger (Circuit)
 
 import Simulator.Core
@@ -32,8 +43,7 @@ import Simulator.Core
 import TSL.Logic
   ( Formula(..)
   , PredicateTerm
-  , SignalTerm(Signal)
-  , SignalTerm
+  , SignalTerm(..)
   , readInput
   , readOutput
   )
@@ -75,24 +85,26 @@ type Witness = [Formula String]
 -- Given a aag counterstrategy and a correspoding tsl spec
 -- generates a simulation out of this
 --
--- TODOs:
--- - Check that counterstartegy and simulation match each other
--- - Implement proper error handling for ap parsing
---
 createSimulation :: Circuit -> TSLSpecification -> Simulation
 createSimulation aag spec =
-  Simulation
-    { counterStrategy = normalize (parseAP readOutput) (parseAP readInput) aag
-    , specification = tslSpecToTSLStrSpec spec
-    , stateStack = [\_ -> False]
-    , trace = emptyTrace
-    }
+  case sanitize sim of
+    Nothing -> sim
+    Just err -> error err
   where
     parseAP :: (String -> Either Error a) -> String -> a
     parseAP parse str =
       case parse str of
         Left err -> error $ "Simulator: While parsing ap found " ++ (show err)
         Right val -> val
+    --
+    sim =
+      Simulation
+        { counterStrategy =
+            normalize (parseAP readOutput) (parseAP readInput) aag
+        , specification = tslSpecToTSLStrSpec spec
+        , stateStack = [\_ -> False]
+        , trace = emptyTrace
+        }
 
 -----------------------------------------------------------------------------
 --
@@ -188,3 +200,39 @@ rewind sim@Simulation {stateStack = stateStack, trace = trace} =
           _:sr -> sr
     , trace = FTC.rewind trace
     }
+
+-----------------------------------------------------------------------------
+--
+-- Sanitize the simulation
+--
+sanitize :: Simulation -> Maybe String
+sanitize Simulation {counterStrategy = cst, specification = spec} =
+  if isSubsetOf cellsSpec cellsStrat
+    then Nothing
+    else Just $
+         "Simulator: Specification does noz match counter-strategy as the following cells differ:  " ++
+         concatMap (++ " ") (toList $ difference cellsSpec cellsStrat)
+  where
+    allUpdates = [inputName cst i | i <- inputs cst]
+    cellsStrat = fromList $ fmap fst allUpdates
+    -- 
+    specForm = Implies (And $ assumptionsStr spec) (And $ guaranteesStr spec)
+    cellsSpec = formulaUpdCells specForm
+    --
+    formulaUpdCells :: Formula String -> Set String
+    formulaUpdCells =
+      \case
+        Check _ -> empty
+        Update c _ -> fromList [c]
+        Not f -> formulaUpdCells f
+        Implies f1 f2 -> unions [formulaUpdCells f1, formulaUpdCells f2]
+        Equiv f1 f2 -> unions [formulaUpdCells f1, formulaUpdCells f2]
+        And fs -> unions $ fmap formulaUpdCells fs
+        Or fs -> unions $ fmap formulaUpdCells fs
+        Next f -> formulaUpdCells f
+        Globally f -> formulaUpdCells f
+        Finally f -> formulaUpdCells f
+        Until f1 f2 -> unions [formulaUpdCells f1, formulaUpdCells f2]
+        Release f1 f2 -> unions [formulaUpdCells f1, formulaUpdCells f2]
+        Weak f1 f2 -> unions [formulaUpdCells f1, formulaUpdCells f2]
+        _ -> empty

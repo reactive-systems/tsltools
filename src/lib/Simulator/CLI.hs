@@ -5,7 +5,6 @@
 -- A simple cli for the simulator backend
 --
 -- TODO 
---  > Sanitize stuff
 --  > Trace priting
 --
 -----------------------------------------------------------------------------
@@ -74,11 +73,11 @@ getUserInput :: [Option] -> IO Action
 getUserInput possibleOptions = do
   putStrLn $
     "Your turn now:\n" ++
-    "  s: Give up\n" ++
-    "  r: Rewind one step\n" ++
+    "  s:  Give up\n" ++
+    "  r:  Rewind one step\n" ++
     " <n>: Choose option n\n" ++
-    "  o: Show why other options are not possible\n" ++
-    "  t: Show the trace till now\n"
+    "  o:  Show why other options are not possible\n" ++
+    "  t:  Show the trace till now\n"
   inpt <- getLine
   case inpt of
     "r" -> return Rewind
@@ -164,4 +163,4 @@ optionWitnessToString (o, fs, predEvals) =
 simulate :: String -> String -> IO ()
 simulate tslPath aagPath = do
   sim <- loadSimulation aagPath tslPath
-  runSimulation m
+  runSimulation sim
