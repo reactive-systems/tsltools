@@ -12,6 +12,7 @@
 -----------------------------------------------------------------------------
 module CoreGen.ToolCall
   ( generateCore
+  , Core(..)
   , generateCoreFromFile
   ) where
 
