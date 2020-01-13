@@ -4,6 +4,10 @@
 --
 -- A simple cli for the simulator backend
 --
+-- TODO 
+--  > Sanitize stuff
+--  > Trace priting
+--
 -----------------------------------------------------------------------------
 {-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
 
@@ -11,9 +15,6 @@
 module Simulator.CLI where
 
 ---------------------------------------------------------------------------
---
--- TODO: Handle multiple same options, sanitize stuff, initial environment choice ???
---
 import Simulator.Simulator as Simulator
   ( Option
   , Simulation
@@ -28,11 +29,16 @@ import TSL.Logic (Formula, PredicateTerm)
 import TSL.Reader (fromTSLtoTSLSpec)
 import TSL.ToString (formulaToString, predicateTermToString, signalTermToString)
 
+import Text.Read (readMaybe)
+
 ---------------------------------------------------------------------------
+--
+-- Loads the simulation given the necessary file path (tsl, agg) 
+--
 loadSimulation :: FilePath -> FilePath -> IO Simulation
 loadSimulation pathAag pathSpec = do
   putStrLn
-    "WARNING: The backend still assumes matching counterstartegies and specification"
+    "\nWARNING: The backend still assumes matching counterstartegy and specification !!\n"
   specOut <- readFile pathSpec
   aagOut <- readFile pathAag
   let aag =
@@ -50,17 +56,56 @@ loadSimulation pathAag pathSpec = do
   return $ createSimulation aag spec
 
 ---------------------------------------------------------------------------
+--
+-- The possible actions a user can take
+--
 data Action
   = Stop
   | Rewind
   | Opt Option
+  | ShowWhyOthersNot
+  | ShowTrace
 
-getAction :: Simulation -> IO Action
-getAction sim = do
+---------------------------------------------------------------------------
+--
+-- Gets the action a user may take (includes input sanitizing)
+--
+getUserInput :: [Option] -> IO Action
+getUserInput possibleOptions = do
+  putStrLn $
+    "Your turn now:\n" ++
+    "  s: Give up\n" ++
+    "  r: Rewind one step\n" ++
+    " <n>: Choose option n\n" ++
+    "  o: Show why other options are not possible\n" ++
+    "  t: Show the trace till now\n"
+  inpt <- getLine
+  case inpt of
+    "r" -> return Rewind
+    "s" -> return Stop
+    "o" -> return ShowWhyOthersNot
+    "t" -> return ShowTrace
+    inp ->
+      case readMaybe inp of
+        Just num ->
+          if num >= 0 && num < length possibleOptions
+            then return $ Opt $ (possibleOptions !! num)
+            else do
+              putStrLn "Not a valid option"
+              getUserInput possibleOptions
+        Nothing -> do
+          putStrLn "Not a valid command"
+          getUserInput possibleOptions
+
+---------------------------------------------------------------------------
+--
+-- Runs a simulation
+--
+runSimulation :: Simulation -> IO ()
+runSimulation sim = do
   let opts = options sim
-  let posOpts = fmap fst $ filter (\(_, xs) -> null xs) opts
-  let imposOpts = filter (\(_, xs) -> not $ null xs) opts
-  putStr $ concatMap optionWitnessToString imposOpts
+  let posOpts = fmap (\(v, _, _) -> v) $ filter (\(_, xs, _) -> null xs) opts
+  let imposOpts = filter (\(_, xs, _) -> not $ null xs) opts
   putStrLn "Your options are:"
   putStrLn $
     snd $
@@ -69,65 +114,54 @@ getAction sim = do
          (n + 1, xs ++ "  " ++ show n ++ " " ++ optionToString e ++ "\n"))
       (0, [])
       posOpts
-  putStrLn $
-    "Your turn now:\n" ++
-    "  S: Give up\n" ++ "  R: Rewind one step\n" ++ " <n>: Choose option n"
-  inpt <- getLine
-  case inpt of
-    "R" -> return Rewind
-    "S" -> return Stop
-    inp ->
-      let opt = posOpts !! (read inp) --TODO Sanitize for invalid user input
-       in return $ Opt opt
-
----------------------------------------------------------------------------
-runSimulation :: Simulation -> IO ()
-runSimulation sim = do
-  act <- getAction sim
+  act <- getUserInput posOpts
   case act of
     Stop -> return ()
     Rewind -> runSimulation (rewind sim)
+    ShowWhyOthersNot -> do
+      putStr $ concatMap optionWitnessToString imposOpts
+      runSimulation sim
     Opt opt ->
       let (sim', preds) = step sim opt
-       in do printPredicates preds
+       in do putStrLn "\nThe environment chooses:"
+             putStrLn (predicateEvalsToString preds)
+             putStrLn ""
              runSimulation sim'
+    ShowTrace -> error "NOT SUPPORTED YET"
 
 ---------------------------------------------------------------------------
+--
+-- Different sub-printing methods
+--
 optionToString :: Option -> String
 optionToString [] = ""
 optionToString ((c, st):xr) =
   "[" ++ c ++ " <- " ++ signalTermToString id st ++ "] " ++ optionToString xr
 
-optionWitnessToString :: (Option, [Formula String]) -> String
-optionWitnessToString (o, fs) =
-  "Hence " ++
+predicateEvalsToString :: [(PredicateTerm String, Bool)] -> String
+predicateEvalsToString =
+  concatMap
+    (\(pt, v) ->
+       (if v
+          then "   "
+          else " not") ++
+       predicateTermToString id pt ++ "\n")
+
+optionWitnessToString ::
+     (Option, [Formula String], [(PredicateTerm String, Bool)]) -> String
+optionWitnessToString (o, fs, predEvals) =
   (optionToString o) ++
-  " is impossible because of\n" ++
-  concatMap (\f -> "    " ++ formulaToString id f ++ "\n") fs ++ "\n"
+  " is impossible as the environment would choose\n" ++
+  predicateEvalsToString predEvals ++
+  " and then each of these guarantees would be violated\n" ++
+  concatMap (\f -> "    " ++ formulaToString id f ++ "\n") fs ++ " \n"
 
 ---------------------------------------------------------------------------
-printPredicates :: [(PredicateTerm String, Bool)] -> IO ()
-printPredicates xs = do
-  putStrLn "The environment chooses:\n"
-  _ <-
-    sequence $
-    fmap
-      (\(pt, v) ->
-         putStrLn $
-         (if v
-            then "    "
-            else " not") ++
-         predicateTermToString id pt)
-      xs
-  putStrLn ""
-  return ()
-
----------------------------------------------------------------------------
-main :: IO ()
-main = do
-  putStrLn "TSL Spec:"
-  tslPath <- getLine
-  putStrLn "AAG Counter Strategy:"
-  aagPath <- getLine
+--
+-- Given the filepaths of the tsl file and the agg file, load
+-- and run the simulation
+--
+simulate :: String -> String -> IO ()
+simulate tslPath aagPath = do
   sim <- loadSimulation aagPath tslPath
-  runSimulation sim
+  runSimulation m

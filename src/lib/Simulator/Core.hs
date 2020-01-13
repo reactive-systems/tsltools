@@ -40,6 +40,7 @@ data CircuitTree
   | InpL Latch
   | AG CircuitTree CircuitTree
   | NG CircuitTree
+  | CT
 
 data NormCircuit i o =
   NormCircuit
@@ -90,7 +91,7 @@ normalize renameInput renameOutput aig =
             Nothing ->
               case isLatchOutput w of
                 Just l -> InpL l
-                Nothing -> error "ASSERTION ERROR: Latch has unconncerted wire" --TODO: Change to real asserion
+                Nothing -> CT
     --
     isInputWire :: Wire -> Maybe Input
     isInputWire w = find (\i -> w == Aiger.inputWire aig i) (Aiger.inputs aig)
@@ -124,6 +125,7 @@ eval ct state inpt =
     InpL l -> state l
     AG x y -> eval x state inpt && eval y state inpt
     NG x -> not $ eval x state inpt
+    CT -> True
 
 simStep :: NormCircuit i o -> State -> Inputs -> (State, Outputs)
 simStep NormCircuit {..} state inpt =

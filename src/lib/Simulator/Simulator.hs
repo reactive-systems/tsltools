@@ -99,16 +99,18 @@ createSimulation aag spec =
 -- Gives all options of a simulation and a list of TSLFormulas (Witness)
 -- that would be violated
 --
-options :: Simulation -> [(Option, Witness)]
+options :: Simulation -> [(Option, Witness, [(PredicateTerm String, Bool)])]
 options sim@Simulation {counterStrategy = ct, specification = spec} =
-  zip options witnesses
+  zip3 options witnesses evaluations
   where
     options = possibleOptions ct
-    posFinTraces = fmap (\o -> trace $ fst $step sim o) options
-    witnesses = fmap (violatedGuarantees spec) posFinTraces
+    steps = fmap (step sim) options
+    witnesses = fmap ((violatedGuarantees spec) . trace . fst) steps
+    evaluations = fmap snd steps
 
 possibleOptions :: CounterStrategy -> [Option]
-possibleOptions cst = fmap extendUpdates filteredCombinations
+possibleOptions cst =
+  Set.toList $ Set.fromList $ fmap extendUpdates filteredCombinations
   where
     allUpdates = [inputName cst i | i <- inputs cst]
     cells = toList $ fromList $ fmap fst allUpdates
