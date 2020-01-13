@@ -18,6 +18,7 @@ import Simulator.Simulator as Simulator
   ( Option
   , Simulation
   , createSimulation
+  , getLog
   , options
   , rewind
   , step
@@ -126,7 +127,16 @@ runSimulation sim = do
              putStrLn (predicateEvalsToString preds)
              putStrLn ""
              runSimulation sim'
-    ShowTrace -> error "NOT SUPPORTED YET"
+    ShowTrace -> do
+      putStrLn $
+        "########\n" ++
+        (concatMap
+           (\(o, p) ->
+              optionToString o ++
+              "\n---------\n" ++ predicateEvalsToString p ++ "\n") $
+         getLog sim) ++
+        "########\n"
+      runSimulation sim
 
 ---------------------------------------------------------------------------
 --
@@ -143,7 +153,7 @@ predicateEvalsToString =
     (\(pt, v) ->
        (if v
           then "   "
-          else " not") ++
+          else "not") ++
        predicateTermToString id pt ++ "\n")
 
 optionWitnessToString ::
