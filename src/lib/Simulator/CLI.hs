@@ -11,7 +11,9 @@
 {-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
 
 ---------------------------------------------------------------------------
-module Simulator.CLI where
+module Simulator.CLI
+  ( simulate
+  ) where
 
 ---------------------------------------------------------------------------
 import Simulator.Simulator as Simulator
@@ -37,8 +39,6 @@ import Text.Read (readMaybe)
 --
 loadSimulation :: FilePath -> FilePath -> IO Simulation
 loadSimulation pathAag pathSpec = do
-  putStrLn
-    "\nWARNING: The backend still assumes matching counterstartegy and specification !!\n"
   specOut <- readFile pathSpec
   aagOut <- readFile pathAag
   let aag =
@@ -112,7 +112,7 @@ runSimulation sim = do
     foldl
       (\(n, xs) e ->
          (n + 1, xs ++ "  " ++ show n ++ " " ++ optionToString e ++ "\n"))
-      (0, [])
+      (0 :: Int, [])
       posOpts
   act <- getUserInput posOpts
   case act of
