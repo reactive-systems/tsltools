@@ -15,6 +15,7 @@ module Simulator.Simulator
   , step
   , Simulator.Simulator.rewind
   , options
+  , getLog
   ) where
 
 -----------------------------------------------------------------------------
@@ -74,6 +75,7 @@ data Simulation =
     , specification :: TSLStringSpecification
     , stateStack :: [State]
     , trace :: FiniteTrace String
+    , logTrace :: [(Option, [(PredicateTerm String, Bool)])]
     }
 
 type Option = [(String, SignalTerm String)]
@@ -104,6 +106,7 @@ createSimulation aag spec =
         , specification = tslSpecToTSLStrSpec spec
         , stateStack = [\_ -> False]
         , trace = emptyTrace
+        , logTrace = []
         }
 
 -----------------------------------------------------------------------------
@@ -158,7 +161,7 @@ violatedGuarantees TSLStringSpecification { assumptionsStr = assmpt
 --
 step :: Simulation -> Option -> (Simulation, [(PredicateTerm String, Bool)])
 step sim@Simulation {..} updates =
-  (sim {stateStack = q : stateStack, trace = newTrace}, eval)
+  (sim {stateStack = q : stateStack, trace = newTrace, logTrace = newLog}, eval)
   where
     input = \i -> elem (inputName counterStrategy i) updates -- The input for the c-strat circuit
     --
@@ -177,6 +180,8 @@ step sim@Simulation {..} updates =
              (== p)
              eval)
     --
+    newLog = (updates, eval) : logTrace
+    --
     findFirst :: String -> (a -> Bool) -> [(a, b)] -> b
     findFirst msg _ [] = error msg
     findFirst msg p ((a, b):xr) =
@@ -189,7 +194,10 @@ step sim@Simulation {..} updates =
 --  Rewind steps the simulation one step back
 --
 rewind :: Simulation -> Simulation
-rewind sim@Simulation {stateStack = stateStack, trace = trace} =
+rewind sim@Simulation { stateStack = stateStack
+                      , trace = trace
+                      , logTrace = logTrace
+                      } =
   sim
     { stateStack =
         case stateStack of
@@ -199,6 +207,10 @@ rewind sim@Simulation {stateStack = stateStack, trace = trace} =
           [init] -> [init]
           _:sr -> sr
     , trace = FTC.rewind trace
+    , logTrace =
+        case logTrace of
+          [] -> []
+          _:lr -> lr
     }
 
 -----------------------------------------------------------------------------
@@ -236,3 +248,10 @@ sanitize Simulation {counterStrategy = cst, specification = spec} =
         Release f1 f2 -> unions [formulaUpdCells f1, formulaUpdCells f2]
         Weak f1 f2 -> unions [formulaUpdCells f1, formulaUpdCells f2]
         _ -> empty
+
+-----------------------------------------------------------------------------
+--
+-- Get the simulation log
+--
+getLog :: Simulation -> [(Option, [(PredicateTerm String, Bool)])]
+getLog = reverse . logTrace
