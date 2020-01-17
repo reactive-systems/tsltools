@@ -18,6 +18,14 @@
 
 module TSL.Splitter
   ( split
+  , makeNodes
+  , dependents
+  , filterAssumptions
+  , fixSymboltable
+  , splitGuarantees
+  , insertGuarantee
+  , connectedParts
+  , explore
   ) where
 
 -----------------------------------------------------------------------------
@@ -83,8 +91,8 @@ split spec = fmap fixSymboltable $ fmap filterAssumptions $ foldl (\xs -> \x -> 
 
 --    outputs = foldl (\xs -> \(i, x) -> if idKind x == Output then i:xs else xs) [] $ assocs $ symtable tslSymboltable
 
-    makeNodes :: Set Int -> [(Int, Set Int)]
-    makeNodes deps = if size deps <= 1 then [] else foldl (\xs -> \x -> (x, Set.delete x deps):xs) [] deps
+makeNodes :: Set Int -> [(Int, Set Int)]
+makeNodes deps = if size deps < 1 then [] else foldl (\xs -> \x -> (x, Set.delete x deps):xs) [] deps
 
 -----------------------------------------------------------------------------
 
@@ -110,7 +118,7 @@ fixSymboltable TSLSpecification{..} = TSLSpecification {assumptions = fmap (fmap
     vars = toAscList $ foldl (foldr Set.insert) assVars guarantees -- Baumfaltung ftw
     newSymbols  = fromDescList $ mapping
     mapping = snd $ foldl (\(i, xs) -> \x -> (i+1,(x,i):xs)) (1,[]) vars
-    oldNewArr = listArray (1,fst $ head mapping) $ reverse $ fmap snd mapping
+    oldNewArr = listArray (1,fst $ head mapping) $ reverse $ fmap fst mapping
     table = fmap (\x -> updateRec ((Map.!) newSymbols) ((symtable tslSymboltable) Ar.! x)) oldNewArr
 
 -----------------------------------------------------------------------------
