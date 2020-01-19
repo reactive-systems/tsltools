@@ -267,62 +267,70 @@ inferType
   :: ExprType -> Expression -> TypeCheck ()
 
 inferType t e = case expr e of
-  BaseTrue         -> checkExprType e t TBoolean
-  BaseFalse        -> checkExprType e t TBoolean
-  BaseWild         -> checkExprType e t TPattern
-  BaseOtherwise    -> checkExprType e t TBoolean
-  BaseCon {}       -> checkExprType e t TNumber
+  BaseTrue             -> checkExprType e t TBoolean
+  BaseFalse            -> checkExprType e t TBoolean
+  BaseWild             -> checkExprType e t TPattern
+  BaseOtherwise        -> checkExprType e t TBoolean
+  BaseCon {}           -> checkExprType e t TNumber
 
-  NumSMin x        -> inferE1 e t TNumber x $ TSet t
-  NumSMax x        -> inferE1 e t TNumber x $ TSet t
-  NumSSize x       -> newP >>= \p -> inferE1 e t TNumber x $ TSet p
-  NumPlus x y      -> inferE2 e t TNumber x t y t
-  NumRPlus xs x    -> inferEI e t TNumber xs x t
-  NumMinus x y     -> inferE2 e t TNumber x t y t
-  NumMul x y       -> inferE2 e t TNumber x t y t
-  NumRMul xs x     -> inferEI e t TNumber xs x t
-  NumDiv x y       -> inferE2 e t TNumber x t y t
-  NumMod x y       -> inferE2 e t TNumber x t y t
+  NumSMin x            -> inferE1 e t TNumber x $ TSet t
+  NumSMax x            -> inferE1 e t TNumber x $ TSet t
+  NumSSize x           -> newP >>= \p -> inferE1 e t TNumber x $ TSet p
+  NumPlus x y          -> inferE2 e t TNumber x t y t
+  NumRPlus xs x        -> inferEI e t TNumber xs x t
+  NumMinus x y         -> inferE2 e t TNumber x t y t
+  NumMul x y           -> inferE2 e t TNumber x t y t
+  NumRMul xs x         -> inferEI e t TNumber xs x t
+  NumDiv x y           -> inferE2 e t TNumber x t y t
+  NumMod x y           -> inferE2 e t TNumber x t y t
 
-  SetExplicit []   -> newP >>= \p -> checkExprType e t $ TSet p
-  SetExplicit xs   -> newP >>= \p -> inferEX e t (TSet p) xs p
-  SetRange x y z   -> inferE3 e t (TSet TNumber) x TNumber y TNumber z TNumber
-  SetCup x y       -> newP >>= \p -> inferE2 e t (TSet p) x t y t
-  SetCap x y       -> newP >>= \p -> inferE2 e t (TSet p) x t y t
-  SetMinus x y     -> newP >>= \p -> inferE2 e t (TSet p) x t y t
-  SetRCap xs x     -> newP >>= \p -> inferEI e t (TSet p) xs x t
-  SetRCup xs x     -> newP >>= \p -> inferEI e t (TSet p) xs x t
+  SetExplicit []       -> newP >>= \p -> checkExprType e t $ TSet p
+  SetExplicit xs       -> newP >>= \p -> inferEX e t (TSet p) xs p
+  SetRange x y z       -> inferE3 e t (TSet TNumber) x TNumber y TNumber z TNumber
+  SetCup x y           -> newP >>= \p -> inferE2 e t (TSet p) x t y t
+  SetCap x y           -> newP >>= \p -> inferE2 e t (TSet p) x t y t
+  SetMinus x y         -> newP >>= \p -> inferE2 e t (TSet p) x t y t
+  SetRCap xs x         -> newP >>= \p -> inferEI e t (TSet p) xs x t
+  SetRCup xs x         -> newP >>= \p -> inferEI e t (TSet p) xs x t
 
-  BlnEQ x y        -> inferE2 e t TBoolean x TNumber y TNumber
-  BlnNEQ x y       -> inferE2 e t TBoolean x TNumber y TNumber
-  BlnGE x y        -> inferE2 e t TBoolean x TNumber y TNumber
-  BlnGEQ x y       -> inferE2 e t TBoolean x TNumber y TNumber
-  BlnLE  x y       -> inferE2 e t TBoolean x TNumber y TNumber
-  BlnLEQ x y       -> inferE2 e t TBoolean x TNumber y TNumber
-  BlnElem x y      -> newP >>= \p -> inferE2 e t TBoolean x p y (TSet p)
+  BlnEQ x y            -> inferE2 e t TBoolean x TNumber y TNumber
+  BlnNEQ x y           -> inferE2 e t TBoolean x TNumber y TNumber
+  BlnGE x y            -> inferE2 e t TBoolean x TNumber y TNumber
+  BlnGEQ x y           -> inferE2 e t TBoolean x TNumber y TNumber
+  BlnLE  x y           -> inferE2 e t TBoolean x TNumber y TNumber
+  BlnLEQ x y           -> inferE2 e t TBoolean x TNumber y TNumber
+  BlnElem x y          -> newP >>= \p -> inferE2 e t TBoolean x p y (TSet p)
 
-  BlnNot x         -> inferE1 e t TBoolean x t
-  BlnOr x y        -> inferE2 e t TBoolean x t y t
-  BlnROr xs x      -> inferEI e t TBoolean xs x t
-  BlnAnd x y       -> inferE2 e t TBoolean x t y t
-  BlnRAnd xs x     -> inferEI e t TBoolean xs x t
-  BlnImpl x y      -> inferE2 e t TBoolean x t y t
-  BlnEquiv x y     -> inferE2 e t TBoolean x t y t
+  BlnNot x             -> inferE1 e t TBoolean x t
+  BlnOr x y            -> inferE2 e t TBoolean x t y t
+  BlnROr xs x          -> inferEI e t TBoolean xs x t
+  BlnAnd x y           -> inferE2 e t TBoolean x t y t
+  BlnRAnd xs x         -> inferEI e t TBoolean xs x t
+  BlnImpl x y          -> inferE2 e t TBoolean x t y t
+  BlnEquiv x y         -> inferE2 e t TBoolean x t y t
 
-  TslNext x        -> inferE1 e t TTSL x t
-  TslRNext x y     -> inferE2 e t TTSL x TNumber y t
-  TslGlobally x    -> inferE1 e t TTSL x t
-  TslRGlobally x y -> inferER e t x y
-  TslFinally x     -> inferE1 e t TTSL x t
-  TslRFinally x y  -> inferER e t x y
-  TslUntil x y     -> inferE2 e t TTSL x t y t
-  TslWeak x y      -> inferE2 e t TTSL x t y t
-  TslAsSoonAs x y  -> inferE2 e t TTSL x t y t
-  TslRelease x y   -> inferE2 e t TTSL x t y t
+  TslNext x            -> inferE1 e t TTSL x t
+  TslRNext x y         -> inferE2 e t TTSL x TNumber y t
+  TslPrevious x        -> inferE1 e t TTSL x t
+  TslRPrevious x y     -> inferE2 e t TTSL x TNumber y t
+  TslGlobally x        -> inferE1 e t TTSL x t
+  TslRGlobally x y     -> inferER e t x y
+  TslFinally x         -> inferE1 e t TTSL x t
+  TslRFinally x y      -> inferER e t x y
+  TslHistorically x    -> inferE1 e t TTSL x t
+  TslRHistorically x y -> inferER e t x y
+  TslOnce x            -> inferE1 e t TTSL x t
+  TslROnce x y         -> inferER e t x y
+  TslUntil x y         -> inferE2 e t TTSL x t y t
+  TslWeak x y          -> inferE2 e t TTSL x t y t
+  TslAsSoonAs x y      -> inferE2 e t TTSL x t y t
+  TslRelease x y       -> inferE2 e t TTSL x t y t
+  TslSince x y         -> inferE2 e t TTSL x t y t
+  TslTriggered x y     -> inferE2 e t TTSL x t y t
 
-  Pattern x y      -> inferE2 e t TBoolean x TTSL y TPattern
+  Pattern x y          -> inferE2 e t TBoolean x TTSL y TPattern
 
-  Colon x y        -> do
+  Colon x y            -> do
     -- check guard type
     inferType TBoolean x
     -- check expression type
@@ -332,7 +340,7 @@ inferType t e = case expr e of
     -- update type of the colon expression
     checkExprType e t t'
 
-  BaseUpd x i      -> do
+  BaseUpd x i          -> do
     -- every update expression must be part of a TSL formula
     checkExprType e t TTSL
     -- get the current type of the assigned output signal
@@ -348,7 +356,7 @@ inferType t e = case expr e of
     -- infer the type of the assigned term
     inferType t' x
 
-  BaseFn x y       -> do
+  BaseFn x y           -> do
     -- create fresh dummy type
     p <- newP
     -- enforce formula type on the applied term
@@ -362,7 +370,7 @@ inferType t e = case expr e of
         updExprType b e
       _ -> assert False undefined
 
-  BaseConFn i      ->
+  BaseConFn i          ->
     lkType i >>= \case
       TSignal t' -> checkExprType e t $ TSignal t'
       TPoly i    -> do
@@ -373,7 +381,7 @@ inferType t e = case expr e of
         p <- newP
         errExpect (TSignal p) t $ srcPos e
 
-  BaseId i         ->
+  BaseId i             ->
     gets (IM.lookup i . bindings . spec) >>= \case
       Nothing -> do
         t' <- lkType i

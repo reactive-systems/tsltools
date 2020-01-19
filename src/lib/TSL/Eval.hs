@@ -140,57 +140,69 @@ evalExpression
 
 evalExpression s a e =
   errPos (srcPos e) <$> case expr e of
-    BaseWild         -> return VWildcard
-    BaseTrue         -> return $ VBoolean True
-    BaseFalse        -> return $ VBoolean False
-    BaseOtherwise    -> return $ VBoolean True
-    BaseCon c        -> return $ VInt c
-    SetExplicit xs   -> VSet . fromList <$> mapM evalE xs
-    NumSMin x        -> vMinS <$> evalE x
-    NumSMax x        -> vMaxS <$> evalE x
-    NumSSize x       -> vSize <$> evalE x
-    BlnNot x         -> vNot <$> evalE x
-    TslNext x        -> vNext <$> evalE x
-    TslGlobally x    -> vGlobally <$> evalE x
-    TslFinally x     -> vFinally <$> evalE x
-    NumPlus x y      -> liftM2 vPlus (evalE x) $ evalE y
-    NumMinus x y     -> liftM2 vMinus (evalE x) $ evalE y
-    NumMul x y       -> liftM2 vMul (evalE x) $ evalE y
-    NumDiv x y       -> liftM2 vDiv (evalE x) $ evalE y
-    NumMod x y       -> liftM2 vMod (evalE x) $ evalE y
-    SetCup x y       -> liftM2 vCup (evalE x) $ evalE y
-    SetCap x y       -> liftM2 vCap (evalE x) $ evalE y
-    SetMinus x y     -> liftM2 vDif (evalE x) $ evalE y
-    BlnEQ x y        -> liftM2 vEQ (evalE x) $ evalE y
-    BlnNEQ x y       -> liftM2 vNEQ (evalE x) $ evalE y
-    BlnGE x y        -> liftM2 vGE (evalE x) $ evalE y
-    BlnGEQ x y       -> liftM2 vGEQ (evalE x) $ evalE y
-    BlnLE x y        -> liftM2 vLE (evalE x) $ evalE y
-    BlnLEQ x y       -> liftM2 vLEQ (evalE x) $ evalE y
-    BlnElem x y      -> liftM2 vElem (evalE x) $ evalE y
-    BlnAnd x y       -> liftM2 vAnd (evalE x) $ evalE y
-    BlnOr x y        -> liftM2 vOr (evalE x) $ evalE y
-    BlnImpl x y      -> liftM2 vImpl (evalE x) $ evalE y
-    BlnEquiv x y     -> liftM2 vEquiv (evalE x) $ evalE y
-    TslUntil x y     -> liftM2 vUntil (evalE x) $ evalE y
-    TslWeak x y      -> liftM2 vWeak (evalE x) $ evalE y
-    TslAsSoonAs x y  -> liftM2 vAsSoonAs (evalE x) $ evalE y
-    TslRelease x y   -> liftM2 vRelease (evalE x) $ evalE y
-    SetRange x y z   -> liftM3 vRange (evalE x) (evalE y) $ evalE z
-    NumRPlus xs x    -> evalRangeExpr vPlus x xs
-    NumRMul xs x     -> evalRangeExpr vMul x xs
-    SetRCup xs x     -> evalRangeExpr vCup x xs
-    SetRCap xs x     -> evalRangeExpr vCap x xs
-    BlnROr xs x      -> evalRangeExpr vOr x xs
-    BlnRAnd xs x     -> evalRangeExpr vAnd x xs
-    TslRNext x y     -> liftM2 vNextN (evalE x) $ evalE y
-    TslRGlobally x y -> case expr x of
+    BaseWild             -> return VWildcard
+    BaseTrue             -> return $ VBoolean True
+    BaseFalse            -> return $ VBoolean False
+    BaseOtherwise        -> return $ VBoolean True
+    BaseCon c            -> return $ VInt c
+    SetExplicit xs       -> VSet . fromList <$> mapM evalE xs
+    NumSMin x            -> vMinS <$> evalE x
+    NumSMax x            -> vMaxS <$> evalE x
+    NumSSize x           -> vSize <$> evalE x
+    BlnNot x             -> vNot <$> evalE x
+    TslNext x            -> vNext <$> evalE x
+    TslPrevious x        -> vPrevious <$> evalE x
+    TslGlobally x        -> vGlobally <$> evalE x
+    TslFinally x         -> vFinally <$> evalE x
+    TslHistorically x    -> vHistorically <$> evalE x
+    TslOnce x            -> vOnce <$> evalE x
+    NumPlus x y          -> liftM2 vPlus (evalE x) $ evalE y
+    NumMinus x y         -> liftM2 vMinus (evalE x) $ evalE y
+    NumMul x y           -> liftM2 vMul (evalE x) $ evalE y
+    NumDiv x y           -> liftM2 vDiv (evalE x) $ evalE y
+    NumMod x y           -> liftM2 vMod (evalE x) $ evalE y
+    SetCup x y           -> liftM2 vCup (evalE x) $ evalE y
+    SetCap x y           -> liftM2 vCap (evalE x) $ evalE y
+    SetMinus x y         -> liftM2 vDif (evalE x) $ evalE y
+    BlnEQ x y            -> liftM2 vEQ (evalE x) $ evalE y
+    BlnNEQ x y           -> liftM2 vNEQ (evalE x) $ evalE y
+    BlnGE x y            -> liftM2 vGE (evalE x) $ evalE y
+    BlnGEQ x y           -> liftM2 vGEQ (evalE x) $ evalE y
+    BlnLE x y            -> liftM2 vLE (evalE x) $ evalE y
+    BlnLEQ x y           -> liftM2 vLEQ (evalE x) $ evalE y
+    BlnElem x y          -> liftM2 vElem (evalE x) $ evalE y
+    BlnAnd x y           -> liftM2 vAnd (evalE x) $ evalE y
+    BlnOr x y            -> liftM2 vOr (evalE x) $ evalE y
+    BlnImpl x y          -> liftM2 vImpl (evalE x) $ evalE y
+    BlnEquiv x y         -> liftM2 vEquiv (evalE x) $ evalE y
+    TslUntil x y         -> liftM2 vUntil (evalE x) $ evalE y
+    TslWeak x y          -> liftM2 vWeak (evalE x) $ evalE y
+    TslAsSoonAs x y      -> liftM2 vAsSoonAs (evalE x) $ evalE y
+    TslRelease x y       -> liftM2 vRelease (evalE x) $ evalE y
+    TslSince x y         -> liftM2 vSince (evalE x) $ evalE y
+    TslTriggered x y     -> liftM2 vTriggered (evalE x) $ evalE y
+    SetRange x y z       -> liftM3 vRange (evalE x) (evalE y) $ evalE z
+    NumRPlus xs x        -> evalRangeExpr vPlus x xs
+    NumRMul xs x         -> evalRangeExpr vMul x xs
+    SetRCup xs x         -> evalRangeExpr vCup x xs
+    SetRCap xs x         -> evalRangeExpr vCap x xs
+    BlnROr xs x          -> evalRangeExpr vOr x xs
+    BlnRAnd xs x         -> evalRangeExpr vAnd x xs
+    TslRNext x y         -> liftM2 vNextN (evalE x) $ evalE y
+    TslRPrevious x y     -> liftM2 vPreviousN (evalE x) $ evalE y
+    TslRGlobally x y     -> case expr x of
       Colon n m -> liftM3 vGloballyR (evalE n) (evalE m) $ evalE y
       _         -> assert False undefined
-    TslRFinally x y  -> case expr x of
+    TslRFinally x y      -> case expr x of
       Colon n m -> liftM3 vFinallyR (evalE n) (evalE m) $ evalE y
       _         -> assert False undefined
-    BaseUpd x i      ->
+    TslRHistorically x y -> case expr x of
+      Colon n m -> liftM3 vHistoricallyR (evalE n) (evalE m) $ evalE y
+      _         -> assert False undefined
+    TslROnce x y         -> case expr x of
+      Colon n m -> liftM3 vOnceR (evalE n) (evalE m) $ evalE y
+      _         -> assert False undefined
+    BaseUpd x i          ->
       evalE x >>= \case
         VSTerm x'      -> return $ VTSL $ Update i x'
         VFTerm x'      -> return $ VTSL $ Update i $ FunctionTerm x'
@@ -198,11 +210,11 @@ evalExpression s a e =
         VBoolean True  -> return $ VTSL $ Update i $ PredicateTerm BooleanTrue
         VBoolean False -> return $ VTSL $ Update i $ PredicateTerm BooleanFalse
         _              -> assert False undefined
-    BaseConFn i      -> case stType s i of
+    BaseConFn i          -> case stType s i of
       TSignal (TPoly _) -> return $ VFTerm $ FunctionSymbol i
       TSignal TBoolean  -> return $ VPTerm $ PredicateSymbol i
       _                 -> assert False undefined
-    BaseId i         -> case stKind s i of
+    BaseId i             -> case stKind s i of
       Input     -> case stType s i of
         TSignal TBoolean -> return $ VPTerm $ BooleanInput i
         _                -> return $ VSTerm $ Signal i
@@ -220,9 +232,9 @@ evalExpression s a e =
             GuardedBinding xs -> vFirst xs
             _                 -> assert False undefined
         v      -> return v
-    BaseFn {}        -> evalFnApplication [] e
-    Pattern {}       -> assert False undefined
-    Colon {}         -> assert False undefined
+    BaseFn {}            -> evalFnApplication [] e
+    Pattern {}           -> assert False undefined
+    Colon {}             -> assert False undefined
 
   where
     evalE = evalExpression s a
@@ -609,6 +621,34 @@ vNextN _        _                = assert False undefined
 
 -----------------------------------------------------------------------------
 
+vPrevious
+  :: Value -> Value
+
+vPrevious (VBoolean False) = VBoolean False
+vPrevious (VPTerm x)       = VTSL $ Previous $ Check x
+vPrevious (VTSL x)         = VTSL $ Previous x
+vPrevious _                = assert False undefined
+
+-----------------------------------------------------------------------------
+
+vPreviousN
+  :: Value -> Value -> Value
+
+vPreviousN _        (VBoolean False) = VBoolean False
+vPreviousN (VInt n) (VTSL x)
+  | n < 0                            = VError undefined $
+                                     "Negative next-operator chain [" ++
+                                     show n ++ "]"
+  | otherwise                        = VTSL $ (!! n) $ iterate Previous x
+vPreviousN (VInt n) (VPTerm x)
+  | n < 0                            = VError undefined $
+                                     "Negative next-operator chain: [" ++
+                                     show n ++ "]"
+  | otherwise                        = VTSL $ (!! n) $ iterate Previous $ Check x
+vPreviousN _        _                = assert False undefined
+
+-----------------------------------------------------------------------------
+
 vGlobally
   :: Value -> Value
 
@@ -675,6 +715,74 @@ vFinallyR (VInt n) (VInt m) (VPTerm x)
   | otherwise                                =
       VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vFinallyR _        _        _                = assert False undefined
+
+-----------------------------------------------------------------------------
+
+vHistorically
+  :: Value -> Value
+
+vHistorically (VBoolean True)  = VBoolean True
+vHistorically (VBoolean False) = VBoolean False
+vHistorically (VPTerm x)       = VTSL $ Historically $ Check x
+vHistorically (VTSL x)         = VTSL $ Historically x
+vHistorically _                = assert False undefined
+
+-----------------------------------------------------------------------------
+
+vHistoricallyR
+  :: Value -> Value -> Value -> Value
+
+vHistoricallyR _        _        (VBoolean True)  = VBoolean True
+vHistoricallyR _        _        (VBoolean False) = VBoolean False
+vHistoricallyR (VInt n) (VInt m) (VTSL x)
+  | n > m                                    = VBoolean False
+  | n >= 0 && m >= 0                            =
+      VTSL $ (!! n) $ iterate Previous $
+        foldl (\a _ -> Or [x, Previous a]) x [0, 1 .. m - n - 1]
+  | otherwise                                =
+      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
+vHistoricallyR (VInt n) (VInt m) (VPTerm x)
+  | n > m                                    = VBoolean False
+  | n >= 0 && m >= 0                            =
+      VTSL $ (!! n) $ iterate Previous $
+        foldl (\a _ -> Or [Check x, Previous a]) (Check x) [0, 1 .. m - n - 1]
+  | otherwise                                =
+      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
+vHistoricallyR _        _        _                = assert False undefined
+
+-----------------------------------------------------------------------------
+
+vOnce
+  :: Value -> Value
+
+vOnce (VBoolean True)  = VBoolean True
+vOnce (VBoolean False) = VBoolean False
+vOnce (VPTerm x)       = VTSL $ Once $ Check x
+vOnce (VTSL x)         = VTSL $ Once x
+vOnce _                = assert False undefined
+
+-----------------------------------------------------------------------------
+
+vOnceR
+  :: Value -> Value -> Value -> Value
+
+vOnceR _        _        (VBoolean True)  = VBoolean True
+vOnceR _        _        (VBoolean False) = VBoolean False
+vOnceR (VInt n) (VInt m) (VTSL x)
+  | n > m                                    = VBoolean False
+  | n >= 0 && m >= 0                            =
+      VTSL $ (!! n) $ iterate Previous $
+        foldl (\a _ -> Or [x, Previous a]) x [0, 1 .. m - n - 1]
+  | otherwise                                =
+      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
+vOnceR (VInt n) (VInt m) (VPTerm x)
+  | n > m                                    = VBoolean False
+  | n >= 0 && m >= 0                            =
+      VTSL $ (!! n) $ iterate Previous $
+        foldl (\a _ -> Or [Check x, Previous a]) (Check x) [0, 1 .. m - n - 1]
+  | otherwise                                =
+      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
+vOnceR _        _        _                = assert False undefined
 
 -----------------------------------------------------------------------------
 
@@ -751,5 +859,40 @@ vAsSoonAs (VTSL x)         (VPTerm y)       = VTSL $ Weak (Not $ Check y) $ And
 vAsSoonAs (VPTerm x)       (VPTerm y)       = VTSL $ Weak (Not $ Check y) $
                                                 And [Check x, Check y]
 vAsSoonAs _                _                = assert False undefined
+
+-----------------------------------------------------------------------------
+
+vSince
+  :: Value -> Value -> Value
+
+vSince _                (VBoolean True)  = VBoolean True
+vSince _                (VBoolean False) = VBoolean False
+vSince (VBoolean True)  (VPTerm y)       = VTSL $ Once $ Check y
+vSince (VBoolean True)  (VTSL y)         = VTSL $ Once y
+vSince (VBoolean False) (VPTerm y)       = VTSL $ Check y
+vSince (VBoolean False) (VTSL y)         = VTSL y
+vSince (VTSL x)         (VTSL y)         = VTSL $ Since x y
+vSince (VPTerm x)       (VTSL y)         = VTSL $ Since (Check x) y
+vSince (VTSL x)         (VPTerm y)       = VTSL $ Since x $ Check y
+vSince (VPTerm x)       (VPTerm y)       = VTSL $ Since (Check x) $ Check y
+vSince _                _                = assert False undefined
+
+-----------------------------------------------------------------------------
+
+vTriggered
+  :: Value -> Value -> Value
+
+vTriggered _                (VBoolean False) = VBoolean False
+vTriggered _                (VBoolean True)  = VBoolean True
+vTriggered (VBoolean True)  (VPTerm y)       = VTSL $ Check y
+vTriggered (VBoolean True)  (VTSL y)         = VTSL y
+vTriggered (VBoolean False) (VPTerm y)       = VTSL $ Historically $ Check y
+vTriggered (VBoolean False) (VTSL y)         = VTSL $ Historically y
+vTriggered (VTSL x)         (VTSL y)         = VTSL $ Triggered x y
+vTriggered (VPTerm x)       (VTSL y)         = VTSL $ Triggered (Check x) y
+vTriggered (VTSL x)         (VPTerm y)       = VTSL $ Triggered x $ Check y
+vTriggered (VPTerm x)       (VPTerm y)       = VTSL $ Triggered (Check x) $
+                                               Check y
+vTriggered _                _                = assert False undefined
 
 -----------------------------------------------------------------------------

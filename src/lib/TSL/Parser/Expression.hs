@@ -78,81 +78,85 @@ exprParser
 exprParser = (~~) >> buildExpressionParser table term
   where
     table =
-      [ [ Infix  applyFn                        AssocLeft
+      [ [ Infix  applyFn                         AssocLeft
         ]
 
       , [ Prefix $ unaryOperators numUnary
         ]
 
-      , [ Infix  (binOp "*"        NumMul)      AssocLeft
-        , Infix  (binOp "MUL"      NumMul)      AssocLeft
+      , [ Infix  (binOp "*"        NumMul)       AssocLeft
+        , Infix  (binOp "MUL"      NumMul)       AssocLeft
         ]
-      , [ Infix  (binOp "/"        NumDiv)      AssocRight
-        , Infix  (binOp "DIV"      NumDiv)      AssocRight
-        , Infix  (binOp "%"        NumMod)      AssocRight
-        , Infix  (binOp "MOD"      NumMod)      AssocRight
+      , [ Infix  (binOp "/"        NumDiv)       AssocRight
+        , Infix  (binOp "DIV"      NumDiv)       AssocRight
+        , Infix  (binOp "%"        NumMod)       AssocRight
+        , Infix  (binOp "MOD"      NumMod)       AssocRight
         ]
-      , [ Infix  (binOp "+"        NumPlus)     AssocLeft
-        , Infix  (binOp "PLUS"     NumPlus)     AssocLeft
-        , Infix  (binOp "-"        NumMinus)    AssocLeft
-        , Infix  (binOp "MINUS"    NumMinus)    AssocLeft
+      , [ Infix  (binOp "+"        NumPlus)      AssocLeft
+        , Infix  (binOp "PLUS"     NumPlus)      AssocLeft
+        , Infix  (binOp "-"        NumMinus)     AssocLeft
+        , Infix  (binOp "MINUS"    NumMinus)     AssocLeft
         ]
 
       , [ Prefix $ unaryOperators setUnary
         ]
 
-      , [ Infix  (binOp "(-)"      SetMinus)    AssocRight
-        , Infix  (binOp "(\\)"     SetMinus)    AssocRight
-        , Infix  (binOp "SETMINUS" SetMinus)    AssocRight
+      , [ Infix  (binOp "(-)"      SetMinus)     AssocRight
+        , Infix  (binOp "(\\)"     SetMinus)     AssocRight
+        , Infix  (binOp "SETMINUS" SetMinus)     AssocRight
         ]
-      , [ Infix  (binOp "(*)"      SetCap)      AssocLeft
-        , Infix  (binOp "CAP"      SetCap)      AssocLeft
+      , [ Infix  (binOp "(*)"      SetCap)       AssocLeft
+        , Infix  (binOp "CAP"      SetCap)       AssocLeft
         ]
-      , [ Infix  (binOp "(+)"      SetCup)      AssocLeft
-        , Infix  (binOp "CUP"      SetCup)      AssocLeft
+      , [ Infix  (binOp "(+)"      SetCup)       AssocLeft
+        , Infix  (binOp "CUP"      SetCup)       AssocLeft
         ]
-      , [ Infix  (binOp "=="       BlnEQ)       AssocLeft
-        , Infix  (binOp "EQ"       BlnEQ)       AssocLeft
-        , Infix  (binOp "/="       BlnNEQ)      AssocLeft
-        , Infix  (binOp "!="       BlnNEQ)      AssocLeft
-        , Infix  (binOp "NEQ"      BlnNEQ)      AssocLeft
-        , Infix  (binOp ">"        BlnGE)       AssocLeft
-        , Infix  (binOp "GE"       BlnGE)       AssocLeft
-        , Infix  (binOp ">="       BlnGEQ)      AssocLeft
-        , Infix  (binOp "GEQ"      BlnGEQ)      AssocLeft
-        , Infix  (binOp "<"        BlnLE)       AssocLeft
-        , Infix  (binOp "LE"       BlnLE)       AssocLeft
-        , Infix  (binOp "<="       BlnLEQ)      AssocLeft
-        , Infix  (binOp "LEQ"      BlnLEQ)      AssocLeft
+      , [ Infix  (binOp "=="       BlnEQ)        AssocLeft
+        , Infix  (binOp "EQ"       BlnEQ)        AssocLeft
+        , Infix  (binOp "/="       BlnNEQ)       AssocLeft
+        , Infix  (binOp "!="       BlnNEQ)       AssocLeft
+        , Infix  (binOp "NEQ"      BlnNEQ)       AssocLeft
+        , Infix  (binOp ">"        BlnGE)        AssocLeft
+        , Infix  (binOp "GE"       BlnGE)        AssocLeft
+        , Infix  (binOp ">="       BlnGEQ)       AssocLeft
+        , Infix  (binOp "GEQ"      BlnGEQ)       AssocLeft
+        , Infix  (binOp "<"        BlnLE)        AssocLeft
+        , Infix  (binOp "LE"       BlnLE)        AssocLeft
+        , Infix  (binOp "<="       BlnLEQ)       AssocLeft
+        , Infix  (binOp "LEQ"      BlnLEQ)       AssocLeft
         ]
-      , [ Infix  (binOp "IN"       BlnElem)     AssocLeft
-        , Infix  (binOp "ELEM"     BlnElem)     AssocLeft
+      , [ Infix  (binOp "IN"       BlnElem)      AssocLeft
+        , Infix  (binOp "ELEM"     BlnElem)      AssocLeft
         ]
 
       , [ Prefix $ unaryOperators tslUnary
         ]
 
-      , [ Infix  (binOp "&&"       BlnAnd)      AssocLeft
-        , Infix  (binOp "AND"      BlnAnd)      AssocLeft
+      , [ Infix  (binOp "&&"       BlnAnd)       AssocLeft
+        , Infix  (binOp "AND"      BlnAnd)       AssocLeft
         ]
-      , [ Infix  (binOp "||"       BlnOr)       AssocLeft
-        , Infix  (binOp "OR"       BlnOr)       AssocLeft
+      , [ Infix  (binOp "||"       BlnOr)        AssocLeft
+        , Infix  (binOp "OR"       BlnOr)        AssocLeft
         ]
-      , [ Infix  (binOp "->"       BlnImpl)     AssocRight
-        , Infix  (binOp "IMPIES"   BlnImpl)     AssocRight
-        , Infix  (binOp "<->"      BlnEquiv)    AssocRight
-        , Infix  (binOp "EQUIV"    BlnEquiv)    AssocRight
+      , [ Infix  (binOp "->"       BlnImpl)      AssocRight
+        , Infix  (binOp "IMPIES"   BlnImpl)      AssocRight
+        , Infix  (binOp "<->"      BlnEquiv)     AssocRight
+        , Infix  (binOp "EQUIV"    BlnEquiv)     AssocRight
         ]
-      , [ Infix  (binOp "W"        TslWeak)     AssocRight
-        , Infix  (binOp "A"        TslAsSoonAs) AssocRight
+      , [ Infix  (binOp "W"        TslWeak)      AssocRight
+        , Infix  (binOp "A"        TslAsSoonAs)  AssocRight
         ]
-      , [ Infix  (binOp "U"        TslUntil)    AssocRight
+      , [ Infix  (binOp "U"        TslUntil)     AssocRight
         ]
-      , [ Infix  (binOp "R"        TslRelease)  AssocLeft
+      , [ Infix  (binOp "R"        TslRelease)   AssocLeft
         ]
-      , [ Infix  (binOp "~"        Pattern)     AssocLeft
+      , [ Infix  (binOp "S"        TslSince)     AssocLeft
         ]
-      , [ Infix  (binOp ":"        Colon)       AssocLeft
+      , [ Infix  (binOp "T"        TslTriggered) AssocLeft
+        ]
+      , [ Infix  (binOp "~"        Pattern)      AssocLeft
+        ]
+      , [ Infix  (binOp ":"        Colon)        AssocLeft
         ]
       ]
 
@@ -166,13 +170,15 @@ exprParser = (~~) >> buildExpressionParser table term
            "NEQ", "LE", "GE", "LEQ", "GEQ", "ELEM","AND[","OR[",
            "+","-","*","/","%","PLUS","MINUS","MUL","DIV","MOD",
            "SIZE","MIN","MAX","(-)","(\\)","(+)","(*)","SETMINUS",
-           "CAP","CUP",":","~","W","A","U","R","X","G","F",",","X[",
-           "G[","F[","AND[","OR[","SUM","PROD","IN"]
+           "CAP","CUP",":","~","W","A","U","R","X","Y","G","F","H",
+           "O","S","T",",","X[","Y[","G[","F[","H[","O[","AND[",
+           "OR[","SUM","PROD","IN"]
       , reservedNames =
           ["NOT","AND","OR","IMPLIES","EQUIV","true","false","F",
            "PLUS","MINUS","MUL","DIV","MOD","SIZE","MIN","MAX","_",
            "SETMINUS","CAP","CUP","otherwise","W","A","U","R","X",
-           "G","SUM","PROD","IN"] }
+           "G","SUM","PROD","IN","Y","H","O","S","T"]
+      }
 
     tokenparser = makeTokenParser tokenDef
 
@@ -207,11 +213,17 @@ exprParser = (~~) >> buildExpressionParser table term
           unOp' '!' BlnNot
       <|> unOp3 'N' 'O' 'T' BlnNot
       <|> unOp1 'X' TslNext
+      <|> unOp1 'Y' TslPrevious
       <|> unOp1 'G' TslGlobally
       <|> unOp1 'F' TslFinally
+      <|> unOp1 'H' TslHistorically
+      <|> unOp1 'O' TslOnce
       <|> parOp "X" exprParser TslRNext
+      <|> parOp "Y" exprParser TslRPrevious
       <|> parOp "G" exprParser TslRGlobally
       <|> parOp "F" exprParser TslRFinally
+      <|> parOp "H" exprParser TslRHistorically
+      <|> parOp "O" exprParser TslROnce
       <|> parOp "&&" manyExprParser BlnRAnd
       <|> parOp "AND" manyExprParser BlnRAnd
       <|> parOp "FORALL" manyExprParser BlnRAnd
@@ -444,6 +456,8 @@ exprParser = (~~) >> buildExpressionParser table term
       <|> string "A"
       <|> string "U"
       <|> string "R"
+      <|> string "T"
+      <|> string "S"
       <|> string "OR"
       <|> string "AND"
       <|> string "IMPLIES"

@@ -190,50 +190,65 @@ data Formula a =
   | And [Formula a]
   | Or [Formula a]
   | Next (Formula a)
+  | Previous (Formula a)
   | Globally (Formula a)
   | Finally (Formula a)
+  | Historically (Formula a)
+  | Once (Formula a)
   | Until (Formula a) (Formula a)
   | Release (Formula a) (Formula a)
   | Weak (Formula a) (Formula a)
+  | Since (Formula a) (Formula a)
+  | Triggered (Formula a) (Formula a)
   deriving (Eq, Ord, Show)
 
 -----------------------------------------------------------------------------
 
 instance Functor Formula where
   fmap f = \case
-    TTrue       -> TTrue
-    FFalse      -> FFalse
-    Check t     -> Check $ fmap f t
-    Update s t  -> Update (f s) $ fmap f t
-    Not x       -> Not $ fmap f x
-    Implies x y -> Implies (fmap f x) $ fmap f y
-    Equiv x y   -> Equiv (fmap f x) $ fmap f y
-    And xs      -> And $ fmap (fmap f) xs
-    Or xs       -> Or $ fmap (fmap f) xs
-    Next x      -> Next $ fmap f x
-    Globally x  -> Globally $ fmap f x
-    Finally x   -> Finally $ fmap f x
-    Until x y   -> Until (fmap f x) $ fmap f y
-    Release x y -> Release (fmap f x) $ fmap f y
-    Weak x y    -> Weak (fmap f x) $ fmap f y
+    TTrue          -> TTrue
+    FFalse         -> FFalse
+    Check t        -> Check $ fmap f t
+    Update s t     -> Update (f s) $ fmap f t
+    Not x          -> Not $ fmap f x
+    Implies x y    -> Implies (fmap f x) $ fmap f y
+    Equiv x y      -> Equiv (fmap f x) $ fmap f y
+    And xs         -> And $ fmap (fmap f) xs
+    Or xs          -> Or $ fmap (fmap f) xs
+    Next x         -> Next $ fmap f x
+    Previous x     -> Previous $ fmap f x
+    Globally x     -> Globally $ fmap f x
+    Finally x      -> Finally $ fmap f x
+    Historically x -> Historically $ fmap f x
+    Once x         -> Once $ fmap f x
+    Until x y      -> Until (fmap f x) $ fmap f y
+    Release x y    -> Release (fmap f x) $ fmap f y
+    Weak x y       -> Weak (fmap f x) $ fmap f y
+    Since x y      -> Since (fmap f x) $ fmap f y
+    Triggered x y  -> Triggered (fmap f x) $ fmap f y
 
 instance Foldable Formula where
   foldr f a = \case
-    TTrue       -> a
-    FFalse      -> a
-    Check t     -> foldr f a t
-    Update s t  -> foldr f (f s a) t
-    Not x       -> foldr f a x
-    Implies x y -> foldr f (foldr f a x) y
-    Equiv x y   -> foldr f (foldr f a x) y
-    And xs      -> foldr (flip $ foldr f) a xs
-    Or xs       -> foldr (flip $ foldr f) a xs
-    Next x      -> foldr f a x
-    Globally x  -> foldr f a x
-    Finally x   -> foldr f a x
-    Until x y   -> foldr f (foldr f a x) y
-    Release x y -> foldr f (foldr f a x) y
-    Weak x y    -> foldr f (foldr f a x) y
+    TTrue          -> a
+    FFalse         -> a
+    Check t        -> foldr f a t
+    Update s t     -> foldr f (f s a) t
+    Not x          -> foldr f a x
+    Implies x y    -> foldr f (foldr f a x) y
+    Equiv x y      -> foldr f (foldr f a x) y
+    And xs         -> foldr (flip $ foldr f) a xs
+    Or xs          -> foldr (flip $ foldr f) a xs
+    Next x         -> foldr f a x
+    Previous x     -> foldr f a x
+    Globally x     -> foldr f a x
+    Finally x      -> foldr f a x
+    Historically x -> foldr f a x
+    Once x         -> foldr f a x
+    Until x y      -> foldr f (foldr f a x) y
+    Release x y    -> foldr f (foldr f a x) y
+    Weak x y       -> foldr f (foldr f a x) y
+    Since x y      -> foldr f (foldr f a x) y
+    Triggered x y  -> foldr f (foldr f a x) y
 
 -----------------------------------------------------------------------------
 
@@ -246,21 +261,26 @@ tslSize = size' 0
 
   where
     size' a = \case
-      TTrue       -> a + 1
-      FFalse      -> a + 1
-      Check {}    -> a + 1
-      Update {}   -> a + 1
-      Not x       -> size' (a + 1) x
-      Implies x y -> size' (size' (a + 1) x) y
-      Equiv x y   -> size' (size' (a + 1) x) y
-      And xs      -> foldl size' (a + 1) xs
-      Or xs       -> foldl size' (a + 1) xs
-      Next x      -> size' (a + 1) x
-      Globally x  -> size' (a + 1) x
-      Finally x   -> size' (a + 1) x
-      Until x y   -> size' (size' (a + 1) x) y
-      Release x y -> size' (size' (a + 1) x) y
-      Weak x y    -> size' (size' (a + 1) x) y
+      TTrue          -> a + 1
+      FFalse         -> a + 1
+      Check {}       -> a + 1
+      Update {}      -> a + 1
+      Not x          -> size' (a + 1) x
+      Implies x y    -> size' (size' (a + 1) x) y
+      Equiv x y      -> size' (size' (a + 1) x) y
+      And xs         -> foldl size' (a + 1) xs
+      Or xs          -> foldl size' (a + 1) xs
+      Next x         -> size' (a + 1) x
+      Previous x     -> size' (a + 1) x
+      Globally x     -> size' (a + 1) x
+      Finally x      -> size' (a + 1) x
+      Historically x -> size' (a + 1) x
+      Once x         -> size' (a + 1) x
+      Until x y      -> size' (size' (a + 1) x) y
+      Release x y    -> size' (size' (a + 1) x) y
+      Weak x y       -> size' (size' (a + 1) x) y
+      Since x y      -> size' (size' (a + 1) x) y
+      Triggered x y  -> size' (size' (a + 1) x) y
 
 -----------------------------------------------------------------------------
 
@@ -292,25 +312,30 @@ tlsfFormula
 tlsfFormula = pr
   where
     pr = \case
-      TTrue       -> "true"
-      FFalse      -> "false"
-      Check t     -> "p0" ++ tlsfPredicate t
-      Update s t  -> "u0" ++ escape s ++ "0" ++ tlsfSignal t
-      Not x       -> "! (" ++ pr x ++ ")"
-      Implies x y -> "(" ++ pr x ++ ") -> (" ++ pr y ++ ")"
-      Equiv x y   -> "(" ++ pr x ++ ") <-> (" ++ pr y ++ ")"
-      And []      -> "true"
-      And [x]     -> pr x
-      And (x:xr)  -> foldl (\a y -> "(" ++ a ++ ") && (" ++ pr y ++ ")") (pr x) xr
-      Or []       -> "false"
-      Or [x]      -> pr x
-      Or (x:xr)   -> foldl (\a y -> "(" ++ a ++ ") || (" ++ pr y ++ ")") (pr x) xr
-      Next x      -> "X (" ++ pr x ++ ")"
-      Globally x  -> "G (" ++ pr x ++ ")"
-      Finally x   -> "F (" ++ pr x ++ ")"
-      Until x y   -> "(" ++ pr x ++ ") U (" ++ pr y ++ ")"
-      Release x y -> "(" ++ pr x ++ ") R (" ++ pr y ++ ")"
-      Weak x y    -> "(" ++ pr x ++ ") W (" ++ pr y ++ ")"
+      TTrue          -> "true"
+      FFalse         -> "false"
+      Check t        -> "p0" ++ tlsfPredicate t
+      Update s t     -> "u0" ++ escape s ++ "0" ++ tlsfSignal t
+      Not x          -> "! (" ++ pr x ++ ")"
+      Implies x y    -> "(" ++ pr x ++ ")    -> (" ++ pr y ++ ")"
+      Equiv x y      -> "(" ++ pr x ++ ") <   -> (" ++ pr y ++ ")"
+      And []         -> "true"
+      And [x]        -> pr x
+      And (x:xr)     -> foldl (\a y -> "(" ++ a ++ ") && (" ++ pr y ++ ")") (pr x) xr
+      Or []          -> "false"
+      Or [x]         -> pr x
+      Or (x:xr)      -> foldl (\a y -> "(" ++ a ++ ") || (" ++ pr y ++ ")") (pr x) xr
+      Next x         -> "X (" ++ pr x ++ ")"
+      Previous x     -> "Y (" ++ pr x ++ ")"
+      Globally x     -> "G (" ++ pr x ++ ")"
+      Finally x      -> "F (" ++ pr x ++ ")"
+      Historically x -> "H (" ++ pr x ++ ")"
+      Once x         -> "O (" ++ pr x ++ ")"
+      Until x y      -> "(" ++ pr x ++ ") U (" ++ pr y ++ ")"
+      Release x y    -> "(" ++ pr x ++ ") R (" ++ pr y ++ ")"
+      Weak x y       -> "(" ++ pr x ++ ") W (" ++ pr y ++ ")"
+      Since x y      -> "(" ++ pr x ++ ") S (" ++ pr y ++ ")"
+      Triggered x y  -> "(" ++ pr x ++ ") T (" ++ pr y ++ ")"
 
 -----------------------------------------------------------------------------
 
@@ -360,21 +385,26 @@ tlsfPredicates
 tlsfPredicates = elems . tlsfPredicates' empty
   where
     tlsfPredicates' s = \case
-      TTrue       -> s
-      FFalse      -> s
-      Update {}   -> s
-      Check p     -> insert p s
-      Not x       -> tlsfPredicates' s x
-      Implies x y -> tlsfPredicates' (tlsfPredicates' s x) y
-      Equiv x y   -> tlsfPredicates' (tlsfPredicates' s x) y
-      And xs      -> foldl tlsfPredicates' s xs
-      Or xs       -> foldl tlsfPredicates' s xs
-      Next x      -> tlsfPredicates' s x
-      Globally x  -> tlsfPredicates' s x
-      Finally x   -> tlsfPredicates' s x
-      Until x y   -> tlsfPredicates' (tlsfPredicates' s x) y
-      Release x y -> tlsfPredicates' (tlsfPredicates' s x) y
-      Weak x y    -> tlsfPredicates' (tlsfPredicates' s x) y
+      TTrue          -> s
+      FFalse         -> s
+      Update {}      -> s
+      Check p        -> insert p s
+      Not x          -> tlsfPredicates' s x
+      Implies x y    -> tlsfPredicates' (tlsfPredicates' s x) y
+      Equiv x y      -> tlsfPredicates' (tlsfPredicates' s x) y
+      And xs         -> foldl tlsfPredicates' s xs
+      Or xs          -> foldl tlsfPredicates' s xs
+      Next x         -> tlsfPredicates' s x
+      Previous x     -> tlsfPredicates' s x
+      Globally x     -> tlsfPredicates' s x
+      Finally x      -> tlsfPredicates' s x
+      Historically x -> tlsfPredicates' s x
+      Once x         -> tlsfPredicates' s x
+      Until x y      -> tlsfPredicates' (tlsfPredicates' s x) y
+      Release x y    -> tlsfPredicates' (tlsfPredicates' s x) y
+      Weak x y       -> tlsfPredicates' (tlsfPredicates' s x) y
+      Since x y      -> tlsfPredicates' (tlsfPredicates' s x) y
+      Triggered x y  -> tlsfPredicates' (tlsfPredicates' s x) y
 
 -----------------------------------------------------------------------------
 
@@ -387,21 +417,26 @@ tlsfUpdates
 tlsfUpdates = elems . tlsfUpdates' empty
   where
     tlsfUpdates' s = \case
-      TTrue       -> s
-      FFalse      -> s
-      Check {}    -> s
-      Update x t  -> insert (x,t) s
-      Not x       -> tlsfUpdates' s x
-      Implies x y -> tlsfUpdates' (tlsfUpdates' s x) y
-      Equiv x y   -> tlsfUpdates' (tlsfUpdates' s x) y
-      And xs      -> foldl tlsfUpdates' s xs
-      Or xs       -> foldl tlsfUpdates' s xs
-      Next x      -> tlsfUpdates' s x
-      Globally x  -> tlsfUpdates' s x
-      Finally x   -> tlsfUpdates' s x
-      Until x y   -> tlsfUpdates' (tlsfUpdates' s x) y
-      Release x y -> tlsfUpdates' (tlsfUpdates' s x) y
-      Weak x y    -> tlsfUpdates' (tlsfUpdates' s x) y
+      TTrue          -> s
+      FFalse         -> s
+      Check {}       -> s
+      Update x t     -> insert (x,t) s
+      Not x          -> tlsfUpdates' s x
+      Implies x y    -> tlsfUpdates' (tlsfUpdates' s x) y
+      Equiv x y      -> tlsfUpdates' (tlsfUpdates' s x) y
+      And xs         -> foldl tlsfUpdates' s xs
+      Or xs          -> foldl tlsfUpdates' s xs
+      Next x         -> tlsfUpdates' s x
+      Previous x     -> tlsfUpdates' s x
+      Globally x     -> tlsfUpdates' s x
+      Finally x      -> tlsfUpdates' s x
+      Historically x -> tlsfUpdates' s x
+      Once x         -> tlsfUpdates' s x
+      Until x y      -> tlsfUpdates' (tlsfUpdates' s x) y
+      Release x y    -> tlsfUpdates' (tlsfUpdates' s x) y
+      Weak x y       -> tlsfUpdates' (tlsfUpdates' s x) y
+      Since x y      -> tlsfUpdates' (tlsfUpdates' s x) y
+      Triggered x y  -> tlsfUpdates' (tlsfUpdates' s x) y
 
 -----------------------------------------------------------------------------
 
