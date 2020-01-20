@@ -3,7 +3,7 @@
 -- Module      :  SSCC.SSCC.hs
 -- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
 --
--- A simpl
+-- Plugging all tools together
 --
 -----------------------------------------------------------------------------
 {-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
@@ -47,11 +47,11 @@ type UnrealizableWitness = (Core, CounterStrategy, Simulation)
 
 -----------------------------------------------------------------------------
 --
--- Anaylizes a specification, so either give a system startegy or some
+-- Analyzes a specification, so either give a system strategy or some
 -- cores with counter strategy and simulation
 --
--- As some of thes operatations might be really costy it might be usefull
--- to use parallelization or to use a incremental approcach i.e. a soon 
+-- As some of the operations might be really costly it might be useful
+-- to use parallelization or to use a incremental approach i.e. a soon 
 -- as a unrealizable part is found, generate the core (so only one core)
 --
 specAnalysis ::

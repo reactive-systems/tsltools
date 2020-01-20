@@ -10,7 +10,7 @@
 
 -----------------------------------------------------------------------------
 module External.Context
-  ( Context
+  ( Context(..)
   , specSatisfiable
   , specRealizable
   , specSynt
