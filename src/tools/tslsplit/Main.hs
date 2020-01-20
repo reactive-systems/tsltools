@@ -15,7 +15,6 @@ module Main
 
 import TSL
   ( fromTSLtoTSLSpec
-  , toTLSF
   , split
   , tslSpecToString
   )
@@ -100,7 +99,7 @@ main = do
         Right s  -> do
           let specs = split s
           path <- getCurrentDirectory
-          zipWithM_ (\s -> \n -> writeFile (path++"/"++(takeBaseName (head args))++"_"++(show n)++".tsl") s ) (fmap tslSpecToString specs) [1,2..]
+          zipWithM_ (\s -> \n -> writeFile (path++"/"++(takeBaseName (head args))++"_"++(show n)++".tsl") s ) (fmap tslSpecToString specs) [1::Int,2..]
 --          mapM_ putStr $ fmap tslSpecToString specs
 
   where
