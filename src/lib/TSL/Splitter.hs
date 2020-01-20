@@ -142,6 +142,7 @@ splitGuarantees guars parts = map fst guarParts
 
 insertGuarantee
  :: Formula Int -> [([Formula Int], Set Int)] -> [([Formula Int], Set Int)]
+insertGuarantee _   []          = error "Assertion: invariant does not permit this case"
 insertGuarantee fml [(fs,s)]    = [(fml:fs,s)]
 insertGuarantee fml ((fs,s):xr) = if isSubsetOf (dependents fml) s then (fml:fs,s):xr else (fs,s):insertGuarantee fml xr
 -- use of dependents inefficient

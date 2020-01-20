@@ -58,7 +58,6 @@ import TSL.SymbolTable
 
 import TSL.Specification
   ( Specification(..)
-  , tslSpecToSpec
   )
 
 import TSL.ToString
