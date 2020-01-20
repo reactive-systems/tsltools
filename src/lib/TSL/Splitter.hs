@@ -85,12 +85,6 @@ split spec = fmap fixSymboltable $ fmap filterAssumptions $ foldl (\xs -> \x -> 
 
     graph = fromListWith union $ concat $ foldl (\xs -> \x -> makeNodes (dependents x):xs) [] (guarantees spec)
  
-
-
---    inputs = foldl (\xs -> \(i, x) -> if idKind x == Input then i:xs else xs) [] $ assocs $ symtable tslSymboltable
-
---    outputs = foldl (\xs -> \(i, x) -> if idKind x == Output then i:xs else xs) [] $ assocs $ symtable tslSymboltable
-
 makeNodes :: Set Int -> [(Int, Set Int)]
 makeNodes deps = if size deps < 1 then [] else foldl (\xs -> \x -> (x, Set.delete x deps):xs) [] deps
 
