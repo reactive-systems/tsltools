@@ -27,9 +27,12 @@ module TSL
   , FunctionName
     -- * TSL Utilties
   , fromTSL
+  , fromTSLtoTSLSpec
   , tslSize
   , st2csv
   , toTLSF
+  , split
+  , tslSpecToString
     -- * CFM Utilities  
   , fromCFM
   , statistics
@@ -57,8 +60,17 @@ import TSL.Specification
   ( Specification(..)
   )
 
+import TSL.ToString
+  ( tslSpecToString
+  )
+
+import TSL.Splitter
+  ( split
+  )
+
 import TSL.Reader
   ( fromTSL
+  , fromTSLtoTSLSpec
   )
 
 import TSL.TLSF
