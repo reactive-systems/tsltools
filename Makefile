@@ -2,6 +2,7 @@ TSLCHECK = tslcheck
 TSLSIZE = tslsize
 TSLSYM   = tslsym
 TSL2TLSF = tsl2tlsf
+TSLSPLIT = tslsplit
 
 CSTRATSIM = cstratsim
 
@@ -18,6 +19,7 @@ default:
 	@if [ -d "dist" ]; then cp ./dist/build/${TSLCHECK}/${TSLCHECK} ${TSLCHECK}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${TSLCHECK} ${TSLCHECK}; fi
 	@if [ -d "dist" ]; then cp ./dist/build/${TSLSIZE}/${TSLSIZE} ${TSLSIZE}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${TSLSIZE} ${TSLSIZE}; fi
 	@if [ -d "dist" ]; then cp ./dist/build/${TSLSYM}/${TSLSYM} ${TSLSYM}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${TSLSYM} ${TSLSYM}; fi
+	@if [ -d "dist" ]; then cp ./dist/build/${TSLSPLIT}/${TSLSPLIT} ${TSLSPLIT}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${TSLSPLIT} ${TSLSPLIT}; fi
 	@if [ -d "dist" ]; then cp ./dist/build/${CFMSYM}/${CFMSYM} ${CFMSYM}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${CFMSYM} ${CFMSYM}; fi
 	@if [ -d "dist" ]; then cp ./dist/build/${CFMCHECK}/${CFMCHECK} ${CFMCHECK}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${CFMCHECK} ${CFMCHECK}; fi
 	@if [ -d "dist" ]; then cp ./dist/build/${CFMINFO}/${CFMINFO} ${CFMINFO}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${CFMINFO} ${CFMINFO}; fi
@@ -36,6 +38,10 @@ ${TSLSIZE}:
 ${TSLSYM}:
 	${BLDTOOL} build ${TSLSYM}
 	@if [ -d "dist" ]; then cp ./dist/build/${TSLSYM}/${TSLSYM} ${TSLSYM}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${TSLSYM} ${TSLSYM}; fi
+
+${TSLSPLIT}:
+	${BLDTOOL} build ${TSLSPLIT}
+	@if [ -d "dist" ]; then cp ./dist/build/${TSLSPLIT}/${TSLSPLIT} ${TSLSPLIT}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${TSLSPLIT} ${TSLSPLIT}; fi
 
 ${TSL2TLSF}:
 	${BLDTOOL} build ${TSL2TLSF}
@@ -78,6 +84,7 @@ clean:
 	rm -f ${TSLCHECK}
 	rm -f ${TSLSIZE}
 	rm -f ${TSLSYM}
+	rm -f ${TSLSPLIT}
 	rm -f ${TSLSYNTH}
 	rm -f ${CFMCHECK}
 	rm -f ${CFMINFO}
