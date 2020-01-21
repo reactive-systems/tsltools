@@ -3,6 +3,8 @@ TSLSIZE = tslsize
 TSLSYM   = tslsym
 TSL2TLSF = tsl2tlsf
 
+CSTRATSIM = cstratsim
+
 CFMCHECK = cfmcheck
 CFMINFO  = cfminfo
 CFMSYM   = cfmsym
@@ -20,6 +22,7 @@ default:
 	@if [ -d "dist" ]; then cp ./dist/build/${CFMCHECK}/${CFMCHECK} ${CFMCHECK}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${CFMCHECK} ${CFMCHECK}; fi
 	@if [ -d "dist" ]; then cp ./dist/build/${CFMINFO}/${CFMINFO} ${CFMINFO}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${CFMINFO} ${CFMINFO}; fi
 	@if [ -d "dist" ]; then cp ./dist/build/${CFM2CODE}/${CFM2CODE} ${CFM2CODE}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${CFM2CODE} ${CFM2CODE}; fi
+	@if [ -d "dist" ]; then cp ./dist/build/${CSTRATSIM}/${CSTRATSIM} ${CSTRATSIM}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${CSTRATSIM} ${CSTRATSIM}; fi
 
 
 ${TSLCHECK}:
@@ -55,6 +58,10 @@ ${CFM2CODE}:
 	${BLDTOOL} build ${CFM2CODE}
 	@if [ -d "dist" ]; then cp ./dist/build/${CFM2CODE}/${CFM2CODE} ${CFM2CODE}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${CFM2CODE} ${CFM2CODE}; fi
 
+${CSTRATSIM}:
+	${BLDTOOL} build ${CSTRATSIM}
+	@if [ -d "dist" ]; then cp ./dist/build/${CSTRATSIM}/${CSTRATSIM} ${CSTRATSIM}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${CSTRATSIM} ${CSTRATSIM}; fi
+
 
 ghci:
 	${BLDTOOL} repl
@@ -76,6 +83,7 @@ clean:
 	rm -f ${CFMINFO}
 	rm -f ${CFMSYM}
 	rm -f ${CFM2CODE}
+	rm -f ${CSTRATSIM}
 
 .PHONY: clean
 .SILENT:
