@@ -18,6 +18,7 @@ cabal.sandbox.config
 tsl2tlsf
 tslcheck
 tslsize
+tslsplit
 tslsym
 cfm2code
 cfmcheck
