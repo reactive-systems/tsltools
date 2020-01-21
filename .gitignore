@@ -23,6 +23,7 @@ cfm2code
 cfmcheck
 cfminfo
 cfmsym
+cstratsim
 .commit
 .stack-work
 stack.yaml.lock
