@@ -51,6 +51,7 @@ import GHC.IO.Encoding
 
 import System.Exit
   ( exitFailure
+  , exitSuccess
   )
 
 -----------------------------------------------------------------------------
@@ -91,6 +92,7 @@ main = do
           cErrorLn White file
 
         resetColors
+        exitFailure
 
       else do
         str <- readFile file
@@ -101,10 +103,13 @@ main = do
             resetColors
             hPrint stderr err
             hPutStrLn stderr ""
+            exitFailure
+
           Right _  -> do
             cPutStr Green "valid: "
             cPutStrLn White file
             resetColors
+            exitSuccess
 
     cPutStr c str = do
       setSGR [ SetColor Foreground Vivid c ]
