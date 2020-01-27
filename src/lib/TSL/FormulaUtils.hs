@@ -34,11 +34,16 @@ getUpdates =
     And xs -> unions (fmap getUpdates xs)
     Or xs -> unions (fmap getUpdates xs)
     Next x -> getUpdates x
+    Previous x -> getUpdates x
     Globally x -> getUpdates x
     Finally x -> getUpdates x
+    Once x -> getUpdates x
+    Historically x -> getUpdates x
     Until x y -> union (getUpdates x) (getUpdates y)
     Release x y -> union (getUpdates x) (getUpdates y)
     Weak x y -> union (getUpdates x) (getUpdates y)
+    Since x y -> union (getUpdates x) (getUpdates y)
+    Triggered x y -> union (getUpdates x) (getUpdates y)
 
 -----------------------------------------------------------------------------
 getOutputs :: Formula Int -> Set Int

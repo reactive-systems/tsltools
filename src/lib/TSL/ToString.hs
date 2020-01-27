@@ -78,14 +78,21 @@ formulaToString env =
     Or xs ->
       "(" ++ concat (insertInside (map (formulaToString env) xs) " || ") ++ ")"
     Next f -> "(X " ++ formulaToString env f ++ ")"
+    Previous f -> "(Y " ++ formulaToString env f ++ ")"
     Globally f -> "(G " ++ formulaToString env f ++ ")"
     Finally f -> "(F " ++ formulaToString env f ++ ")"
+    Historically f -> "(H " ++ formulaToString env f ++ ")"
+    Once f -> "(H " ++ formulaToString env f ++ ")"
     Until f g ->
       "(" ++ formulaToString env f ++ " U " ++ formulaToString env g ++ ")"
     Release f g ->
       "(" ++ formulaToString env f ++ " R " ++ formulaToString env g ++ ")"
     Weak f g ->
       "(" ++ formulaToString env f ++ " W " ++ formulaToString env g ++ ")"
+    Since f g ->
+      "(" ++ formulaToString env f ++ " S " ++ formulaToString env g ++ ")"
+    Triggered f g ->
+      "(" ++ formulaToString env f ++ " T " ++ formulaToString env g ++ ")"
 
 -----------------------------------------------------------------------------
 specToString :: Specification -> String
