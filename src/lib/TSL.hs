@@ -32,8 +32,8 @@ module TSL
     -- * TSL Utilties
   , fromTSL
   , fromTSLtoTSLSpec
-  , tslSpecToString
   , tslSize
+  , tslSpecToString
   , st2csv
   , toTLSF
   , split

@@ -15,10 +15,11 @@ module FunctionComposite
   ) where
 
 -----------------------------------------------------------------------------
-import CoreGen.ToolCall (Core(..), generateCore)
+import CoreGen (Core(..), generateCore)
 import Data.Maybe
 import External.Context (Context, tslSpecCounterSynt, tslSpecSynt)
 import Simulator.Simulator (Simulation, createSimulation)
+import TSL (split)
 import TSL.Aiger (Circuit)
 import TSL.Specification (TSLSpecification)
 
@@ -26,9 +27,6 @@ import TSL.Specification (TSLSpecification)
 --
 --  This are dummies, TODO replace by import
 --
-split :: TSLSpecification -> [TSLSpecification]
-split _ = error "TODO Implement"
-
 merge :: [Circuit] -> Circuit
 merge _ = error "TODO Implement"
 
