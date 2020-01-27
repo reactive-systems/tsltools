@@ -18,10 +18,7 @@ module FunctionComposite
 import CoreGen (Core(..), generateCore)
 import Data.Maybe
 import External.Context (Context, tslSpecCounterSynt, tslSpecSynt)
-import TSL (split)
-import TSL.Aiger (Circuit)
-import TSL.Simulator (Simulation, createSimulation)
-import TSL.Specification (TSLSpecification)
+import TSL (Circuit, Simulation, TSLSpecification, createSimulation, split)
 
 -----------------------------------------------------------------------------
 --

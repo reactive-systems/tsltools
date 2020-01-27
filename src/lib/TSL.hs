@@ -20,6 +20,8 @@ module TSL
   , SymbolTable
   , ModuleName
   , FunctionName
+  , Circuit
+  , Simulation
     -- * Formula Utilities
   , getOutputs
   , getPossibleUpdates
@@ -42,6 +44,10 @@ module TSL
   , statistics
   , csvSymbolTable
   , implement
+    -- * Aiger Utilities
+  , parseAag
+    -- * Simulator Backend
+  , createSimulation
   ) where
 
 -----------------------------------------------------------------------------
@@ -65,6 +71,10 @@ import TSL.SymbolTable (SymbolTable, st2csv)
 import TSL.Specification (Specification(..), TSLSpecification(..))
 
 import TSL.Splitter (split)
+
+import TSL.Aiger (Circuit, parseAag)
+
+import TSL.Simulator (Simulation, createSimulation)
 
 import TSL.Reader (fromTSL, fromTSLtoTSLSpec)
 
