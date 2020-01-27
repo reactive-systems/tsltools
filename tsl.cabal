@@ -35,7 +35,9 @@ library
   exposed-modules:
     TSL
     Simulator.CLI
-    CoreGen.ToolCall
+    CoreGen
+    External.Context
+    External.ToolCalls
 
   other-modules:
     TSL.Binding
@@ -72,7 +74,6 @@ library
     Simulator.Simulator
     Simulator.Core
     Simulator.FiniteTraceChecker
-    CoreGen.CoreGen
 
   hs-source-dirs:
     src/lib
