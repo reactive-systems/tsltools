@@ -51,8 +51,7 @@ type UnrealizableWitness = (Core, CounterStrategy, Simulation)
 -- cores with counter strategy and simulation
 --
 -- As some of the operations might be really costly it might be useful
--- to use parallelization or to use a incremental approach i.e. a soon 
--- as a unrealizable part is found, generate the core (so only one core)
+-- to use parallelization
 --
 specAnalysis ::
      Context -> TSLSpecification -> IO (Either Strategy [UnrealizableWitness])
@@ -77,6 +76,11 @@ specAnalysis context spec = do
       witnesses <- sequence $ map (coreToWitness context) cores --Could be parallelized
       return $ Right $ witnesses
 
+-----------------------------------------------------------------------------
+--
+-- Analyzes a specification, so either give a system strategy or one
+-- cores with counter strategy and simulation, i.e. this is an incremental approach
+--
 lazySpecAnalysis ::
      Context -> TSLSpecification -> IO (Either Strategy UnrealizableWitness)
 lazySpecAnalysis context spec = do
@@ -102,6 +106,10 @@ incrementalSynthesis context (x:xr) = do
         Left sr -> return $ Left $ s : sr
         counterEx -> return $ counterEx
 
+-----------------------------------------------------------------------------
+--
+-- Creates an unrealizabilty wittness out of a core
+--
 coreToWitness :: Context -> Core -> IO UnrealizableWitness
 coreToWitness context core =
   case core of
