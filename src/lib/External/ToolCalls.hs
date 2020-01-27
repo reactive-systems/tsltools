@@ -13,7 +13,7 @@ module External.ToolCalls where
 
 -----------------------------------------------------------------------------
 import External.Context (Context(..))
-import TSL.Aiger (Circuit)
+import TSL.Aiger (Circuit, parseAag)
 
 import System.IO
 import System.Process
@@ -41,11 +41,11 @@ execCMD cmd stdIn = do
 --
 -- Implements a sat check, by calling trp++uc
 --
-satTrpppuc :: FilePath -> FilePath -> String -> IO Bool
-satTrpppuc trpppuc syfco tlsf = do
-  (ltl, _) <- execCMD (syfco ++ " -f trp -in") tlsf
+satTrpppuc :: String -> IO Bool
+satTrpppuc tlsf = do
+  (ltl, _) <- execCMD ("syfco -f trp -in") tlsf
   writeFile "tmp133742.tmp" ltl
-  (out, _) <- execCMD (trpppuc ++ " -f ltl -q tmp133742.tmp") ""
+  (out, _) <- execCMD ("trp++uc -f ltl -q tmp133742.tmp") ""
   _ <- execCMD "rm tmp133742.tmp" ""
   return (not $ isInfixOf "Unsatisfiable" out)
 
@@ -55,62 +55,67 @@ satTrpppuc trpppuc syfco tlsf = do
 -- binary and owl.jar. Note that an addition argument tells if a result should be
 -- synthesized
 --
-strix :: String -> Bool -> String -> IO String
-strix strixDir synth tlsf = do
-  (ltl, _) <- execCMD "syfco -f rabinizer -in" tlsf
-  (inp, _) <- execCMD "syfco -f rabinizer --print-input-signals -in" tlsf
-  (out, _) <- execCMD "syfco -f rabinizer --print-output-signals -in" tlsf
+strix :: Bool -> String -> IO String
+strix synth tlsf = do
+  writeFile "tmp133742.tmp" tlsf
   (str, _) <-
     execCMD
-      (strixDir ++
-       "/strix --owl-jar-dir " ++
-       strixDir ++
-       (if synth
-          then ""
-          else " -r ") ++
-       " -f \"" ++ ltl ++ "\" --ins \"" ++ inp ++ "\" --outs \"" ++ out ++ "\"")
+      ("~/tools/dockerimagegen/strix/strix tmp133742.tmp" ++
+       if synth
+         then ""
+         else " -r ")
       ""
+  _ <- execCMD "rm tmp133742.tmp" ""
   return str
 
 -----------------------------------------------------------------------------
 --
 -- Implements a realizabilty check, by calling strix
 --
-realStrix :: FilePath -> FilePath -> String -> IO Bool
-realStrix strixPath syfco tlsf = do
-  str <- strix "~/tools/strix/bin" False tlsf
+realStrix :: String -> IO Bool
+realStrix tlsf = do
+  str <- strix False tlsf
   return (str == "REALIZABLE\n")
 
 -----------------------------------------------------------------------------
 --
--- Implements synthesis, by calling strix
+-- Implements full synthesis (startgegy or counter strategy), by calling strix
 --
-syntStrix :: FilePath -> FilePath -> String -> IO (Maybe Circuit)
-syntStrix strixPath syfco tlsf = error "TODO"
+fullSyntStrix :: String -> IO (Bool, Circuit)
+fullSyntStrix tlsf = do
+  out <- strix True tlsf
+  case out of
+    'R':'E':'A':'L':'I':'Z':'A':'B':'L':'E':'\n':aag ->
+      case parseAag aag of
+        Left err -> error $ (show err)
+        Right cir -> return (True, cir)
+    'U':'N':'R':'E':'A':'L':'I':'Z':'A':'B':'L':'E':'\n':aag ->
+      case parseAag aag of
+        Left err -> error $ (show err)
+        Right cir -> return (False, cir)
+    _ -> error "Strix Synthesis: Strix outputed some weird stuff"
 
 -----------------------------------------------------------------------------
 --
--- Implements counter startegy synthesis, by calling strix
+-- Context with strix,
 --
-counterSyntStrix :: FilePath -> FilePath -> String -> IO (Maybe Circuit)
-counterSyntStrix strixPath syfco tlsf = error "TODO"
-
------------------------------------------------------------------------------
+-- ASSUMPTION: strix, syfco, trp++uc are inside the path
 --
--- Generate context with strix
---
-data StrixPath =
-  StrixPath
-    { strixPath :: String
-    , syfco :: String
-    , trpppuc :: String
-    }
-
-genStrixContext :: StrixPath -> Context
-genStrixContext StrixPath {..} =
+strixContext :: Context
+strixContext =
   Context
-    { sat = satTrpppuc trpppuc syfco
-    , real = realStrix strixPath syfco
-    , synt = syntStrix strixPath syfco
-    , counterSynt = counterSyntStrix strixPath syfco
+    { sat = satTrpppuc
+    , real = realStrix
+    , synt =
+        \s -> do
+          full <- fullSyntStrix s
+          case full of
+            (True, cir) -> return $ Just cir
+            (False, _) -> return $ Nothing
+    , counterSynt =
+        \s -> do
+          full <- fullSyntStrix s
+          case full of
+            (False, cir) -> return $ Just cir
+            (True, _) -> return $ Nothing
     }

@@ -10,38 +10,21 @@
 
 -----------------------------------------------------------------------------
 module CoreGen.CoreGen
-  ( Query(..)
+  ( Query
   , getCores
-  , genQuery
   ) where
 
 -----------------------------------------------------------------------------
 import Data.Set
 import TSL.FormulaUtils (getOutputs, getPossibleUpdates, getUpdates)
 import TSL.Logic (Formula(..))
-import TSL.Specification (TSLSpecification(..), tslSpecToSpec)
-import TSL.TLSF (toTLSF)
+import TSL.Specification (TSLSpecification(..))
 
 -----------------------------------------------------------------------------
 --
--- This represents some query to check.
--- - synthSpec: String passed to the SAT/Synthesis - Tool
--- - potCore: Core in case of unsat/unrez
+-- This represents some query (potential core)
 --
-data Query =
-  Query
-    { potCore :: TSLSpecification
-    , synthSpec :: String
-    }
-
------------------------------------------------------------------------------
---
--- Given some TSL Specification generates a query to check if this specification
--- is a core
---
-genQuery :: TSLSpecification -> Query
-genQuery spec =
-  Query {potCore = spec, synthSpec = toTLSF "CoreCandidat" (tslSpecToSpec spec)}
+type Query = TSLSpecification
 
 -----------------------------------------------------------------------------
 --
@@ -50,7 +33,7 @@ genQuery spec =
 getCores :: TSLSpecification -> [Query]
 getCores tsl@TSLSpecification {guarantees = g} =
   fmap
-    (\indices -> genQuery $ tsl {guarantees = choose indices})
+    (\indices -> tsl {guarantees = choose indices})
     (sortedPowerSet $ length g)
   where
     choose indices = choosen ++ [otherUpdates]

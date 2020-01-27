@@ -15,7 +15,7 @@ module SCCC.SSCC
   ) where
 
 -----------------------------------------------------------------------------
-import CoreGen.ToolCall (Core(..))
+import CoreGen.ToolCall (Core(..), generateCore)
 import Data.Maybe
 import External.Context (Context, tslSpecCounterSynt, tslSpecSynt)
 import Simulator.Simulator (Simulation, createSimulation)
@@ -31,9 +31,6 @@ split _ = error "TODO Implement"
 
 merge :: [Circuit] -> Circuit
 merge _ = error "TODO Implement"
-
-generateCore :: Context -> TSLSpecification -> IO Core
-generateCore _ _ = error "TODO Implement"
 
 -----------------------------------------------------------------------------
 --
