@@ -11,7 +11,7 @@ module Main
   ) where
 
 -----------------------------------------------------------------------------
-import Simulator.CLI (simulate)
+import PlayTSL (simulate)
 
 import System.Directory (doesFileExist)
 

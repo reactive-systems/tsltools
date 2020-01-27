@@ -34,7 +34,7 @@ library
 
   exposed-modules:
     TSL
-    Simulator.CLI
+    PlayTSL
     CoreGen
     External.Context
     External.ToolCalls
@@ -71,9 +71,9 @@ library
     TSL.CFM
     TSL.ToString
     TSL.FormulaUtils
-    Simulator.Simulator
-    Simulator.Core
-    Simulator.FiniteTraceChecker
+    TSL.Simulator
+    TSL.Simulator.Core
+    TSL.Simulator.FiniteTraceChecker
 
   hs-source-dirs:
     src/lib

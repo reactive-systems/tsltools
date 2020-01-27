@@ -1,5 +1,5 @@
 -- |
--- Module      :  Simulator.Simulator
+-- Module      :  TSL.Simulator
 -- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
 --
 -- A simple counterstrategy simulator
@@ -8,12 +8,12 @@
 {-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
 
 -----------------------------------------------------------------------------
-module Simulator.Simulator
+module TSL.Simulator
   ( Simulation
   , Option
   , createSimulation
   , step
-  , Simulator.Simulator.rewind
+  , TSL.Simulator.rewind
   , options
   , getLog
   ) where
@@ -34,7 +34,7 @@ import Data.Set as Set
   )
 import TSL.Aiger (Circuit)
 
-import Simulator.Core
+import TSL.Simulator.Core
   ( NormCircuit(inputName, inputs, outputName, outputs)
   , State
   , normalize
@@ -57,7 +57,7 @@ import TSL.Specification
   , tslSpecToTSLStrSpec
   )
 
-import Simulator.FiniteTraceChecker as FTC
+import TSL.Simulator.FiniteTraceChecker as FTC
   ( FiniteTrace
   , (|=)
   , append

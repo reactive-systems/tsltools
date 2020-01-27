@@ -1,22 +1,20 @@
 -- |
--- Module      :  Simulator.CLI
+-- Module      :  PlayTSL
 -- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
 --
 -- A simple cli for the simulator backend
 --
--- TODO 
---  > Trace priting
 --
 -----------------------------------------------------------------------------
 {-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
 
 ---------------------------------------------------------------------------
-module Simulator.CLI
+module PlayTSL
   ( simulate
   ) where
 
 ---------------------------------------------------------------------------
-import Simulator.Simulator as Simulator
+import TSL.Simulator as Simulator
   ( Option
   , Simulation
   , createSimulation
