@@ -11,23 +11,36 @@ module Main
   ) where
 
 -----------------------------------------------------------------------------
-import CoreGen.ToolCall (generateCoreFromFile)
+import CoreGen (Core(..), generateCore)
+
+import External.ToolCalls (strixContext)
 
 import System.Directory (doesFileExist)
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
+
+import TSL (fromTSLtoTSLSpec, tslSpecToString)
 
 -----------------------------------------------------------------------------
 main :: IO ()
 main = do
   args <- getArgs
   case args of
-    [tsl] -> do
-      tslEx <- doesFileExist tsl
+    [tslPath] -> do
+      tslEx <- doesFileExist tslPath
       if tslEx
-        then generateCoreFromFile tsl
+        then do
+          tsl <- readFile tslPath
+          case fromTSLtoTSLSpec tsl of
+            Left err -> putStrLn (show err)
+            Right spec -> do
+              core <- generateCore strixContext spec
+              case core of
+                NaC -> print "Not unrealizable"
+                Unrez s -> putStrLn ("UNREALIZABLE\n\n" ++ tslSpecToString s)
+                Unsat s -> putStrLn ("UNSATISFIABLE\n\n" ++ tslSpecToString s)
         else do
-          putStrLn $ "File " ++ tsl ++ " does not exists"
+          putStrLn $ "File " ++ tslPath ++ " does not exists"
           exitFailure
     _ -> do
       putStrLn "Usage: coregen <tsl-file>"

@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  SSCC.SSCC.hs
+-- Module      :  FunctionComposite.hs
 -- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
 --
 -- Plugging all tools together
@@ -9,7 +9,7 @@
 {-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
 
 -----------------------------------------------------------------------------
-module SCCC.SSCC
+module FunctionComposite
   ( specAnalysis
   , lazySpecAnalysis
   ) where

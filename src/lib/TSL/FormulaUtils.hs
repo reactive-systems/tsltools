@@ -13,12 +13,36 @@ module TSL.FormulaUtils
   ( getPossibleUpdates
   , getUpdates
   , getOutputs
+  , constantTrue
+  , constantFalse
+  , conjunctFormulas
+  , disjunctFormulas
+  , negateFormula
   ) where
 
 -----------------------------------------------------------------------------
 import Data.Set
 
 import TSL.Logic (Formula(..), SignalTerm(..))
+
+-----------------------------------------------------------------------------
+--
+-- Wrap some basic logical operators
+--
+conjunctFormulas :: [Formula a] -> Formula a
+conjunctFormulas = And
+
+disjunctFormulas :: [Formula a] -> Formula a
+disjunctFormulas = Or
+
+negateFormula :: Formula a -> Formula a
+negateFormula = Not
+
+constantFalse :: Formula a
+constantFalse = FFalse
+
+constantTrue :: Formula a
+constantTrue = TTrue
 
 -----------------------------------------------------------------------------
 getUpdates :: Formula Int -> Set (Formula Int)

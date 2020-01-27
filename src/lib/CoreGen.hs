@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  CoreGen.CoreGen
+-- Module      :  CoreGen
 -- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
 --
 -- Generates and unsat / unrealizabilty core
@@ -9,16 +9,35 @@
 {-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
 
 -----------------------------------------------------------------------------
-module CoreGen.CoreGen
-  ( Query
-  , getCores
+module CoreGen
+  ( generateCore
+  , Core(..)
   ) where
 
 -----------------------------------------------------------------------------
-import Data.Set
-import TSL.FormulaUtils (getOutputs, getPossibleUpdates, getUpdates)
-import TSL.Logic (Formula(..))
-import TSL.Specification (TSLSpecification(..))
+import Data.Set as Set
+  ( Set
+  , difference
+  , fromList
+  , insert
+  , member
+  , notMember
+  , size
+  , toList
+  , unions
+  )
+
+import TSL
+  ( TSLSpecification(..)
+  , conjunctFormulas
+  , constantTrue
+  , disjunctFormulas
+  , getOutputs
+  , getPossibleUpdates
+  , getUpdates
+  )
+
+import External.Context (Context, tslSpecRealizable, tslSpecSatisfiable)
 
 -----------------------------------------------------------------------------
 --
@@ -41,12 +60,14 @@ getCores tsl@TSLSpecification {guarantees = g} =
         choosen =
           fmap snd $ Prelude.filter (\(a, _) -> member a indices) $ zip [0 ..] g
         otherUpdates =
-          Or $
-          TTrue :
-          (Data.Set.toList $
-           Data.Set.difference
-             (getPossibleUpdates (And g) (unions $ fmap getOutputs choosen))
-             (getUpdates (And g)))
+          disjunctFormulas $
+          constantTrue :
+          (Set.toList $
+           Set.difference
+             (getPossibleUpdates
+                (conjunctFormulas g)
+                (unions $ fmap getOutputs choosen))
+             (getUpdates (conjunctFormulas g)))
 
 -----------------------------------------------------------------------------
 --
@@ -68,3 +89,35 @@ sortedPowerSet n = powerSetB n n
                 (Prelude.filter (\s -> size s == n - 1) sub)
             new = toList (fromList subNew)
          in sub ++ new
+
+-----------------------------------------------------------------------------
+--
+--Notion of different core types
+-- 
+data Core
+  = NaC
+  | Unsat TSLSpecification
+  | Unrez TSLSpecification
+
+-----------------------------------------------------------------------------
+--
+-- Generates (eventually) a core given a TSL Specification using a simple
+-- realizabilty test
+--
+generateCore :: Context -> TSLSpecification -> IO Core
+generateCore context tsl = do
+  let queries = getCores tsl
+  genCore' queries
+  where
+    genCore' :: [Query] -> IO Core
+    genCore' [] = return NaC
+    genCore' (q:qr) = do
+      sat <- tslSpecSatisfiable context q
+      if not sat
+        then return (Unsat q)
+        else do
+          rel <- tslSpecRealizable context q
+          if not rel
+            then return (Unrez q)
+            else do
+              genCore' qr
