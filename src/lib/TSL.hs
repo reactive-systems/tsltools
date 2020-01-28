@@ -21,7 +21,6 @@ module TSL
   , ModuleName
   , FunctionName
   , Circuit
-  , Simulation
     -- * Formula Utilities
   , getOutputs
   , getPossibleUpdates
@@ -47,7 +46,7 @@ module TSL
     -- * Aiger Utilities
   , parseAag
     -- * Simulator Backend
-  , createSimulation
+  , simulate
   ) where
 
 -----------------------------------------------------------------------------
@@ -74,7 +73,7 @@ import TSL.Splitter (split)
 
 import TSL.Aiger (Circuit, parseAag)
 
-import TSL.Simulator (Simulation, createSimulation)
+import TSL.Simulation (simulate)
 
 import TSL.Reader (fromTSL, fromTSLtoTSLSpec)
 

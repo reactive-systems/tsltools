@@ -3,8 +3,7 @@ TSLSIZE = tslsize
 TSLSYM   = tslsym
 TSL2TLSF = tsl2tlsf
 TSLSPLIT = tslsplit
-
-CSTRATSIM = cstratsim
+TSLPLAY = tslplay
 
 CFMCHECK = cfmcheck
 CFMINFO  = cfminfo
@@ -24,7 +23,7 @@ default:
 	@if [ -d "dist" ]; then cp ./dist/build/${CFMCHECK}/${CFMCHECK} ${CFMCHECK}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${CFMCHECK} ${CFMCHECK}; fi
 	@if [ -d "dist" ]; then cp ./dist/build/${CFMINFO}/${CFMINFO} ${CFMINFO}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${CFMINFO} ${CFMINFO}; fi
 	@if [ -d "dist" ]; then cp ./dist/build/${CFM2CODE}/${CFM2CODE} ${CFM2CODE}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${CFM2CODE} ${CFM2CODE}; fi
-	@if [ -d "dist" ]; then cp ./dist/build/${CSTRATSIM}/${CSTRATSIM} ${CSTRATSIM}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${CSTRATSIM} ${CSTRATSIM}; fi
+	@if [ -d "dist" ]; then cp ./dist/build/${TSLPLAY}/${TSLPLAY} ${TSLPLAY}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${TSLPLAY} ${TSLPLAY}; fi
 
 
 ${TSLCHECK}:
@@ -64,9 +63,9 @@ ${CFM2CODE}:
 	${BLDTOOL} build ${CFM2CODE}
 	@if [ -d "dist" ]; then cp ./dist/build/${CFM2CODE}/${CFM2CODE} ${CFM2CODE}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${CFM2CODE} ${CFM2CODE}; fi
 
-${CSTRATSIM}:
-	${BLDTOOL} build ${CSTRATSIM}
-	@if [ -d "dist" ]; then cp ./dist/build/${CSTRATSIM}/${CSTRATSIM} ${CSTRATSIM}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${CSTRATSIM} ${CSTRATSIM}; fi
+${TSLPLAY}:
+	${BLDTOOL} build ${TSLPLAY}
+	@if [ -d "dist" ]; then cp ./dist/build/${TSLPLAY}/${TSLPLAY} ${TSLPLAY}; else cp `stack path | grep local-install-root | sed 's/local-install-root: //'`/bin/${TSLPLAY} ${TSLPLAY}; fi
 
 
 ghci:
@@ -90,7 +89,7 @@ clean:
 	rm -f ${CFMINFO}
 	rm -f ${CFMSYM}
 	rm -f ${CFM2CODE}
-	rm -f ${CSTRATSIM}
+	rm -f ${TSLPLAY}
 
 .PHONY: clean
 .SILENT:

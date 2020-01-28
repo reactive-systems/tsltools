@@ -20,11 +20,11 @@ tslcheck
 tslsize
 tslsplit
 tslsym
+tslplay
 cfm2code
 cfmcheck
 cfminfo
 cfmsym
-cstratsim
 .commit
 .stack-work
 stack.yaml.lock

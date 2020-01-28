@@ -1,5 +1,5 @@
 -- |
--- Module      :  TSL.Simulator.FinitTraceChecker
+-- Module      :  TSL.Simulation.FinitTraceChecker
 -- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
 --
 -- A simple AIGER simulator
@@ -12,7 +12,7 @@
 -- TODOs: 
 -- - Check purity (although this will always falsify the enivornment)
 --
-module TSL.Simulator.FiniteTraceChecker
+module TSL.Simulation.FiniteTraceChecker
   ( FiniteTrace
   , append
   , rewind

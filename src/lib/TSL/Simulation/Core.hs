@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  TSL.Simulator.Core
+-- Module      :  TSL.Simulation.Core
 -- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
 --
 -- A simple AIGER simulator
@@ -9,7 +9,7 @@
 {-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
 
 -----------------------------------------------------------------------------
-module TSL.Simulator.Core
+module TSL.Simulation.Core
   ( NormCircuit(inputs, outputs, latches, inputName, outputName)
   , State
   , Input

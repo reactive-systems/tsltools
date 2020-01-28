@@ -34,7 +34,6 @@ library
 
   exposed-modules:
     TSL
-    PlayTSL
     CoreGen
     External.Context
     External.ToolCalls
@@ -71,9 +70,9 @@ library
     TSL.CFM
     TSL.ToString
     TSL.FormulaUtils
-    TSL.Simulator
-    TSL.Simulator.Core
-    TSL.Simulator.FiniteTraceChecker
+    TSL.Simulation
+    TSL.Simulation.Core
+    TSL.Simulation.FiniteTraceChecker
 
   hs-source-dirs:
     src/lib
@@ -274,7 +273,7 @@ executable cfm2code
   default-language:
     Haskell2010
 
-executable cstratsim
+executable tslplay
 
   main-is:
     Main.hs
@@ -287,9 +286,10 @@ executable cstratsim
     , base >=4.7 && <4.13
     , filepath >= 1.4
     , directory >= 1.3
+    , ansi-terminal >= 0.6
 
   hs-source-dirs:
-    src/tools/cstratsim
+    src/tools/tslplay
 
   default-language:
     Haskell2010
