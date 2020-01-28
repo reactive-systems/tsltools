@@ -71,8 +71,12 @@ main = do
     cErrorLn White "tslcheck <files>"
     resetColors
     exitFailure
-  else
-    mapM_ checkFile args
+  else do
+    xs <- mapM checkFile args
+
+    if and xs
+    then exitSuccess
+    else exitFailure
 
   where
     checkFile file = do
@@ -92,7 +96,7 @@ main = do
           cErrorLn White file
 
         resetColors
-        exitFailure
+        return False
 
       else do
         str <- readFile file
@@ -103,13 +107,13 @@ main = do
             resetColors
             hPrint stderr err
             hPutStrLn stderr ""
-            exitFailure
+            return False
 
           Right _  -> do
             cPutStr Green "valid: "
             cPutStrLn White file
             resetColors
-            exitSuccess
+            return True
 
     cPutStr c str = do
       setSGR [ SetColor Foreground Vivid c ]
