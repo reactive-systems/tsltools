@@ -317,8 +317,8 @@ tlsfFormula = pr
       Check t        -> "p0" ++ tlsfPredicate t
       Update s t     -> "u0" ++ escape s ++ "0" ++ tlsfSignal t
       Not x          -> "! (" ++ pr x ++ ")"
-      Implies x y    -> "(" ++ pr x ++ ")    -> (" ++ pr y ++ ")"
-      Equiv x y      -> "(" ++ pr x ++ ") <   -> (" ++ pr y ++ ")"
+      Implies x y    -> "(" ++ pr x ++ ") -> (" ++ pr y ++ ")"
+      Equiv x y      -> "(" ++ pr x ++ ") <-> (" ++ pr y ++ ")"
       And []         -> "true"
       And [x]        -> pr x
       And (x:xr)     -> foldl (\a y -> "(" ++ a ++ ") && (" ++ pr y ++ ")") (pr x) xr
