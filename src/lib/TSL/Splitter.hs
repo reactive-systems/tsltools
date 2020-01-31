@@ -18,14 +18,11 @@
 
 module TSL.Splitter
   ( split
-  , makeNodes
-  , dependents
-  , filterAssumptions
-  , fixSymboltable
-  , splitGuarantees
-  , insertGuarantee
+  , splitWithInputs
+  , getInputs
+  , splitFormulas
+  , makeEdges
   , connectedParts
-  , explore
   ) where
 
 -----------------------------------------------------------------------------
@@ -33,6 +30,9 @@ module TSL.Splitter
 import TSL.SymbolTable
   ( SymbolTable(..)
   , IdRec(..)
+  , stBounds
+  , stKind
+  , Kind(..)
   )
 
 import TSL.Specification
@@ -43,10 +43,16 @@ import TSL.Logic
   ( Formula(..)
   )
 
+import TSL.FormulaUtils as Util
+  ( getOutputs
+  , getInputs
+  )
+
 import Data.Map.Strict as Map
   ( Map
   , fromListWith
   , (!)
+  , (!?)
   , delete
   , keys
   , fromDescList
@@ -59,15 +65,26 @@ import Data.Set as Set
   , delete
   , size
   , union
+  , intersection
   , difference
+  , disjoint
   , toList
   , isSubsetOf
   , toAscList
+  , fromList
   )
 
 import Data.Array as Ar
   ( listArray
   , (!)
+  )
+
+import Data.Maybe
+  ( fromMaybe
+  )
+
+import Data.Ix
+  ( range
   )
 -----------------------------------------------------------------------------
 
@@ -79,14 +96,50 @@ split
 split spec = fmap fixSymboltable $ fmap filterAssumptions $ foldl (\xs -> \x -> spec{guarantees = x}:xs) [] guarParts
   where
     
-    guarParts = splitGuarantees (guarantees spec) parts
+    guarParts = splitFormulas (guarantees spec) parts
+    -- TODO: check whether no outputs were found, in that case output each guarantee as a single specification
+    parts = connectedParts graph
+
+    graph = fromListWith union $ concat $ foldl (\xs -> \x -> makeEdges (getOutputs x):xs) [] (guarantees spec)
+
+-- | Splits including input dependencies
+
+-- TODO replace folding over tree by getting (foldr Set.insert Set.empty x) -> (union (getInputs x) (getOutputs x))
+
+splitWithInputs
+ :: TSLSpecification -> [TSLSpecification]
+splitWithInputs spec = fmap fixSymboltable $ foldl (\xs -> \(a,g) -> spec{assumptions = a, guarantees = g}:xs) [] $ zip splitAssmpts splitGuars
+  where
+    graph = fromListWith union $ guaranteeOIIEdges ++ assumptionOIIEdges 
+    
+    guaranteeOIIEdges = concat $ foldl (\xs -> \x -> makeEdges (intersection (union (getInputs x) (getOutputs x)) outsAndImpIns):xs) [] (guarantees spec)
+    assumptionOIIEdges = concat $ foldl (\xs -> \x -> makeEdges (intersection (union (getInputs x) (getOutputs x)) outsAndImpIns):xs) [] (assumptions spec)
+
+    assumptionIIEdges= concat $ foldl (\xs -> \x -> makeEdges (Util.getInputs x):xs) [] (assumptions spec)
+    assumptionOIEdges = concat $ foldl (\xs -> \x -> makeIOEdges (Util.getInputs x) (getOutputs x):xs) [] (assumptions spec)
+
+    assumptionGraph = fromListWith union $ assumptionIIEdges ++ assumptionOIEdges
+    
+    outsAndImpIns = explore allOutputs Set.empty assumptionGraph
+    
+    table = tslSymboltable spec
+
+    allOutputs = filter (\x -> stKind table x == Output) $ range $ stBounds table
+    
+    allInputs = filter (\x -> stKind table x == Input) $ range $ stBounds table
 
     parts = connectedParts graph
 
-    graph = fromListWith union $ concat $ foldl (\xs -> \x -> makeNodes (dependents x):xs) [] (guarantees spec)
- 
-makeNodes :: Set Int -> [(Int, Set Int)]
-makeNodes deps = if size deps < 1 then [] else foldl (\xs -> \x -> (x, Set.delete x deps):xs) [] deps
+    splitGuars = splitFormulas (guarantees spec) parts
+    
+    splitAssmpts = splitFormulas (assumptions spec) parts
+
+
+makeIOEdges :: Set Int -> Set Int -> [(Int, Set Int)]
+makeIOEdges inputs outputs = if size inputs < 1 || size outputs < 1 then [] else foldl (\xs -> \x -> (x, inputs):xs) [] outputs
+
+makeEdges :: Set Int -> [(Int, Set Int)]
+makeEdges deps = if size deps < 1 then [] else foldl (\xs -> \x -> (x, Set.delete x deps):xs) [] deps
 
 -----------------------------------------------------------------------------
 
@@ -125,21 +178,20 @@ updateRec dict rec = rec{idArgs = fmap dict $ idArgs rec, idDeps = fmap dict $ i
 
 -----------------------------------------------------------------------------
 
--- | 
+-- | Splits a list of formulas by disjoint sets of variables 
 
-splitGuarantees
+splitFormulas
   :: [Formula Int] -> [Set Int] -> [[Formula Int]]
-splitGuarantees guars parts = map fst guarParts
+splitFormulas guars parts = map fst guarParts
   where
-    guarParts = foldr insertGuarantee zippedParts guars
+    guarParts = foldr insertFormula zippedParts guars
     zippedParts = foldl (\xs -> \s -> ([],s):xs) [] parts
 
-insertGuarantee
+insertFormula
  :: Formula Int -> [([Formula Int], Set Int)] -> [([Formula Int], Set Int)]
-insertGuarantee _   []          = error "Assertion: invariant does not permit this case"
-insertGuarantee fml [(fs,s)]    = [(fml:fs,s)]
-insertGuarantee fml ((fs,s):xr) = if isSubsetOf (dependents fml) s then (fml:fs,s):xr else (fs,s):insertGuarantee fml xr
--- use of dependents inefficient
+insertFormula _   []          = error "Assertion: invariant does not permit this case"
+insertFormula fml [(fs,s)]    = [(fml:fs,s)]
+insertFormula fml ((fs,s):xr) = if not $ disjoint (foldr Set.insert Set.empty fml) s then (fml:fs,s):xr else (fs,s):insertFormula fml xr
 
 -----------------------------------------------------------------------------
 
@@ -159,7 +211,7 @@ connectedParts graph = if null graph then [] else parts
 explore
   :: [Int] -> Set Int -> Map.Map Int (Set Int) -> Set Int
 explore []      explored   _    = explored
-explore (x:xr)  explored graph  = explore (toList (difference (graph Map.! x) explored) ++ xr)
+explore (x:xr)  explored graph  = explore (toList (difference (fromMaybe Set.empty (graph Map.!? x)) explored) ++ xr)
                                             (insert x explored) graph
     
 
@@ -189,4 +241,16 @@ dependents fml = outs empty fml
       Release x y -> outs (outs set x) y
       Weak x y    -> outs (outs set x) y
 
+
+-----------------------------------------------------------------------------
+{-
+-- | Extracts the outputs from one formula
+
+getInputs
+ :: SymbolTable -> Set Int
+getInputs table = inputs
+  where
+    (start, end) = stBounds table
+    inputs = fromList $ filter (\x -> stKind table x == Input ) [start..end]
+-}
 -----------------------------------------------------------------------------

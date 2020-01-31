@@ -17,6 +17,7 @@ import TSL
   ( fromTSLtoTSLSpec
   , split
   , tslSpecToString
+  , splitWithInputs
   )
 
 import System.Directory
@@ -72,8 +73,7 @@ main = do
   setLocaleEncoding utf8
   setFileSystemEncoding utf8
   setForeignEncoding utf8
-  args <- getArgs
-
+  (inputs, args) <- parseArgs
   if length args /= 1 then do
     cError Yellow "Usage: "
     cErrorLn White "tslsplit <file>"
@@ -97,7 +97,7 @@ main = do
           hPrint stderr err
           exitFailure
         Right s  -> do
-          let specs = split s
+          let specs = if inputs then splitWithInputs s else split s
           path <- getCurrentDirectory
           zipWithM_ (\s -> \n -> writeFile (path++"/"++(takeBaseName (head args))++"_"++(show n)++".tsl") s ) (fmap tslSpecToString specs) [1::Int,2..]
 --          mapM_ putStr $ fmap tslSpecToString specs
@@ -123,4 +123,10 @@ main = do
       hSetSGR stderr [ Reset ]
       setSGR [ Reset ]
 
+    parseArgs = do
+      args <- getArgs
+      if length args == 2 && head (tail args) == "--inputs" then do
+        return (True, (head args) : [])
+      else do 
+        return (False, args)
 -----------------------------------------------------------------------------
