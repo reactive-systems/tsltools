@@ -6,17 +6,9 @@
 -- A simple counterstrategy simulator
 --
 -----------------------------------------------------------------------------
-
-{-# LANGUAGE
-
-    ViewPatterns
-  , LambdaCase
-  , RecordWildCards
-
-  #-}
+{-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
 
 -----------------------------------------------------------------------------
-
 module TSL.Simulation
   ( Simulation
   , Option
@@ -25,33 +17,24 @@ module TSL.Simulation
   , rewind
   , options
   , getLog
-  , simulate  
+  , simulate
   ) where
 
 -----------------------------------------------------------------------------
+import TSL.Reader (fromTSLtoTSLSpec)
 
-import TSL.Reader
-  ( fromTSLtoTSLSpec
-  )
-  
-import TSL.ToString
-  ( formulaToString
-  , predicateTermToString
-  , signalTermToString
-  )
+import TSL.ToString (formulaToString, predicateTermToString, signalTermToString)
 
-import Text.Read
-  ( readMaybe
-  )
+import Text.Read (readMaybe)
 
-import qualified Data.List as List
-  ( filter
-  )
-  
-import qualified Data.Set as Set
-  ( filter
-  )
-  
+import TSL.Error (genericError)
+
+import qualified Data.List as List (filter)
+
+import qualified Data.Set as Set (filter)
+
+import Control.Exception (assert)
+
 import Data.Set as Set
   ( Set
   , difference
@@ -63,34 +46,29 @@ import Data.Set as Set
   , toList
   , unions
   )
-  
-import TSL.Aiger
-  ( Circuit
-  , parseAag  
-  )
+
+import TSL.Aiger (Circuit, parseAag)
 
 import TSL.Simulation.Core
   ( NormCircuit
-  , State  
+  , State
   , inputName
   , inputs
+  , normalize
   , outputName
   , outputs
-  , normalize
   , simStep
   )
 
 import TSL.Logic
   ( Formula(..)
-  , SignalTerm(..)  
   , PredicateTerm
+  , SignalTerm(..)
   , readInput
   , readOutput
   )
 
-import TSL.Error
-  ( Error
-  )
+import TSL.Error (Error)
 
 import TSL.Specification
   ( TSLSpecification
@@ -105,10 +83,8 @@ import TSL.Simulation.FiniteTraceChecker as FTC
   , emptyTrace
   )
 
-import qualified TSL.Simulation.FiniteTraceChecker as FTC
-  ( rewind  
-  )
-  
+import qualified TSL.Simulation.FiniteTraceChecker as FTC (rewind)
+
 -----------------------------------------------------------------------------
 type CounterStrategy
    = NormCircuit (String, SignalTerm String) (PredicateTerm String)
@@ -127,31 +103,24 @@ type Option = [(String, SignalTerm String)]
 type Witness = [Formula String]
 
 -----------------------------------------------------------------------------
-
 -- | Generates a simulation out of a given an AIGER counterstrategy
 -- and a correspoding TSL specification.
-
-createSimulation :: Circuit -> TSLSpecification -> Simulation
+createSimulation :: Circuit -> TSLSpecification -> Either Error Simulation
 createSimulation aag spec =
-  case sanitize sim of
-    Nothing -> sim
-    Just err -> error err
-  where
-    parseAP :: (String -> Either Error a) -> String -> a
-    parseAP parse str =
-      case parse str of
-        Left err -> error $ "Simulator: While parsing ap found " ++ (show err)
-        Right val -> val
-    --
-    sim =
-      Simulation
-        { counterStrategy =
-            normalize (parseAP readOutput) (parseAP readInput) aag
-        , specification = tslSpecToTSLStrSpec spec
-        , stateStack = [\_ -> False]
-        , trace = emptyTrace
-        , logTrace = []
-        }
+  case normalize readOutput readInput aag of
+    Left err -> Left err
+    Right naag ->
+      let sim =
+            Simulation
+              { counterStrategy = naag
+              , specification = tslSpecToTSLStrSpec spec
+              , stateStack = [\_ -> False]
+              , trace = emptyTrace
+              , logTrace = []
+              }
+       in case sanitize sim of
+            Nothing -> Right sim
+            Just err -> genericError $ err
 
 -----------------------------------------------------------------------------
 --
@@ -201,7 +170,8 @@ violatedGuarantees TSLStringSpecification { assumptionsStr = assmpt
 --  Given an possible action option, simulate one step and calculate the
 --  predicate evaluations
 --  ASSUMPTION: The option should be complete, i.e. on a higher level
---  for every cell in the formula, the circuit can update on of these cells
+--  for every cell in the formula, the circuit can update on of these cells 
+--  (can be checked using sanitize)
 --
 step :: Simulation -> Option -> (Simulation, [(PredicateTerm String, Bool)])
 step sim@Simulation {..} updates =
@@ -217,21 +187,17 @@ step sim@Simulation {..} updates =
     newTrace =
       append
         trace
-        (\c -> findFirst "Simulator.step: Assumption violated" (== c) updates)
-        (\p ->
-           findFirst
-             "Simulator.step: Ouput should contain all predicates"
-             (== p)
-             eval)
+        (\c -> findFirst (== c) updates)
+        (\p -> findFirst (== p) eval)
     --
     newLog = (updates, eval) : logTrace
     --
-    findFirst :: String -> (a -> Bool) -> [(a, b)] -> b
-    findFirst msg _ [] = error msg
-    findFirst msg p ((a, b):xr) =
+    findFirst :: (a -> Bool) -> [(a, b)] -> b
+    findFirst _ [] = assert False undefined --THIS cant happend iff the simulation is sanitized
+    findFirst p ((a, b):xr) =
       if p a
         then b
-        else findFirst msg p xr
+        else findFirst p xr
 
 -----------------------------------------------------------------------------
 --
@@ -245,9 +211,7 @@ rewind sim@Simulation { stateStack = stateStack
   sim
     { stateStack =
         case stateStack of
-          [] ->
-            error
-              "Simulator: Assertion, there should always be the initial state"
+          [] -> assert False undefined -- There is always an inital state
           [init] -> [init]
           _:sr -> sr
     , trace = FTC.rewind trace
@@ -411,16 +375,12 @@ optionWitnessToString (o, fs, predEvals) =
   concatMap (\f -> "    " ++ formulaToString id f ++ "\n") fs ++ " \n"
 
 ---------------------------------------------------------------------------
-
 -- | Given the filepaths of the tsl file and the agg file, load and
 -- run the simulation
-
-simulate
-  :: String -> String -> Either Error (IO ())
-  
+simulate :: String -> String -> Either Error (IO ())
 simulate tsl' aag' = do
   aag <- parseAag aag'
   tsl <- fromTSLtoTSLSpec tsl'
-  return $ runSimulation $ createSimulation aag tsl
-
----------------------------------------------------------------------------
+  case createSimulation aag tsl of
+    Left err -> Left $ err
+    Right sim -> Right $ runSimulation sim

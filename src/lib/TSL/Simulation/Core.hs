@@ -29,7 +29,10 @@ import TSL.Aiger as Aiger
   , Wire
   )
 
+import Data.Either (lefts, rights)
 import Data.List (find)
+
+import Control.Exception (assert)
 
 -----------------------------------------------------------------------------
 --
@@ -58,20 +61,48 @@ data NormCircuit i o =
 -- Transform a circuit into a normalized circuit
 -- ASSUMPTIONS: 
 -- - The aiger circuit contains no logic loops
--- - The aiger circuit has no unbound wires
 --
-normalize :: (String -> i) -> (String -> o) -> Circuit -> NormCircuit i o
+normalize ::
+     (String -> Either err i)
+  -> (String -> Either err o)
+  -> Circuit
+  -> Either err (NormCircuit i o)
 normalize renameInput renameOutput aig =
-  NormCircuit
-    { inputs = Aiger.inputs aig
-    , outputs = Aiger.outputs aig
-    , latches = Aiger.latches aig
-    , outputCir = \o -> iwire2ct $ Aiger.outputWire aig o
-    , latchCir = \l -> iwire2ct $ Aiger.latchInput aig l
-    , inputName = renameInput . (Aiger.inputName aig)
-    , outputName = renameOutput . (Aiger.outputName aig)
-    }
+  case (lefts renamedInputs, lefts renamedOutputs) of
+    (e:_, _) -> Left e
+    ([], e:_) -> Left e
+    ([], []) ->
+      Right $
+      NormCircuit
+        { inputs = Aiger.inputs aig
+        , outputs = Aiger.outputs aig
+        , latches = Aiger.latches aig
+        , outputCir = \o -> iwire2ct $ Aiger.outputWire aig o
+        , latchCir = \l -> iwire2ct $ Aiger.latchInput aig l
+        , inputName = lookup $ rights $ renamedInputs
+        , outputName = lookup $ rights $ renamedOutputs
+        }
   where
+    renamedInputs = rename (Aiger.inputs aig) (Aiger.inputName aig) renameInput
+    renamedOutputs =
+      rename (Aiger.outputs aig) (Aiger.outputName aig) renameOutput
+    --
+    rename :: [a] -> (a -> b) -> (b -> Either err c) -> [Either err (a, c)]
+    rename xs toStr rnm =
+      map
+        (\x ->
+           case rnm (toStr x) of
+             Left err -> Left err
+             Right v -> Right (x, v))
+        xs
+    --
+    lookup :: Eq a => [(a, b)] -> a -> b
+    lookup [] _ = assert False undefined
+    lookup ((k, v):xr) a =
+      if k == a
+        then v
+        else lookup xr a
+    --
     iwire2ct :: Invertible Wire -> CircuitTree
     iwire2ct =
       \case
