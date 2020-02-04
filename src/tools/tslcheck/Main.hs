@@ -46,10 +46,10 @@ main = do
   args <- getArgs
   if null args
     then do
-      cError Yellow "Usage: "
-      cErrorLn White "tslcheck <files>"
-      resetColors
-      exitFailure
+      valid <- checkStdIn
+      if valid
+      then exitSuccess
+      else exitFailure
     else do
       xs <- mapM checkFile args
       if and xs
@@ -86,6 +86,22 @@ main = do
               cPutStrLn White file
               resetColors
               return True
+
+    checkStdIn = do
+        str <- getContents
+        case fromTSL str of
+          Left err -> do
+            cPutStrLn Red "invalid"
+            resetColors
+            hPrint stderr err
+            hPutStrLn stderr ""
+            return False
+
+          Right _  -> do
+            cPutStrLn Green "valid"
+            resetColors
+            return True
+
     cPutStr c str = do
       setSGR [SetColor Foreground Vivid c]
       putStr str
