@@ -27,6 +27,8 @@ import System.Directory
 
 import System.FilePath
   ( takeBaseName
+  , (</>)
+  , (<.>)
   )
 
 import System.Environment
@@ -40,10 +42,6 @@ import System.Console.ANSI
   , Color(..)
   , setSGR
   , hSetSGR
-  )
-
-import Control.Monad
-  ( zipWithM_
   )
 
 import System.IO
@@ -73,34 +71,36 @@ main = do
   setLocaleEncoding utf8
   setFileSystemEncoding utf8
   setForeignEncoding utf8
-  (inputs, args) <- parseArgs
-  if length args /= 1 then do
-    cError Yellow "Usage: "
-    cErrorLn White "tslsplit <file>"
-    resetColors
-    exitFailure
-  else do
-    exists <- doesFileExist $ head args
-
-    if not exists then do
-      cError Red "File not found: "
-      cErrorLn White $ head args
+  (inputs, file) <- parseArgs
+  case file of
+    Nothing -> do
+      cError Yellow "Usage: "
+      cErrorLn White "tslsplit <file>"
       resetColors
       exitFailure
-    else do
-      str <- readFile $ head args
-      case fromTSLtoTSLSpec str of
-        Left err -> do
-          cPutStr Red "invalid: "
-          cPutStrLn White $ head args
-          resetColors
-          hPrint stderr err
-          exitFailure
-        Right s  -> do
-          let specs = if inputs then splitWithInputs s else split s
-          path <- getCurrentDirectory
-          zipWithM_ (\s -> \n -> writeFile (path++"/"++(takeBaseName (head args))++"_"++(show n)++".tsl") s ) (fmap tslSpecToString specs) [1::Int,2..]
---          mapM_ putStr $ fmap tslSpecToString specs
+    Just filepath -> do
+      exists <- doesFileExist filepath
+
+      if not exists then do
+        cError Red "File not found: "
+        cErrorLn White $ filepath
+        resetColors
+        exitFailure
+      else do
+        str <- readFile $ filepath
+        case fromTSLtoTSLSpec str of
+          Left err -> do
+            cPutStr Red "invalid: "
+            cPutStrLn White $ filepath
+            resetColors
+            hPrint stderr err
+            exitFailure
+          Right s  -> do
+            let specs = if inputs then splitWithInputs s else split s
+            path <- getCurrentDirectory
+            let filepathN = \n -> path </> (takeBaseName (filepath)) <.> (show n) <.> "tsl"
+            mapM_ (\(s,n) -> writeFile (filepathN n) (tslSpecToString s) ) $ zip specs [1::Int,2..]
+--            mapM_ putStr $ fmap tslSpecToString specs
 
   where
     cPutStr c str = do
@@ -125,8 +125,9 @@ main = do
 
     parseArgs = do
       args <- getArgs
-      if length args == 2 && head (tail args) == "--inputs" then do
-        return (True, (head args) : [])
-      else do 
-        return (False, args)
+      case args of
+        [x,"--inputs"] -> return (True, Just x)
+        [x]            -> return (False, Just x)
+        _              -> return (False, Nothing)
+
 -----------------------------------------------------------------------------
