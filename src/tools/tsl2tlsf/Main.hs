@@ -68,11 +68,17 @@ main = do
   setForeignEncoding utf8
   args <- getArgs
 
-  if length args /= 1 then do
-    cError Yellow "Usage: "
-    cErrorLn White "tsl2tlsf <file>"
-    resetColors
-    exitFailure
+  if null args
+  then do
+      str <- getContents
+      case fromTSL str of
+        Left err -> do
+          cPutStrLn Red "invalid"
+          resetColors
+          hPrint stderr err
+          exitFailure
+        Right s  ->
+          putStr $ toTLSF "stdin" s
   else do
     exists <- doesFileExist $ head args
 
