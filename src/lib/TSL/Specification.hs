@@ -25,8 +25,8 @@ import TSL.SymbolTable (SymbolTable, stName)
 -----------------------------------------------------------------------------
 data Specification =
   Specification
-      -- | TSL formula
-    { formula :: Formula Int
+    { -- | TSL formula
+      formula :: Formula Int
       -- | symbol table containing information about identifiers
     , symboltable :: SymbolTable
     }
@@ -34,8 +34,8 @@ data Specification =
 -----------------------------------------------------------------------------
 data TSLSpecification =
   TSLSpecification
-      -- | List of TSL formulas that are assumed
-    { assumptions :: [Formula Int]
+    { -- | List of TSL formulas that are assumed
+      assumptions :: [Formula Int]
       -- | List of TSL formulas that should be guaranteed
     , guarantees :: [Formula Int]
       -- | symbol table containing information about identifiers
@@ -45,8 +45,8 @@ data TSLSpecification =
 ---------------------------------------------------------
 data TSLStringSpecification =
   TSLStringSpecification
-      -- | List of TSL formulas that are assumed
-    { assumptionsStr :: [Formula String]
+    { -- | List of TSL formulas that are assumed
+      assumptionsStr :: [Formula String]
       -- | List of TSL formulas that should be guaranteed
     , guaranteesStr :: [Formula String]
     }
