@@ -2,6 +2,7 @@ TSLCHECK=tslcheck
 TSLSIZE=tslsize
 TSLSYM=tslsym
 TSL2TLSF=tsl2tlsf
+TSL2TOML=tsl2toml
 TSLSPLIT=tslsplit
 TSLPLAY=tslplay
 CFMCHECK=cfmcheck
@@ -14,6 +15,7 @@ TOOLS=\
   ${TSLSIZE}\
   ${TSLSYM}\
   ${TSL2TLSF}\
+  ${TSL2TOML}\
   ${TSLSPLIT}\
   ${TSLPLAY}\
   ${CFMCHECK}\
@@ -45,6 +47,10 @@ ${TSLSPLIT}:
 	@if [ -d "dist" ]; then cp ./dist/build/$@/$@ $@; else cp ${STACKPATH}/bin/$@ $@; fi
 
 ${TSL2TLSF}:
+	${BLDTOOL} build :$@
+	@if [ -d "dist" ]; then cp ./dist/build/$@/$@ $@; else cp ${STACKPATH}/bin/$@ $@; fi
+
+${TSL2TOML}:
 	${BLDTOOL} build :$@
 	@if [ -d "dist" ]; then cp ./dist/build/$@/$@ $@; else cp ${STACKPATH}/bin/$@ $@; fi
 
