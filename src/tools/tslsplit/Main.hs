@@ -100,7 +100,6 @@ main = do
             path <- getCurrentDirectory
             let filepathN = \n -> path </> (takeBaseName (filepath)) <.> (show n) <.> "tsl"
             mapM_ (\(s,n) -> writeFile (filepathN n) (tslSpecToString s) ) $ zip specs [1::Int,2..]
---            mapM_ putStr $ fmap tslSpecToString specs
 
   where
     cPutStr c str = do
