@@ -86,6 +86,11 @@ import Data.Maybe
 import Data.Ix
   ( range
   )
+
+import Control.Exception
+  ( assert
+  )
+
 -----------------------------------------------------------------------------
 
 -- | Creates separate specifications for independent specification parts
@@ -189,7 +194,7 @@ splitFormulas guars parts = map fst guarParts
 
 insertFormula
  :: Formula Int -> [([Formula Int], Set Int)] -> [([Formula Int], Set Int)]
-insertFormula _   []          = error "Assertion: invariant does not permit this case"
+insertFormula _   []          = assert False undefined --"Assertion: invariant does not permit this case"
 insertFormula fml [(fs,s)]    = [(fml:fs,s)]
 insertFormula fml ((fs,s):xr) = if not $ disjoint (foldr Set.insert Set.empty fml) s then (fml:fs,s):xr else (fs,s):insertFormula fml xr
 
