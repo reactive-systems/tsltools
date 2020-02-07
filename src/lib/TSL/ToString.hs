@@ -39,7 +39,9 @@ signalTermToString :: (a -> String) -> SignalTerm a -> String
 signalTermToString env =
   \case
     Signal a -> env a
-    FunctionTerm ft -> functionTermToString env ft
+    FunctionTerm ft -> case ft of
+                        FunctionSymbol a -> env a ++"()"
+                        ft -> functionTermToString env ft
     PredicateTerm pt -> predicateTermToString env pt
 
 functionTermToString :: (a -> String) -> FunctionTerm a -> String
