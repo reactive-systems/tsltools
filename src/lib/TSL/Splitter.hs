@@ -243,7 +243,9 @@ insertFormula
 --                              Assertion: invariant does not permit this case
 insertFormula _   []          = assert False undefined 
 insertFormula fml [(fs,s)]    = [(fml:fs,s)]
-insertFormula fml ((fs,s):xr) = if not $ disjoint (foldr Set.insert Set.empty fml) s
+insertFormula fml ((fs,s):xr) = if not $ disjoint (union (getInputs fml) (getOutputs fml)) s
+                                -- since s only contains outputs and impressionable inputs,
+                                -- checking for disjunctness with all inputs is not bad
                                 then (fml:fs,s):xr
                                 else (fs,s):insertFormula fml xr
 
