@@ -553,6 +553,7 @@ identParser = ident ""
           '6' -> ident ('_' : a)
           '7' -> ident ('@' : a)
           '8' -> ident ('\'' : a)
+          '9' -> ident ('.' : a)
           c   -> ident (toUpper c : a)
         c   -> alphaNum >> ident (c:a)
 
@@ -574,6 +575,7 @@ escape = escape' []
         '_'  -> escape' ('6' : '2' : a) cr
         '@'  -> escape' ('7' : '2' : a) cr
         '\'' -> escape' ('8' : '2' : a) cr
+        '.'  -> escape' ('9' : '2' : a) cr
         _
           | isUpper c -> escape' (toLower c : '2' : a) cr
           | otherwise -> escape' (c : a) cr
@@ -600,7 +602,7 @@ newtype Identifier = Identifier { identifier :: String }
 instance Arbitrary Identifier where
   arbitrary = do
     x <- choose (10 :: Int, 61 :: Int)
-    xr <- listOf $ choose (0 :: Int, 64 :: Int)
+    xr <- listOf $ choose (0 :: Int, 65 :: Int)
     return $ Identifier $ map toC $ x : xr
 
     where
@@ -610,6 +612,7 @@ instance Arbitrary Identifier where
         | c >= 36 && c < 62 = chr (ord 'A' + (c - 36))
         | c == 62          = '_'
         | c == 63          = '@'
+        | c == 64          = '.'
         | otherwise       = '\''
 
 -----------------------------------------------------------------------------
