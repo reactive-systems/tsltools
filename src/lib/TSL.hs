@@ -39,7 +39,6 @@ module TSL
   , toTLSF
   , splitIgnoreAssumptions
   , split
-  , tslSpecToString
     -- * CFM Utilities  
   , fromCFM
   , statistics
@@ -88,10 +87,6 @@ import TSL.Reader
 import TSL.Aiger (Circuit, parseAag)
 
 import TSL.Simulation (simulate)
-
-import TSL.Reader (fromTSL, fromTSLtoTSLSpec)
-
-import TSL.ToString (tslSpecToString)
 
 import TSL.TLSF (toTLSF)
 

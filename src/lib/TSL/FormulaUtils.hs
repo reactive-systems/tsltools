@@ -94,11 +94,16 @@ getChecks =
     And xs -> unions (fmap getChecks xs)
     Or xs -> unions (fmap getChecks xs)
     Next x -> getChecks x
+    Previous x -> getChecks x
     Globally x -> getChecks x
     Finally x -> getChecks x
+    Once x -> getChecks x
+    Historically x -> getChecks x
     Until x y -> union (getChecks x) (getChecks y)
     Release x y -> union (getChecks x) (getChecks y)
     Weak x y -> union (getChecks x) (getChecks y)
+    Since x y -> union (getChecks x) (getChecks y)
+    Triggered x y -> union (getChecks x) (getChecks y)
 
 -----------------------------------------------------------------------------
 getInputs :: Formula Int -> Set Int
@@ -107,7 +112,7 @@ getInputs form =
     (\set ->
       \case
        Check s -> maybe set ((flip Data.Set.insert) set) (getSignal s)
-       _ -> undefined -- In this case get Updates has to be wrong !!
+       _ -> undefined -- In this case get Checks has to be wrong !!
      )
     Data.Set.empty
     (getChecks form)

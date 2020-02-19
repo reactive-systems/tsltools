@@ -86,11 +86,6 @@ import Data.Ix
   ( range
   )
 
-import Control.Exception
-  ( assert
-  )
-
--- TODO: check whether no outputs were found, in that case output each guarantee as a single specification
 -----------------------------------------------------------------------------
 
 -- | Creates separate specifications for independent specification parts
@@ -123,7 +118,7 @@ split spec =
     
     splitAssmpts = splitFormulas (assumptions spec) parts
   in  
-    fmap cleanSymboltable $ buildSpecs $ zip splitAssmpts splitGuars
+    fmap cleanSymboltable $ buildSpecs $ zip (splitAssmpts ++ cycle [[]]) splitGuars
   where
     buildSpecs  = foldl (\xs -> \(a,g) -> spec{assumptions = a, guarantees = g}:xs) [] 
 
@@ -240,12 +235,10 @@ splitFormulas guars parts = map fst guarParts
 
 insertFormula
  :: Formula Int -> [([Formula Int], Set Int)] -> [([Formula Int], Set Int)]
---                              Assertion: invariant does not permit this case
-insertFormula _   []          = assert False undefined 
-insertFormula fml [(fs,s)]    = [(fml:fs,s)]
+insertFormula fml   []        = [([fml], empty)] 
 insertFormula fml ((fs,s):xr) = if not $ disjoint (union (getInputs fml) (getOutputs fml)) s
                                 -- since s only contains outputs and impressionable inputs,
-                                -- checking for disjunctness with all inputs is not bad
+                                -- checking for disjunctness with all inputs suffices
                                 then (fml:fs,s):xr
                                 else (fs,s):insertFormula fml xr
 
