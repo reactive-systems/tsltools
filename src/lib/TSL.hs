@@ -37,7 +37,9 @@ module TSL
   , tslSpecToString
   , st2csv
   , toTLSF
+  , splitIgnoreAssumptions
   , split
+  , tslSpecToString
     -- * CFM Utilities  
   , fromCFM
   , statistics
@@ -69,7 +71,19 @@ import TSL.SymbolTable (SymbolTable, st2csv)
 
 import TSL.Specification (Specification(..), TSLSpecification(..))
 
-import TSL.Splitter (split)
+import TSL.ToString
+  ( tslSpecToString
+  )
+
+import TSL.Splitter
+  ( split
+  , splitIgnoreAssumptions
+  )
+
+import TSL.Reader
+  ( fromTSL
+  , fromTSLtoTSLSpec
+  )
 
 import TSL.Aiger (Circuit, parseAag)
 

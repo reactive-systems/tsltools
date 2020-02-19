@@ -5,6 +5,8 @@ TSL2TLSF = tsl2tlsf
 TSLSPLIT = tslsplit
 TSLPLAY = tslplay
 
+CSTRATSIM = cstratsim
+
 CFMCHECK = cfmcheck
 CFMINFO  = cfminfo
 CFMSYM   = cfmsym

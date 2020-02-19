@@ -18,12 +18,13 @@ module TSL.FormulaUtils
   , conjunctFormulas
   , disjunctFormulas
   , negateFormula
+  , getInputs
   ) where
 
 -----------------------------------------------------------------------------
 import Data.Set
 
-import TSL.Logic (Formula(..), SignalTerm(..))
+import TSL.Logic (Formula(..), SignalTerm(..), PredicateTerm(..), FunctionTerm(..))
 
 -----------------------------------------------------------------------------
 --
@@ -79,6 +80,63 @@ getOutputs form =
      )
     (getUpdates form)
 
+-----------------------------------------------------------------------------
+getChecks :: Formula Int -> Set (Formula Int)
+getChecks =
+  \case
+    TTrue -> empty
+    FFalse -> empty
+    Check s -> singleton (Check s) 
+    Update _ _ -> empty
+    Not x -> getChecks x
+    Implies x y -> union (getChecks x) (getChecks y)
+    Equiv x y -> union (getChecks x) (getChecks y)
+    And xs -> unions (fmap getChecks xs)
+    Or xs -> unions (fmap getChecks xs)
+    Next x -> getChecks x
+    Globally x -> getChecks x
+    Finally x -> getChecks x
+    Until x y -> union (getChecks x) (getChecks y)
+    Release x y -> union (getChecks x) (getChecks y)
+    Weak x y -> union (getChecks x) (getChecks y)
+
+-----------------------------------------------------------------------------
+getInputs :: Formula Int -> Set Int
+getInputs form =
+  Prelude.foldl
+    (\set ->
+      \case
+       Check s -> maybe set ((flip Data.Set.insert) set) (getSignal s)
+       _ -> undefined -- In this case get Updates has to be wrong !!
+     )
+    Data.Set.empty
+    (getChecks form)
+
+-----------------------------------------------------------------------------
+getSignal :: PredicateTerm Int -> Maybe Int
+getSignal =
+  \case
+    BooleanInput a  -> Just a
+    PApplied _ b    -> getInput b
+    _               -> Nothing
+
+
+-----------------------------------------------------------------------------
+getInput :: SignalTerm Int -> Maybe Int
+getInput =
+  \case
+    Signal a        -> Just a
+    PredicateTerm a -> getSignal a
+    FunctionTerm  a -> getSigFunc a
+
+
+-----------------------------------------------------------------------------
+getSigFunc :: FunctionTerm Int -> Maybe Int
+getSigFunc =
+  \case
+    FApplied _ b -> getInput b
+    _ -> Nothing
+    
 -----------------------------------------------------------------------------
 --
 -- Get all possible updates from a set of possible outputs
