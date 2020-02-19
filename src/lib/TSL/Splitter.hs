@@ -17,8 +17,8 @@
 -----------------------------------------------------------------------------
 
 module TSL.Splitter
-  ( split
-  , splitWithInputs
+  ( splitIgnoreAssumptions
+  , split
   , getInputs
   , splitFormulas
   , makeEdges
@@ -95,9 +95,9 @@ import Control.Exception
 
 -- | Creates separate specifications for independent specification parts
 
-split
+splitIgnoreAssumptions
   :: TSLSpecification -> [TSLSpecification]
-split spec =
+splitIgnoreAssumptions spec =
   let
     guarParts = splitFormulas (guarantees spec) parts
     parts = connectedParts graph
@@ -111,9 +111,9 @@ split spec =
 
 -- | Splits including input dependencies
 
-splitWithInputs
+split
  :: TSLSpecification -> [TSLSpecification]
-splitWithInputs spec =
+split spec =
   let
     graph = createDepGraph spec
 

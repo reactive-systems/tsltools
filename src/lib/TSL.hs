@@ -31,7 +31,7 @@ module TSL
   , tslSize
   , st2csv
   , toTLSF
-  , splitWithInputs
+  , splitIgnoreAssumptions
   , split
   , tslSpecToString
     -- * CFM Utilities  
@@ -67,7 +67,7 @@ import TSL.ToString
 
 import TSL.Splitter
   ( split
-  , splitWithInputs
+  , splitIgnoreAssumptions
   )
 
 import TSL.Reader
