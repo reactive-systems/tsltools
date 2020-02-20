@@ -33,6 +33,7 @@ module TSL
     -- * TSL Utilties
   , fromTSL
   , fromTSLtoTSLSpec
+  , tslSpecToSpec
   , tslSize
   , tslSpecToString
   , st2csv
@@ -68,21 +69,17 @@ import TSL.Error (Error)
 
 import TSL.SymbolTable (SymbolTable, st2csv)
 
-import TSL.Specification (Specification(..), TSLSpecification(..))
-
-import TSL.ToString
-  ( tslSpecToString
+import TSL.Specification
+  ( Specification(..)
+  , TSLSpecification(..)
+  , tslSpecToSpec
   )
 
-import TSL.Splitter
-  ( split
-  , splitIgnoreAssumptions
-  )
+import TSL.ToString (tslSpecToString)
 
-import TSL.Reader
-  ( fromTSL
-  , fromTSLtoTSLSpec
-  )
+import TSL.Splitter (split, splitIgnoreAssumptions)
+
+import TSL.Reader (fromTSL, fromTSLtoTSLSpec)
 
 import TSL.Aiger (Circuit, parseAag)
 
