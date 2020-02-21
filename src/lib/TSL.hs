@@ -10,8 +10,8 @@
 
 -----------------------------------------------------------------------------
 module TSL
-    -- * Data Structures
-  ( Error
+  ( -- * Data Structures
+    Error
   , Formula
   , Specification(..)
   , TSLSpecification(..)
