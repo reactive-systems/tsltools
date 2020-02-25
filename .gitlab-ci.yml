@@ -1,0 +1,5 @@
+image: "registry.intelligent-conception.de/haskell:lts-14.17"
+
+build:
+  script:
+    - stack build --tests
