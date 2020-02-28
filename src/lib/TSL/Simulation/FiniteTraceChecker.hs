@@ -2,7 +2,7 @@
 -- Module      :  TSL.Simulation.FinitTraceChecker
 -- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
 --
--- A simple AIGER simulator
+-- A simple finite trace checker
 --
 -----------------------------------------------------------------------------
 {-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
@@ -21,18 +21,18 @@ module TSL.Simulation.FiniteTraceChecker
   ) where
 
 -----------------------------------------------------------------------------
-import Data.List as List (all)
 import TSL.Logic as Logic (Formula(..), PredicateTerm, SignalTerm)
 
 -----------------------------------------------------------------------------
---
--- A Finite Trace is List of updates and predicate evalutations 
+-- | A Finite Trace is List of updates and predicate evalutations 
 -- (which are partial functions), a finite trace can be extended by append,
 -- or rewind
 --
 newtype FiniteTrace c =
   FiniteTrace [(c -> SignalTerm c, PredicateTerm c -> Bool)]
 
+-----------------------------------------------------------------------------
+-- | Adds an update and predicate evaluation at the end of a finite trace
 append ::
      FiniteTrace c
   -> (c -> SignalTerm c)
@@ -41,97 +41,138 @@ append ::
 append (FiniteTrace tr) updates predicates =
   FiniteTrace $ tr ++ [(updates, predicates)]
 
+-----------------------------------------------------------------------------
+-- | Reverts the last appending to the finite trace. If the trace is empty
+-- the trace stays empty
 rewind :: FiniteTrace c -> FiniteTrace c
 rewind (FiniteTrace ts) =
   case reverse ts of
     [] -> FiniteTrace []
     (_:tr) -> FiniteTrace (reverse tr)
 
+-----------------------------------------------------------------------------
+-- | The empty finite trace
 emptyTrace :: FiniteTrace c
 emptyTrace = FiniteTrace []
 
 -----------------------------------------------------------------------------
---
--- This relation is the satisfcation relation of a finite trace of a TSL formula
--- Checking is done by expansion, via
---
---  a U b = b || (a && X (a U b))
---  a W b = b || (a && X (a W b))
---  G a = a && X(G a)
---  F a = a || X(F a)
---  a R b := b W (a && b)
---
+-- | This relation is the satisfcation relation of a finite trace of a TSL formula
+-- Checking is done by expansion. The checking function uses a three value logic
+-- where the neutral value is used if a trace ends. Satisifcation holds when 
+-- the outcoming value is not false (in the three value logic). This means
+-- that the finite trace is a bad prefix the formula
 (|=) :: Eq c => FiniteTrace c -> Formula c -> Bool
-(|=) (FiniteTrace ts) f = check [] ts f
+(|=) (FiniteTrace ts) f = check [] ts f /= FF
 
 check ::
      Eq c
   => [(c -> SignalTerm c, PredicateTerm c -> Bool)]
   -> [(c -> SignalTerm c, PredicateTerm c -> Bool)]
   -> Formula c
-  -> Bool
+  -> TBool
 check [] [] =
   \case
-    FFalse -> False
-    Previous _ -> False
-    _ -> True
+    FFalse -> FF
+    TTrue -> TT
+    Previous _ -> FF
+    _ -> NN
 check (o:old) [] =
   \case
-    FFalse -> False
+    FFalse -> FF
+    TTrue -> TT
     Previous f -> check old [o] f
     Once f -> check old [o] (Once f)
     Historically f -> check old [o] (Historically f)
     Since f1 f2 -> check old [o] (Since f1 f2)
     Triggered f1 f2 -> check old [o] (Triggered f1 f2)
-    _ -> True
+    _ -> NN
 check old ts@(t:tr) =
   \case
-    TTrue -> True
-    FFalse -> False
-    --None temporal
-    Check p -> (snd t) p
-    Update c st -> (fst t) c == st
-    Not f -> not $ check old ts f
-    And fs -> all (\f -> check old ts f) fs
-    Implies f1 f2 -> (not (check ts old f1)) || (check old ts f2)
-    Equiv f1 f2 ->
-      (check old ts (Implies f1 f2)) && (check old ts (Implies f2 f1))
-    Or fs -> not (all (\f -> not (check old ts f)) fs)
-    -- Normal Temporal
+    TTrue -> TT
+    FFalse -> FF
+    --None temporal Base
+    Check p -> fromBool $ (snd t) p
+    Update c st -> fromBool $ (fst t) c == st
+    Not f -> tNot $ check old ts f
+    And fs -> tConj $ map (check old ts) fs
+    Or fs -> tDisj $ map (check old ts) fs
+    --None temporal derived
+    Implies f1 f2 -> check old ts $ Or [Not f1, f2]
+    Equiv f1 f2 -> check old ts $ And [Implies f1 f2, Implies f2 f1]
+    -- Temporal, note that H, T cant be expanded due to the missing Z operator
     Next f -> check (t : old) tr f
-    Globally f -> (check old ts f) && (check (t : old) tr (Globally f))
-    Finally f -> (check old ts f) || (check (t : old) tr (Finally f))
-    Until f1 f2 ->
-      (check old ts f2) ||
-      (check old ts f1) && (check (t : old) tr (Until f1 f2))
-    Weak f1 f2 ->
-      (check old ts f2) ||
-      (check old ts f1) && (check (t : old) tr (Weak f1 f2))
-    Release f1 f2 -> check old ts (Weak f2 (And [f1, f2]))
-    -- Past temoral
     Previous f ->
       case old of
-        [] -> False
+        [] -> FF
         (o:ol) -> check ol (o : ts) f
-    Once f ->
-      (check old ts f) ||
-      case old of
-        [] -> False
-        (o:ol) -> check ol (o : ts) (Once f)
     Historically f ->
-      (check old ts f) &&
+      (check old ts f) &&&
       case old of
-        [] -> True
+        [] -> TT
         (o:ol) -> check ol (o : ts) (Historically f)
-    Since f1 f2 ->
-      (check old ts f2) ||
-      (check old ts f1 &&
-       case old of
-         [] -> False
-         (o:ol) -> check ol (o : ts) (Since f1 f2))
     Triggered f1 f2 ->
-      (check old ts f2) &&
-      ((check old ts f1) ||
+      (check old ts f2) &&&
+      ((check old ts f1) |||
        case old of
-         [] -> True
+         [] -> TT
          (o:ol) -> check ol (o : ts) (Triggered f1 f2))
+    -- Temporal Expanded
+    Globally f -> check old ts $ And [f, Next (Globally f)]
+    Finally f -> check old ts $ Or [f, Next (Finally f)]
+    Until f1 f2 -> check old ts $ Or [f2, And [f1, Next (Until f1 f2)]]
+    Weak f1 f2 -> check old ts $ Or [f2, And [f1, Next (Until f1 f2)]]
+    Release f1 f2 -> check old ts $ Weak f2 (And [f1, f2])
+    Once f -> check old ts $ Or [f, Previous (Once f)]
+    Since f1 f2 -> check old ts $ Or [f2, And [f1, Previous (Since f1 f2)]]
+
+-----------------------------------------------------------------------------
+-- | Data structure for a three value logic
+data TBool
+  = TT
+  | NN
+  | FF
+  deriving (Eq, Ord, Show)
+
+-----------------------------------------------------------------------------
+-- | Converts a bool to a three value bool
+fromBool :: Bool -> TBool
+fromBool True = TT
+fromBool False = FF
+
+-----------------------------------------------------------------------------
+-- | Three value disjunction
+(|||) :: TBool -> TBool -> TBool
+(|||) TT _ = TT
+(|||) _ TT = TT
+(|||) NN _ = NN
+(|||) _ NN = NN
+(|||) _ _ = FF
+
+-----------------------------------------------------------------------------
+-- | Three value conjunction
+(&&&) :: TBool -> TBool -> TBool
+(&&&) FF _ = FF
+(&&&) _ FF = FF
+(&&&) NN _ = NN
+(&&&) _ NN = NN
+(&&&) _ _ = TT
+
+-----------------------------------------------------------------------------
+-- | Three value negation
+tNot :: TBool -> TBool
+tNot TT = FF
+tNot NN = NN
+tNot FF = NN
+
+-----------------------------------------------------------------------------
+-- | Three value list conjunction (conjunct all elements of the list)
+tConj :: [TBool] -> TBool
+tConj [] = TT
+tConj (x:xr) = x &&& tConj xr
+
+-----------------------------------------------------------------------------
+-- | Three value list disjunction (conjunct all elements of the list)
+tDisj :: [TBool] -> TBool
+tDisj [] = FF
+tDisj (x:xr) = x ||| tDisj xr
+-----------------------------------------------------------------------------
