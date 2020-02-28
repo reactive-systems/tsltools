@@ -68,8 +68,10 @@ library
     TSL.ToString
     TSL.FormulaUtils
     TSL.Simulation
-    TSL.Simulation.Core
+    TSL.Simulation.AigerSimulator
     TSL.Simulation.FiniteTraceChecker
+    TSL.Simulation.SystemSimulationBackend
+    TSL.Simulation.SystemSimulationInterface
 
   hs-source-dirs:
     src/lib

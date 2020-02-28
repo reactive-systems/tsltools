@@ -1,0 +1,12 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  TSL.Simulator
+-- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
+--
+-- A simple counterstrategy simulator
+--
+-----------------------------------------------------------------------------
+{-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
+
+-----------------------------------------------------------------------------
+
