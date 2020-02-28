@@ -1,19 +1,19 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  TSL.Simulaton.SystemSimulationBackend
+-- Module      :  TSL.Simulaton.EnvironmentSimulationBackend
 -- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
 --
--- The backend of the system simulation when playing againts a counter
--- strategy
+-- The backend of the environment simulation when playing againts a strategy/
+-- system
 --
 -----------------------------------------------------------------------------
 {-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
 
------------------------------------------------------------------------------
-module TSL.Simulation.SystemSimulationBackend
-  ( EnvironmentCounterStrategy
-  , SystemOption
-  , SystemSimulation(..)
+-----------------------------------------------------------------------------v
+module TSL.Simulation.EnvironmentSimulationBackend
+  ( SystemStrategy
+  , EnvironmentOption
+  , EnvironmentSimulation(..)
   , Witness
   , options
   , step
@@ -29,9 +29,15 @@ import TSL.Specification (TSLStringSpecification(..))
 
 import qualified Data.List as List (filter)
 
-import qualified Data.Set as Set (filter)
-
-import Data.Set as Set (difference, fromList, isSubsetOf, map, powerSet, toList)
+import Data.Set as Set
+  ( Set
+  , difference
+  , fromList
+  , isSubsetOf
+  , member
+  , powerSet
+  , toList
+  )
 
 import TSL.Simulation.AigerSimulator
   ( NormCircuit
@@ -54,20 +60,28 @@ import TSL.FormulaUtils (getOutputs, getPredicates)
 import TSL.ToString (predicateTermToString)
 
 -----------------------------------------------------------------------------
-type EnvironmentCounterStrategy
-   = NormCircuit (String, SignalTerm String) (PredicateTerm String)
+-- | TODO
+type SystemStrategy
+   = NormCircuit (PredicateTerm String) (String, SignalTerm String)
 
-data SystemSimulation =
-  SystemSimulation
-    { counterStrategy :: EnvironmentCounterStrategy
+-----------------------------------------------------------------------------
+-- | TODO
+data EnvironmentSimulation =
+  EnvironmentSimulation
+    { strategy :: SystemStrategy
     , specification :: TSLStringSpecification
     , stateStack :: [State]
     , trace :: FiniteTrace String
-    , logTrace :: [(SystemOption, [(PredicateTerm String, Bool)])]
+    , logTrace :: [(EnvironmentOption, [(String, SignalTerm String)])]
     }
 
-type SystemOption = [(String, SignalTerm String)]
+-----------------------------------------------------------------------------
+-- | TODO
+type EnvironmentOption
+   = (Set (PredicateTerm String), PredicateTerm String -> Bool)
 
+-----------------------------------------------------------------------------
+-- | TODO
 type Witness = [Formula String]
 
 -----------------------------------------------------------------------------
@@ -76,74 +90,50 @@ type Witness = [Formula String]
 -- that would be violated
 --
 options ::
-     SystemSimulation
-  -> [(SystemOption, Witness, [(PredicateTerm String, Bool)])]
-options sim@SystemSimulation {counterStrategy = ct, specification = spec} =
+     EnvironmentSimulation
+  -> [(EnvironmentOption, Witness, [(String, SignalTerm String)])]
+options sim@EnvironmentSimulation {strategy = ct, specification = spec} =
   zip3 options witnesses evaluations
   where
     options = possibleOptions ct
     steps = fmap (step sim) options
-    witnesses = fmap ((violatedGuarantees spec) . trace . fst) steps
+    witnesses = fmap ((violatedAssumptions spec) . trace . fst) steps
     evaluations = fmap snd steps
 
-possibleOptions :: EnvironmentCounterStrategy -> [SystemOption]
+possibleOptions :: SystemStrategy -> [EnvironmentOption]
 possibleOptions cst =
-  Set.toList $ Set.fromList $ fmap extendUpdates filteredCombinations
-  where
-    allUpdates = [inputName cst i | i <- inputs cst]
-    cells = toList $ fromList $ fmap fst allUpdates
-    --
-    allCombinations = Set.map toList $ powerSet $ fromList allUpdates
-    filteredCombinations =
-      toList $ Set.filter (unique . (fmap fst)) $ allCombinations
-    --
-    unique [] = True
-    unique (c:cr) = (not (elem c cr)) && unique cr
-    --
-    extendUpdates updates =
-      foldl
-        (\upds c ->
-           if all ((/= c) . fst) upds
-             then (c, Signal c) : upds
-             else upds)
-        updates
-        cells
+  let allPredicates = [inputName cst i | i <- inputs cst]
+      allPredicateChoices = toList $ powerSet $ fromList allPredicates
+   in fmap
+        (\s -> (fromList allPredicates, \p -> p `member` s))
+        allPredicateChoices
 
-violatedGuarantees :: TSLStringSpecification -> FiniteTrace String -> Witness
-violatedGuarantees TSLStringSpecification { assumptionsStr = assmpt
-                                          , guaranteesStr = gar
-                                          } trace =
-  List.filter (\f -> not (trace |= Implies (And assmpt) f)) gar
+violatedAssumptions :: TSLStringSpecification -> FiniteTrace String -> Witness
+violatedAssumptions TSLStringSpecification {assumptionsStr = assmpt} trace =
+  List.filter (\f -> not (trace |= f)) assmpt
 
 -----------------------------------------------------------------------------
---
---  Given an possible action option, simulate one step and calculate the
---  predicate evaluations
+--  | Given an possible action option, simulate one step and calculate the
+--  update choices
 --  ASSUMPTION: The option should be complete, i.e. on a higher level
 --  for every cell in the formula, the circuit can update on of these cells 
 --  (can be checked using sanitize)
 --
 step ::
-     SystemSimulation
-  -> SystemOption
-  -> (SystemSimulation, [(PredicateTerm String, Bool)])
-step sim@SystemSimulation {..} updates =
+     EnvironmentSimulation
+  -> EnvironmentOption
+  -> (EnvironmentSimulation, [(String, SignalTerm String)])
+step sim@EnvironmentSimulation {..} (predicates, predEval) =
   (sim {stateStack = q : stateStack, trace = newTrace, logTrace = newLog}, eval)
   where
-    input = \i -> elem (inputName counterStrategy i) updates -- The input for the c-strat circuit
+    (q, output) =
+      simStep strategy (head stateStack) (predEval . (inputName strategy))
     --
-    (q, output) = simStep counterStrategy (head stateStack) input -- The c-strat simulation step
+    eval = [outputName strategy o | o <- outputs strategy, output o]
     --
-    eval =
-      [(outputName counterStrategy o, output o) | o <- outputs counterStrategy] --The predicate evaluation generated out of the output
+    newTrace = append trace (\c -> findFirst (== c) eval) predEval
     --
-    newTrace =
-      append
-        trace
-        (\c -> findFirst (== c) updates)
-        (\p -> findFirst (== p) eval)
-    --
-    newLog = (updates, eval) : logTrace
+    newLog = ((predicates, predEval), eval) : logTrace
     --
     findFirst :: (a -> Bool) -> [(a, b)] -> b
     findFirst _ [] = assert False undefined --THIS cant happend iff the simulation is sanitized
@@ -153,14 +143,12 @@ step sim@SystemSimulation {..} updates =
         else findFirst p xr
 
 -----------------------------------------------------------------------------
---
---  Rewind steps the simulation one step back
---
-rewind :: SystemSimulation -> SystemSimulation
-rewind sim@SystemSimulation { stateStack = stateStack
-                            , trace = trace
-                            , logTrace = logTrace
-                            } =
+-- | Rewind steps the simulation one step back
+rewind :: EnvironmentSimulation -> EnvironmentSimulation
+rewind sim@EnvironmentSimulation { stateStack = stateStack
+                                 , trace = trace
+                                 , logTrace = logTrace
+                                 } =
   sim
     { stateStack =
         case stateStack of
@@ -176,15 +164,15 @@ rewind sim@SystemSimulation { stateStack = stateStack
 
 -----------------------------------------------------------------------------
 --  | Sanitize the simulation
-sanitize :: SystemSimulation -> Maybe String
-sanitize SystemSimulation {counterStrategy = cst, specification = spec} =
+sanitize :: EnvironmentSimulation -> Maybe String
+sanitize EnvironmentSimulation {strategy = cst, specification = spec} =
   let specForm = Implies (And $ assumptionsStr spec) (And $ guaranteesStr spec)
       specUpatedCells = getOutputs specForm
       specPredicates = getPredicates specForm
       --
       strategyUpdatedCells =
-        fromList $ fmap fst [inputName cst o | o <- inputs cst]
-      strategyPredicates = fromList $ [outputName cst o | o <- outputs cst]
+        fromList $ fmap fst [outputName cst o | o <- outputs cst]
+      strategyPredicates = fromList $ [inputName cst o | o <- inputs cst]
       --
       errorMsgCells =
         "Simulator: Specification does not match the strategy as the following cells differ:  " ++
@@ -204,8 +192,8 @@ sanitize SystemSimulation {counterStrategy = cst, specification = spec} =
         (False, False) -> Just $ errorMsgCells ++ "\n" ++ errorMsgPred
 
 -----------------------------------------------------------------------------
---
--- Get the simulation log
---
-getLog :: SystemSimulation -> [(SystemOption, [(PredicateTerm String, Bool)])]
+-- | Get the simulation log
+getLog ::
+     EnvironmentSimulation
+  -> [(EnvironmentOption, [(String, SignalTerm String)])]
 getLog = reverse . logTrace

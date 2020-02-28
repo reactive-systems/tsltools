@@ -175,4 +175,3 @@ tConj (x:xr) = x &&& tConj xr
 tDisj :: [TBool] -> TBool
 tDisj [] = FF
 tDisj (x:xr) = x ||| tDisj xr
------------------------------------------------------------------------------
