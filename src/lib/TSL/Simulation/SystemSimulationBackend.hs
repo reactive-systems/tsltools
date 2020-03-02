@@ -71,10 +71,8 @@ type SystemOption = [(String, SignalTerm String)]
 type Witness = [Formula String]
 
 -----------------------------------------------------------------------------
---
--- Gives all options of a simulation and a list of TSLFormulas (Witness)
+-- | Gives all options of a simulation and a list of TSLFormulas (Witness)
 -- that would be violated
---
 options ::
      SystemSimulation
   -> [(SystemOption, Witness, [(PredicateTerm String, Bool)])]
@@ -116,12 +114,13 @@ violatedGuarantees TSLStringSpecification { assumptionsStr = assmpt
   List.filter (\f -> not (trace |= Implies (And assmpt) f)) gar
 
 -----------------------------------------------------------------------------
+-- | Given an possible action option, simulate one step and calculate the
+-- predicate evaluations
 --
---  Given an possible action option, simulate one step and calculate the
---  predicate evaluations
---  ASSUMPTION: The option should be complete, i.e. on a higher level
---  for every cell in the formula, the circuit can update on of these cells 
---  (can be checked using sanitize)
+-- ASSUMPTION: The option should be complete, i.e. on a higher level
+-- for every cell in the formula, the circuit can update on of these cells,
+-- and the preidcates have to match
+-- (can be checked using sanitize)
 --
 step ::
      SystemSimulation
@@ -153,9 +152,7 @@ step sim@SystemSimulation {..} updates =
         else findFirst p xr
 
 -----------------------------------------------------------------------------
---
---  Rewind steps the simulation one step back
---
+-- | Rewind steps the simulation one step back
 rewind :: SystemSimulation -> SystemSimulation
 rewind sim@SystemSimulation { stateStack = stateStack
                             , trace = trace
@@ -204,8 +201,6 @@ sanitize SystemSimulation {counterStrategy = cst, specification = spec} =
         (False, False) -> Just $ errorMsgCells ++ "\n" ++ errorMsgPred
 
 -----------------------------------------------------------------------------
---
--- Get the simulation log
---
+-- | Get the simulation log
 getLog :: SystemSimulation -> [(SystemOption, [(PredicateTerm String, Bool)])]
 getLog = reverse . logTrace

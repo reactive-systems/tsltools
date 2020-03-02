@@ -15,7 +15,7 @@ module TSL.Simulation.SystemSimulationInterface
   ) where
 
 -----------------------------------------------------------------------------
-import TSL.ToString (formulaToString, predicateTermToString, signalTermToString)
+import TSL.ToString (formulaToString)
 
 import Text.Read (readMaybe)
 
@@ -30,112 +30,114 @@ import TSL.Simulation.SystemSimulationBackend
 
 import TSL.Logic (Formula, PredicateTerm)
 
+import TSL.Simulation.InterfacePrintingUtils
+  ( Color(..)
+  , cPutStr
+  , cPutStrLn
+  , initInterface
+  , predicateEvaluationListToString
+  , resetInterface
+  , updateListToString
+  )
+
 ---------------------------------------------------------------------------
---
--- The possible actions a user can take
---
+-- | The possible actions a user can take
 data Action
   = Stop
   | Rewind
   | Opt SystemOption
   | ShowWhyOthersNot
-  | ShowTrace
 
 ---------------------------------------------------------------------------
---
--- Gets the action a user may take (includes input sanitizing)
---
+-- | Gets the action a user may take (includes input sanitizing)
 getUserInput :: [SystemOption] -> IO Action
 getUserInput possibleOptions = do
-  putStrLn $
+  cPutStrLn White $
     "Your turn now:\n" ++
     "  s:  Give up\n" ++
     "  r:  Rewind one step\n" ++
     " <n>: Choose option n\n" ++
-    "  o:  Show why other options are not possible\n" ++
-    "  t:  Show the trace till now\n"
+    "  o:  Show why other options are not possible\n"
+  cPutStrLn Red "Choose: "
   inpt <- getLine
   case inpt of
     "r" -> return Rewind
     "s" -> return Stop
     "o" -> return ShowWhyOthersNot
-    "t" -> return ShowTrace
     inp ->
       case readMaybe inp of
         Just num ->
           if num >= 0 && num < length possibleOptions
             then return $ Opt $ (possibleOptions !! num)
             else do
-              putStrLn "Not a valid option"
+              cPutStrLn Red "Not a valid option\n"
               getUserInput possibleOptions
         Nothing -> do
-          putStrLn "Not a valid command"
+          cPutStrLn Red "Not a valid command\n"
           getUserInput possibleOptions
 
 ---------------------------------------------------------------------------
---
--- Runs a simulation
---
+-- | Runs a simulation
 runSimulation :: SystemSimulation -> IO ()
 runSimulation sim = do
+  initInterface
   let opts = options sim
   let posOpts = fmap (\(v, _, _) -> v) $ filter (\(_, xs, _) -> null xs) opts
   let imposOpts = filter (\(_, xs, _) -> not $ null xs) opts
-  putStrLn "Your options are:"
-  putStrLn $
-    snd $
-    foldl
-      (\(n, xs) e ->
-         (n + 1, xs ++ "  " ++ show n ++ " " ++ optionToString e ++ "\n"))
-      (0 :: Int, [])
-      posOpts
+  cPutStrLn White "Your options are:"
+  cPutStrLn Magenta $
+    (snd $
+     foldl
+       (\(n, xs) e ->
+          (n + 1, xs ++ "  " ++ show n ++ " " ++ updateListToString e ++ "\n"))
+       (0 :: Int, [])
+       posOpts)
   act <- getUserInput posOpts
   case act of
-    Stop -> return ()
-    Rewind -> runSimulation (rewind sim)
+    Stop -> do
+      cPutStrLn
+        Red
+        "You gave up! The environment seems to be stronger than you."
+      return ()
+    Rewind -> do
+      let sim' = rewind sim
+      resetInterface
+      printTrace sim'
+      putStrLn ""
+      cPutStrLn Red "You steped on step back.\n"
+      runSimulation sim'
     ShowWhyOthersNot -> do
-      putStr $ concatMap optionWitnessToString imposOpts
+      resetInterface
+      printTrace sim
+      putStrLn ""
+      cPutStrLn White $ concatMap optionWitnessToString imposOpts
       runSimulation sim
-    Opt opt ->
-      let (sim', preds) = step sim opt
-       in do putStrLn "\nThe environment chooses:"
-             putStrLn (predicateEvalsToString preds)
-             putStrLn ""
-             runSimulation sim'
-    ShowTrace -> do
-      putStrLn $
-        "########\n" ++
-        (concatMap
-           (\(o, p) ->
-              optionToString o ++
-              "\n---------\n" ++ predicateEvalsToString p ++ "\n") $
-         getLog sim) ++
-        "########\n"
-      runSimulation sim
+    Opt opt -> do
+      let (sim', _) = step sim opt
+      resetInterface
+      printTrace sim'
+      putStrLn ""
+      runSimulation sim'
 
----------------------------------------------------------------------------
---
--- Different sub-printing methods
---
-optionToString :: SystemOption -> String
-optionToString [] = ""
-optionToString ((c, st):xr) =
-  "[" ++ c ++ " <- " ++ signalTermToString id st ++ "] " ++ optionToString xr
-
-predicateEvalsToString :: [(PredicateTerm String, Bool)] -> String
-predicateEvalsToString =
-  concatMap
-    (\(pt, v) ->
-       (if v
-          then "   "
-          else "not") ++
-       predicateTermToString id pt ++ "\n")
+printTrace :: SystemSimulation -> IO ()
+printTrace sim = do
+  let log = getLog sim
+  _ <-
+    sequence $
+    map
+      (\(opt, preds) -> do
+         cPutStr Cyan "You (System): "
+         cPutStrLn White (updateListToString opt)
+         cPutStr Cyan "Environment:  "
+         cPutStrLn White (predicateEvaluationListToString preds))
+      log
+  return ()
 
 optionWitnessToString ::
      (SystemOption, [Formula String], [(PredicateTerm String, Bool)]) -> String
 optionWitnessToString (o, fs, predEvals) =
-  (optionToString o) ++
+  (updateListToString o) ++
   " is impossible as the environment would choose\n" ++
-  predicateEvalsToString predEvals ++
+  predicateEvaluationListToString predEvals ++
   " and then each of these guarantees would be violated\n" ++
   concatMap (\f -> "    " ++ formulaToString id f ++ "\n") fs ++ " \n"
