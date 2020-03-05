@@ -1,0 +1,11 @@
+always assume {
+    F a;
+    !(a && c)
+}
+
+always guarantee {
+// asöldkfalöskdf
+    [out <- b()] U a; //asdflök
+    c <-> [out2 <- fun a]
+//asdflkj
+}

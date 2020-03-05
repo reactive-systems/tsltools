@@ -23,6 +23,7 @@ module TSL.Splitter
   , splitFormulas
   , makeEdges
   , connectedParts
+  , createDepGraph
   ) where
 
 -----------------------------------------------------------------------------
@@ -65,6 +66,7 @@ import Data.Set as Set
   , delete
   , size
   , union
+  , unions
   , intersection
   , difference
   , disjoint
@@ -116,9 +118,12 @@ split spec =
 
     splitGuars = splitFormulas (guarantees spec) parts
     
-    splitAssmpts = splitFormulas (assumptions spec) parts
+    splitInOutputs = map (uncurry union) 
+        $ zip (map (unions . (map getInOutputs)) splitGuars) (parts ++ cycle [Set.empty])
+
+    splitAssmpts = distributeAssumptions (assumptions spec) splitInOutputs 
   in  
-    fmap cleanSymboltable $ buildSpecs $ zip (splitAssmpts ++ cycle [[]]) splitGuars
+    fmap cleanSymboltable $ buildSpecs $ zip splitAssmpts splitGuars
   where
     buildSpecs  = foldl (\xs -> \(a,g) -> spec{assumptions = a, guarantees = g}:xs) [] 
 
@@ -143,7 +148,7 @@ createDepGraph spec =
   in 
     fromListWith union $ concat $ guaranteeOIIEdges ++ assumptionOIIEdges
   where
-    getOutInsAlsoIn fml nodes = (intersection (union (getInputs fml) (getOutputs fml)) nodes)
+    getOutInsAlsoIn fml nodes = (intersection (getInOutputs fml) nodes)
     makeEdgesForNodes nodes = foldl (\xs -> \fml -> makeEdges (getOutInsAlsoIn fml nodes):xs) []
 
 
@@ -231,16 +236,27 @@ splitFormulas
 splitFormulas guars parts = map fst guarParts
   where
     guarParts = foldr insertFormula zippedParts guars
-    zippedParts = foldl (\xs -> \s -> ([],s):xs) [] parts
+    zippedParts = foldr (\s -> \xs -> ([],s):xs) [] parts
 
 insertFormula
  :: Formula Int -> [([Formula Int], Set Int)] -> [([Formula Int], Set Int)]
 insertFormula fml   []        = [([fml], empty)] 
-insertFormula fml ((fs,s):xr) = if not $ disjoint (union (getInputs fml) (getOutputs fml)) s
+insertFormula fml ((fs,s):xr) = if not $ disjoint (getInOutputs fml) s
                                 -- since s only contains outputs and impressionable inputs,
                                 -- checking for disjunctness with all inputs suffices
                                 then (fml:fs,s):xr
                                 else (fs,s):insertFormula fml xr
+
+-----------------------------------------------------------------------------
+
+-- | Distributes assumptions over sets of in-/ouputs 
+
+distributeAssumptions
+  :: [Formula Int] -> [Set Int] -> [[Formula Int]]
+distributeAssumptions assmpts parts = map pickAssumptions parts
+  where
+    isRelated set fml = isSubsetOf (getInOutputs fml) set
+    pickAssumptions set = filter (isRelated set) assmpts
 
 -----------------------------------------------------------------------------
 
@@ -265,3 +281,8 @@ explore (x:xr)  explored graph  = explore
                         (toList (difference (fromMaybe Set.empty (graph Map.!? x)) explored) ++ xr)
                         (insert x explored)
                         graph
+
+
+getInOutputs
+  :: Formula Int -> Set Int 
+getInOutputs fml = (union (getInputs fml) (getOutputs fml))

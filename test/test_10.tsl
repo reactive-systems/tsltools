@@ -1,0 +1,9 @@
+// should be split in two parts: out, a and c, out2
+always assume {
+    !(a && c)
+}
+
+always guarantee {
+    [out <- b()] U a;
+    c <-> [out2 <- fun a]
+}
