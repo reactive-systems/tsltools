@@ -111,36 +111,36 @@ getInputs form =
   Prelude.foldl
     (\set ->
       \case
-       Check s -> maybe set ((flip Data.Set.insert) set) (getSignal s)
+       Check s -> union set (getSignal s)
        _ -> undefined -- In this case get Checks has to be wrong !!
      )
-    Data.Set.empty
+    empty
     (getChecks form)
 
 -----------------------------------------------------------------------------
-getSignal :: PredicateTerm Int -> Maybe Int
+getSignal :: PredicateTerm Int -> Set Int
 getSignal =
   \case
-    BooleanInput a  -> Just a
-    PApplied _ b    -> getInput b
-    _               -> Nothing
+    BooleanInput a  -> singleton a
+    PApplied a b    -> union (getSignal a) (getInput b)
+    _               -> empty
 
 
 -----------------------------------------------------------------------------
-getInput :: SignalTerm Int -> Maybe Int
+getInput :: SignalTerm Int -> Set Int
 getInput =
   \case
-    Signal a        -> Just a
+    Signal a        -> singleton a
     PredicateTerm a -> getSignal a
     FunctionTerm  a -> getSigFunc a
 
 
 -----------------------------------------------------------------------------
-getSigFunc :: FunctionTerm Int -> Maybe Int
+getSigFunc :: FunctionTerm Int -> Set Int
 getSigFunc =
   \case
-    FApplied _ b -> getInput b
-    _ -> Nothing
+    FApplied a b -> union (getSigFunc a) (getInput b)
+    _ -> empty
     
 -----------------------------------------------------------------------------
 --
