@@ -1,0 +1,12 @@
+// This specification should not be split
+always assume {
+    ([a <- val1()] && [b <- val2()]) -> X in1;
+}
+
+always guarantee {
+    F in1;
+
+    F [a <- val2()];
+    F [b <- val1()];
+}
+
