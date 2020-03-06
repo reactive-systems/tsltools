@@ -22,7 +22,7 @@ TOOLS=\
   ${CFM2CODE}
 
 STACKPATH=$(shell if [ -d "dist" ]; then echo ""; else stack path | grep local-install-root | sed 's/local-install-root: //'; fi)
-BLDTOOL=$(shell if [ -d "dist" ]; then echo "cabal"; else echo "stack --test --haddock"; fi)
+BLDTOOL=$(shell if [ -d "dist" ]; then echo "cabal"; else echo "stack"; fi)
 
 default:
 	${BLDTOOL} build
