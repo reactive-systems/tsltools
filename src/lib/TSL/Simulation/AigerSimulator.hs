@@ -35,16 +35,7 @@ import Data.List (find)
 import Control.Exception (assert)
 
 -----------------------------------------------------------------------------
---
--- Defines custom easier to evaluate intermediate tree-shaped circuit
---
-data CircuitTree
-  = Inp Input
-  | InpL Latch
-  | AG CircuitTree CircuitTree
-  | NG CircuitTree
-  | CT
-
+-- | Defines custom easier to evaluate intermediate tree-shaped circuit
 data NormCircuit i o =
   NormCircuit
     { inputs :: [Input]
@@ -56,9 +47,15 @@ data NormCircuit i o =
     , outputName :: Output -> o
     }
 
+data CircuitTree
+  = Inp Input
+  | InpL Latch
+  | AG CircuitTree CircuitTree
+  | NG CircuitTree
+  | CT
+
 -----------------------------------------------------------------------------
--- 
--- Transform a circuit into a normalized circuit
+-- | Transform a circuit into a normalized circuit (incl. sanitizing)
 -- ASSUMPTIONS: 
 -- - The aiger circuit contains no logic loops
 --
@@ -135,20 +132,20 @@ normalize renameInput renameOutput aig =
       find (\l -> w == Aiger.latchOutput aig l) (Aiger.latches aig)
 
 -----------------------------------------------------------------------------
---
--- Defines the (intermediate) state of an aiger circuit. Note that the 
+-- | Defines the (intermediate) state of an aiger circuit. Note that the 
 -- assigment function may return undefined
---
 type State = Latch -> Bool
 
 type Inputs = Input -> Bool
 
 type Outputs = Output -> Bool
 
------------------------------------------------------------------------------
---
--- Evaluation and simulation step of an normalized circuit
---
+---------------------------------------------------------------------------
+-- | Evaluat on and simulation step of an normalized circuit
+simStep :: NormCircuit i o -> State -> Inputs -> (State, Outputs)
+simStep NormCircuit {..} state inpt =
+  (\l -> eval (latchCir l) state inpt, \o -> eval (outputCir o) state inpt)
+
 eval :: CircuitTree -> State -> Inputs -> Bool
 eval ct state inpt =
   case ct of
@@ -157,7 +154,3 @@ eval ct state inpt =
     AG x y -> eval x state inpt && eval y state inpt
     NG x -> not $ eval x state inpt
     CT -> True
-
-simStep :: NormCircuit i o -> State -> Inputs -> (State, Outputs)
-simStep NormCircuit {..} state inpt =
-  (\l -> eval (latchCir l) state inpt, \o -> eval (outputCir o) state inpt)

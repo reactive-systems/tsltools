@@ -46,19 +46,19 @@ import System.Console.ANSI
   )
 
 -----------------------------------------------------------------------------
--- | TODO
+-- | Transforms an update to a string
 updateToString :: (String, SignalTerm String) -> String
 updateToString (c, st) = "[" ++ c ++ " <- " ++ signalTermToString id st ++ "]"
 
 -----------------------------------------------------------------------------
--- | TODO
+-- | Transforms an update list to a string
 updateListToString :: [(String, SignalTerm String)] -> String
 updateListToString [] = ""
 updateListToString [x] = updateToString x
 updateListToString (x:xr) = updateToString x ++ " " ++ updateListToString xr
 
 -----------------------------------------------------------------------------
--- | TODO
+-- | Transforms a predicate evalutation to a string
 predicateEvaluationToString :: (PredicateTerm String, Bool) -> String
 predicateEvaluationToString (pt, v) =
   (if v
@@ -67,7 +67,7 @@ predicateEvaluationToString (pt, v) =
   predicateTermToString id pt
 
 -----------------------------------------------------------------------------
--- | TODO
+-- | Transforms predicate evalutations (as list) to a string
 predicateEvaluationListToString :: [(PredicateTerm String, Bool)] -> String
 predicateEvaluationListToString [] = ""
 predicateEvaluationListToString [x] = predicateEvaluationToString x
@@ -75,14 +75,14 @@ predicateEvaluationListToString (x:xr) =
   predicateEvaluationToString x ++ ", " ++ predicateEvaluationListToString xr
 
 -----------------------------------------------------------------------------
--- | TODO
+-- | Transforms predicate evalutations (as mapping) to a string
 mappedPredicateEvaluationToString ::
      (Set (PredicateTerm String), PredicateTerm String -> Bool) -> String
 mappedPredicateEvaluationToString (terms, mapping) =
   predicateEvaluationListToString (fmap (\p -> (p, mapping p)) $ toList terms)
 
 -----------------------------------------------------------------------------
--- | TODO
+-- | Inits the (colored) interface by setting the encoding
 initInterface :: IO ()
 initInterface = do
   setLocaleEncoding utf8
@@ -91,14 +91,14 @@ initInterface = do
   return ()
 
 -----------------------------------------------------------------------------
--- | TODO
+-- | Resets the (colored) interface by clearing the scree
 resetInterface :: IO ()
 resetInterface = do
   clearScreen
   putStrLn ""
 
 -----------------------------------------------------------------------------
--- | TODO
+-- | Puts a colored string to stdin (with a newline at the end)
 cPutStrLn :: Color -> String -> IO ()
 cPutStrLn c str = do
   setSGR [SetColor Foreground Vivid c]
@@ -106,7 +106,7 @@ cPutStrLn c str = do
   setSGR []
 
 -----------------------------------------------------------------------------
--- | TODO
+-- | Puts a colored string to stdin
 cPutStr :: Color -> String -> IO ()
 cPutStr c str = do
   setSGR [SetColor Foreground Vivid c]

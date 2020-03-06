@@ -14,7 +14,6 @@ module TSL.Simulation.EnvironmentSimulationBackend
   ( SystemStrategy
   , EnvironmentOption
   , EnvironmentSimulation(..)
-  , Witness
   , options
   , step
   , rewind
@@ -60,12 +59,15 @@ import TSL.FormulaUtils (getOutputs, getPredicates)
 import TSL.ToString (predicateTermToString)
 
 -----------------------------------------------------------------------------
--- | TODO
+-- | A system startegy is a circuit with predicate evaluations as inputs
+-- and updates as outputs
 type SystemStrategy
    = NormCircuit (PredicateTerm String) (String, SignalTerm String)
 
 -----------------------------------------------------------------------------
--- | TODO
+-- | An environemnt simulation consists of the system strategy,
+-- the respective specification, the stack of the startegies state, the trace
+-- and a logging trace
 data EnvironmentSimulation =
   EnvironmentSimulation
     { strategy :: SystemStrategy
@@ -76,12 +78,12 @@ data EnvironmentSimulation =
     }
 
 -----------------------------------------------------------------------------
--- | TODO
+-- | The options of the environment is the set of predicates, and the choice 
+-- for the predicates
 type EnvironmentOption
    = (Set (PredicateTerm String), PredicateTerm String -> Bool)
 
 -----------------------------------------------------------------------------
--- | TODO
 type Witness = [Formula String]
 
 -----------------------------------------------------------------------------
