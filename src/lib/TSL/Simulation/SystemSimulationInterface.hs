@@ -52,12 +52,6 @@ data Action
 -- | Gets the action a user may take (includes input sanitizing)
 getUserInput :: [SystemOption] -> IO Action
 getUserInput possibleOptions = do
-  cPutStrLn White $
-    "Your turn now:\n" ++
-    "  s:  Give up\n" ++
-    "  r:  Rewind one step\n" ++
-    " <n>: Choose option n\n" ++
-    "  o:  Show why other options are not possible\n"
   cPutStrLn Red "Choose: "
   inpt <- getLine
   case inpt of
@@ -81,17 +75,28 @@ getUserInput possibleOptions = do
 runSimulation :: SystemSimulation -> IO ()
 runSimulation sim = do
   initInterface
+  resetInterface
+  execSimulation sim
+
+execSimulation :: SystemSimulation -> IO ()
+execSimulation sim = do
   let opts = options sim
   let posOpts = fmap (\(v, _, _) -> v) $ filter (\(_, xs, _) -> null xs) opts
   let imposOpts = filter (\(_, xs, _) -> not $ null xs) opts
-  cPutStrLn White "Your options are:"
-  cPutStrLn Magenta $
+  cPutStrLn Magenta "Your options are:"
+  cPutStrLn White $
     (snd $
      foldl
        (\(n, xs) e ->
           (n + 1, xs ++ "  " ++ show n ++ " " ++ updateListToString e ++ "\n"))
        (0 :: Int, [])
        posOpts)
+  cPutStrLn Magenta $
+    "Your turn now:\n" ++
+    "  s:  Give up\n" ++
+    "  r:  Rewind one step\n" ++
+    " <n>: Choose option n\n" ++
+    "  o:  Show why other options are not possible\n"
   act <- getUserInput posOpts
   case act of
     Stop -> do
@@ -105,19 +110,19 @@ runSimulation sim = do
       printTrace sim'
       putStrLn ""
       cPutStrLn Red "You steped on step back.\n"
-      runSimulation sim'
+      execSimulation sim'
     ShowWhyOthersNot -> do
       resetInterface
       printTrace sim
       putStrLn ""
-      cPutStrLn White $ concatMap optionWitnessToString imposOpts
-      runSimulation sim
+      _ <- sequence $ map printImpossibleOptions imposOpts
+      execSimulation sim
     Opt opt -> do
       let (sim', _) = step sim opt
       resetInterface
       printTrace sim'
       putStrLn ""
-      runSimulation sim'
+      execSimulation sim'
 
 printTrace :: SystemSimulation -> IO ()
 printTrace sim = do
@@ -133,11 +138,12 @@ printTrace sim = do
       log
   return ()
 
-optionWitnessToString ::
-     (SystemOption, [Formula String], [(PredicateTerm String, Bool)]) -> String
-optionWitnessToString (o, fs, predEvals) =
-  (updateListToString o) ++
-  " is impossible as the environment would choose\n" ++
-  predicateEvaluationListToString predEvals ++
-  " and then each of these guarantees would be violated\n" ++
-  concatMap (\f -> "    " ++ formulaToString id f ++ "\n") fs ++ " \n"
+printImpossibleOptions ::
+     (SystemOption, [Formula String], [(PredicateTerm String, Bool)]) -> IO ()
+printImpossibleOptions (opt, fs, predEvals) = do
+  cPutStrLn White (updateListToString opt)
+  cPutStrLn Cyan "is impossible as the environemnt would choose"
+  cPutStrLn White (predicateEvaluationListToString predEvals)
+  cPutStrLn Cyan "and then each of these guarantees would be violated"
+  cPutStrLn White $
+    concatMap (\f -> "    " ++ formulaToString id f ++ "\n") fs ++ " \n"
