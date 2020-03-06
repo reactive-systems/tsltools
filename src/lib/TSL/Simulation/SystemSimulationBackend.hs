@@ -119,7 +119,7 @@ violatedGuarantees :: TSLStringSpecification -> FiniteTrace String -> Witness
 violatedGuarantees TSLStringSpecification { assumptionsStr = assmpt
                                           , guaranteesStr = gar
                                           } trace =
-  List.filter (\f -> not (trace |= Implies (And assmpt) f)) gar
+  List.filter (\f -> (not (trace |= f)) && trace |= (And assmpt)) gar
 
 -----------------------------------------------------------------------------
 -- | Given an possible action option, simulate one step and calculate the
