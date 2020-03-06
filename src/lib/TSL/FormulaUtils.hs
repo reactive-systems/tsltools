@@ -34,9 +34,7 @@ import TSL.Logic
   )
 
 -----------------------------------------------------------------------------
---
--- Wrap some basic logical operators
---
+-- | Wrap some basic logical operators
 conjunctFormulas :: [Formula a] -> Formula a
 conjunctFormulas = And
 
@@ -53,6 +51,7 @@ constantTrue :: Formula a
 constantTrue = TTrue
 
 -----------------------------------------------------------------------------
+-- | Get update parts of a formula
 getUpdates :: Ord c => Formula c -> Set (Formula c)
 getUpdates =
   \case
@@ -78,6 +77,7 @@ getUpdates =
     Triggered x y -> union (getUpdates x) (getUpdates y)
 
 -----------------------------------------------------------------------------
+-- | Get output streams of a formula
 getOutputs :: Ord c => Formula c -> Set c
 getOutputs form =
   Data.Set.map
@@ -88,6 +88,7 @@ getOutputs form =
     (getUpdates form)
 
 -----------------------------------------------------------------------------
+-- | Get check parts of a formula
 getChecks :: Ord c => Formula c -> Set (Formula c)
 getChecks =
   \case
@@ -113,6 +114,7 @@ getChecks =
     Triggered x y -> union (getChecks x) (getChecks y)
 
 -----------------------------------------------------------------------------
+-- | Get predicate terms out of formula
 getPredicates :: Ord c => Formula c -> Set (PredicateTerm c)
 getPredicates form =
   Prelude.foldl
@@ -125,6 +127,7 @@ getPredicates form =
     (getChecks form)
 
 -----------------------------------------------------------------------------
+-- | Extract inputs out of predicate terms  out of a formula
 getInputs :: Ord c => Formula c -> Set c
 getInputs form =
   Prelude.foldl
@@ -137,6 +140,7 @@ getInputs form =
     (getChecks form)
 
 -----------------------------------------------------------------------------
+-- | Extract inputs out of a predicate terms
 getSignal :: Ord c => PredicateTerm c -> Set c
 getSignal =
   \case
@@ -145,6 +149,7 @@ getSignal =
     _ -> empty
 
 -----------------------------------------------------------------------------
+-- | Extract all streams out of a signal term
 getInput :: Ord c => SignalTerm c -> Set c
 getInput =
   \case
@@ -153,6 +158,7 @@ getInput =
     FunctionTerm a -> getSigFunc a
 
 -----------------------------------------------------------------------------
+-- | Extract all streams out of a function term
 getSigFunc :: Ord c => FunctionTerm c -> Set c
 getSigFunc =
   \case
@@ -160,9 +166,7 @@ getSigFunc =
     _ -> empty
 
 -----------------------------------------------------------------------------
---
--- Get all possible updates from a set of possible outputs
---
+-- | Get all possible updates from a set of possible outputs
 getPossibleUpdates :: Ord c => Formula c -> Set c -> Set (Formula c)
 getPossibleUpdates form outps =
   let updates = getUpdates form

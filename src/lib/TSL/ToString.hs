@@ -17,6 +17,7 @@ module TSL.ToString
   , signalTermToString
   ) where
 
+-----------------------------------------------------------------------------
 import TSL.Specification (Specification(..), TSLSpecification(..))
 
 import TSL.Logic
@@ -29,12 +30,13 @@ import TSL.Logic
 import TSL.SymbolTable (stName)
 
 -----------------------------------------------------------------------------
------------------------------------------------------------------------------
 insertInside :: [a] -> a -> [a]
 insertInside [] _ = []
 insertInside [x] _ = [x]
 insertInside (x:xr) a = x : a : insertInside xr a
 
+-----------------------------------------------------------------------------
+-- | Given a symbol naming function, convert a signal term to a string
 signalTermToString :: (a -> String) -> SignalTerm a -> String
 signalTermToString env =
   \case
@@ -45,6 +47,8 @@ signalTermToString env =
         ft -> functionTermToString env ft
     PredicateTerm pt -> predicateTermToString env pt
 
+-----------------------------------------------------------------------------
+-- | Given a symbol naming function, convert a function term to a string
 functionTermToString :: (a -> String) -> FunctionTerm a -> String
 functionTermToString env =
   \case
@@ -53,6 +57,8 @@ functionTermToString env =
       "(" ++
       functionTermToString env ft ++ " " ++ signalTermToString env st ++ ")"
 
+-----------------------------------------------------------------------------
+-- | Given a symbol naming function, convert a predicate term to a string
 predicateTermToString :: (a -> String) -> PredicateTerm a -> String
 predicateTermToString env =
   \case
@@ -64,6 +70,8 @@ predicateTermToString env =
       "(" ++
       predicateTermToString env pt ++ " " ++ signalTermToString env st ++ ")"
 
+-----------------------------------------------------------------------------
+-- | Given a symbol naming function, convert a formula to a string
 formulaToString :: (a -> String) -> (Formula a) -> String
 formulaToString env =
   \case
@@ -98,10 +106,13 @@ formulaToString env =
       "(" ++ formulaToString env f ++ " T " ++ formulaToString env g ++ ")"
 
 -----------------------------------------------------------------------------
+-- | Converts a specification to a string
 specToString :: Specification -> String
 specToString Specification {..} =
   "initially guarantee {" ++ formulaToString (stName symboltable) formula ++ "}"
 
+-----------------------------------------------------------------------------
+-- | Convert a TSL specification to a string
 tslSpecToString :: TSLSpecification -> String
 tslSpecToString TSLSpecification {..} =
   "initially assume {\n" ++
