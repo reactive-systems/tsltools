@@ -72,7 +72,9 @@ library
     TSL.Simulation.AigerSimulator
     TSL.Simulation.FiniteTraceChecker
     TSL.Simulation.SystemSimulationBackend
-    TSL.Simulation.SystemSimulationInterface
+    TSL.Simulation.SystemSimulationInterface    
+    TSL.Simulation.EnvironmentSimulationBackend
+    TSL.Simulation.EnvironmentSimulationInterface
     TSL.Simulation.InterfacePrintingUtils
 
   hs-source-dirs:

@@ -142,8 +142,8 @@ printImpossibleOptions ::
      (SystemOption, [Formula String], [(PredicateTerm String, Bool)]) -> IO ()
 printImpossibleOptions (opt, fs, predEvals) = do
   cPutStrLn White (updateListToString opt)
-  cPutStrLn Cyan "is impossible as the environemnt would choose"
+  cPutStrLn Magenta "is impossible as the environemnt would choose"
   cPutStrLn White (predicateEvaluationListToString predEvals)
-  cPutStrLn Cyan "and then each of these guarantees would be violated"
+  cPutStrLn Magenta "and then each of these guarantees would be violated"
   cPutStrLn White $
-    concatMap (\f -> "    " ++ formulaToString id f ++ "\n") fs ++ " \n"
+    concatMap (\f -> "> " ++ formulaToString id f ++ "\n") fs ++ " \n"
