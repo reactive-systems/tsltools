@@ -31,6 +31,7 @@ library
     , containers >=0.5 && <0.7
     , QuickCheck
     , process >= 1.6.3.0
+    , ansi-terminal >= 0.6
 
   exposed-modules:
     TSL
@@ -68,8 +69,13 @@ library
     TSL.ToString
     TSL.FormulaUtils
     TSL.Simulation
-    TSL.Simulation.Core
+    TSL.Simulation.AigerSimulator
     TSL.Simulation.FiniteTraceChecker
+    TSL.Simulation.SystemSimulationBackend
+    TSL.Simulation.SystemSimulationInterface    
+    TSL.Simulation.EnvironmentSimulationBackend
+    TSL.Simulation.EnvironmentSimulationInterface
+    TSL.Simulation.InterfacePrintingUtils
 
   hs-source-dirs:
     src/lib

@@ -6,132 +6,97 @@
 -- Checks TSL specifications to be in a valid format.
 --
 -----------------------------------------------------------------------------
-
 module Main
   ( main
   ) where
 
 -----------------------------------------------------------------------------
+import TSL (fromTSL)
 
-import TSL
-  ( fromTSL
-  )
-
-import System.Directory
-  ( doesFileExist
-  , doesDirectoryExist
-  )
+import System.Directory (doesDirectoryExist, doesFileExist)
 
 import System.Console.ANSI
-  ( SGR(..)
-  , ConsoleLayer(..)
+  ( Color(..)
   , ColorIntensity(..)
-  , Color(..)
-  , setSGR
+  , ConsoleLayer(..)
+  , SGR(..)
   , hSetSGR
+  , setSGR
   )
 
-import System.Environment
-  ( getArgs
-  )
+import System.Environment (getArgs)
 
-import System.IO
-  ( stderr
-  , hPrint
-  , hPutStr
-  , hPutStrLn
-  )
+import System.IO (hPrint, hPutStr, hPutStrLn, stderr)
 
 import GHC.IO.Encoding
-  ( utf8
-  , setLocaleEncoding
-  , setFileSystemEncoding
+  ( setFileSystemEncoding
   , setForeignEncoding
+  , setLocaleEncoding
+  , utf8
   )
 
-import System.Exit
-  ( exitFailure
-  , exitSuccess
-  )
+import System.Exit (exitFailure, exitSuccess)
 
 -----------------------------------------------------------------------------
-
-main
-  :: IO ()
-
+main :: IO ()
 main = do
   setLocaleEncoding utf8
   setFileSystemEncoding utf8
   setForeignEncoding utf8
   args <- getArgs
-
   if null args
-  then do
-    cError Yellow "Usage: "
-    cErrorLn White "tslcheck <files>"
-    resetColors
-    exitFailure
-  else do
-    xs <- mapM checkFile args
-
-    if and xs
-    then exitSuccess
-    else exitFailure
-
+    then do
+      cError Yellow "Usage: "
+      cErrorLn White "tslcheck <files>"
+      resetColors
+      exitFailure
+    else do
+      xs <- mapM checkFile args
+      if and xs
+        then exitSuccess
+        else exitFailure
   where
     checkFile file = do
-
       exists <- doesFileExist file
-
-      if not exists then do
-        dir <- doesDirectoryExist file
-
-        if dir
+      if not exists
         then do
-          cPutStr Yellow "directory: "
-          cPutStr White file
-          cPutStrLn Yellow " (skipping)"
+          dir <- doesDirectoryExist file
+          if dir
+            then do
+              cPutStr Yellow "directory: "
+              cPutStr White file
+              cPutStrLn Yellow " (skipping)"
+            else do
+              cError Red "Not found: "
+              cErrorLn White file
+          resetColors
+          return False
         else do
-          cError Red "Not found: "
-          cErrorLn White file
-
-        resetColors
-        return False
-
-      else do
-        str <- readFile file
-        case fromTSL str of
-          Left err -> do
-            cPutStr Red "invalid: "
-            cPutStrLn White file
-            resetColors
-            hPrint stderr err
-            hPutStrLn stderr ""
-            return False
-
-          Right _  -> do
-            cPutStr Green "valid: "
-            cPutStrLn White file
-            resetColors
-            return True
-
+          str <- readFile file
+          case fromTSL str of
+            Left err -> do
+              cPutStr Red "invalid: "
+              cPutStrLn White file
+              resetColors
+              hPrint stderr err
+              hPutStrLn stderr ""
+              return False
+            Right _ -> do
+              cPutStr Green "valid: "
+              cPutStrLn White file
+              resetColors
+              return True
     cPutStr c str = do
-      setSGR [ SetColor Foreground Vivid c ]
+      setSGR [SetColor Foreground Vivid c]
       putStr str
-
     cPutStrLn c str = do
-      setSGR [ SetColor Foreground Vivid c ]
+      setSGR [SetColor Foreground Vivid c]
       putStrLn str
-
     cError c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
+      hSetSGR stderr [SetColor Foreground Vivid c]
       hPutStr stderr str
-
     cErrorLn c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
+      hSetSGR stderr [SetColor Foreground Vivid c]
       hPutStrLn stderr str
-
-    resetColors =
-      hSetSGR stderr [ Reset ]
-
+    resetColors = hSetSGR stderr [Reset]
 -----------------------------------------------------------------------------

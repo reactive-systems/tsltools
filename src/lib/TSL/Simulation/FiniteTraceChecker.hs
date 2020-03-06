@@ -8,10 +8,6 @@
 {-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
 
 -----------------------------------------------------------------------------
---
--- TODOs: 
--- - Check purity (although this will always falsify the enivornment)
---
 module TSL.Simulation.FiniteTraceChecker
   ( FiniteTrace
   , append
@@ -175,4 +171,3 @@ tConj (x:xr) = x &&& tConj xr
 tDisj :: [TBool] -> TBool
 tDisj [] = FF
 tDisj (x:xr) = x ||| tDisj xr
------------------------------------------------------------------------------
