@@ -83,43 +83,110 @@ check (o:old) [] =
     Triggered f1 f2 -> check old [o] (Triggered f1 f2)
     _ -> NN
 check old ts@(t:tr) =
-  \case
-    TTrue -> TT
-    FFalse -> FF
+  \formula ->
+    case optimize formula of
+      TTrue -> TT
+      FFalse -> FF
     --None temporal Base
-    Check p -> fromBool $ (snd t) p
-    Update c st -> fromBool $ (fst t) c == st
-    Not f -> tNot $ check old ts f
-    And fs -> tConj $ map (check old ts) fs
-    Or fs -> tDisj $ map (check old ts) fs
+      Check p -> fromBool $ (snd t) p
+      Update c st -> fromBool $ (fst t) c == st
+      Not f -> tNot $ check old ts f
+      And fs -> tConj $ map (check old ts) fs
+      Or fs -> tDisj $ map (check old ts) fs
     --None temporal derived
-    Implies f1 f2 -> check old ts $ Or [Not f1, f2]
-    Equiv f1 f2 -> check old ts $ And [Implies f1 f2, Implies f2 f1]
+      Implies f1 f2 -> check old ts $ Or [Not f1, f2]
+      Equiv f1 f2 -> check old ts $ And [Implies f1 f2, Implies f2 f1]
     -- Temporal, note that H, T cant be expanded due to the missing Z operator
-    Next f -> check (t : old) tr f
-    Previous f ->
-      case old of
-        [] -> FF
-        (o:ol) -> check ol (o : ts) f
-    Historically f ->
-      (check old ts f) &&&
-      case old of
-        [] -> TT
-        (o:ol) -> check ol (o : ts) (Historically f)
-    Triggered f1 f2 ->
-      (check old ts f2) &&&
-      ((check old ts f1) |||
-       case old of
-         [] -> TT
-         (o:ol) -> check ol (o : ts) (Triggered f1 f2))
+      Next f -> check (t : old) tr f
+      Previous f ->
+        case old of
+          [] -> FF
+          (o:ol) -> check ol (o : ts) f
+      Historically f ->
+        (check old ts f) &&&
+        case old of
+          [] -> TT
+          (o:ol) -> check ol (o : ts) (Historically f)
+      Triggered f1 f2 ->
+        (check old ts f2) &&&
+        ((check old ts f1) |||
+         case old of
+           [] -> TT
+           (o:ol) -> check ol (o : ts) (Triggered f1 f2))
     -- Temporal Expanded
-    Globally f -> check old ts $ And [f, Next (Globally f)]
-    Finally f -> check old ts $ Or [f, Next (Finally f)]
-    Until f1 f2 -> check old ts $ Or [f2, And [f1, Next (Until f1 f2)]]
-    Weak f1 f2 -> check old ts $ Or [f2, And [f1, Next (Until f1 f2)]]
-    Release f1 f2 -> check old ts $ Weak f2 (And [f1, f2])
-    Once f -> check old ts $ Or [f, Previous (Once f)]
-    Since f1 f2 -> check old ts $ Or [f2, And [f1, Previous (Since f1 f2)]]
+      Globally f -> check old ts $ And [f, Next (Globally f)]
+      Finally f -> check old ts $ Or [f, Next (Finally f)]
+      Until f1 f2 -> check old ts $ Or [f2, And [f1, Next (Until f1 f2)]]
+      Weak f1 f2 -> check old ts $ Or [f2, And [f1, Next (Until f1 f2)]]
+      Release f1 f2 -> check old ts $ Weak f2 (And [f1, f2])
+      Once f -> check old ts $ Or [f, Previous (Once f)]
+      Since f1 f2 -> check old ts $ Or [f2, And [f1, Previous (Since f1 f2)]]
+
+-----------------------------------------------------------------------------
+-- | Expansion and Lifting based optimizations 
+optimize :: Formula a -> Formula a
+optimize = liftNext . expand
+
+liftNext :: Formula a -> Formula a
+liftNext =
+  \case
+    Not f ->
+      case liftNext f of
+        Next f' -> Next (Not f')
+        f' -> Not f'
+    And fs ->
+      case liftNextList $ map liftNext fs of
+        ([], []) -> TTrue
+        (gs, []) -> And gs
+        ([], hs) -> Next $ And hs
+        (gs, hs) -> And $ gs ++ [Next $ And hs]
+    Or fs ->
+      case liftNextList $ map liftNext fs of
+        ([], []) -> TTrue
+        (gs, []) -> Or gs
+        ([], hs) -> Next $ Or hs
+        (gs, hs) -> Or $ gs ++ [Next $ Or hs]
+    f -> f
+  where
+    liftNextList :: [Formula a] -> ([Formula a], [Formula a])
+    liftNextList [] = ([], [])
+    liftNextList (Next f:xr) =
+      let (a, b) = liftNextList xr
+       in (a, f : b)
+    liftNextList (f:xr) =
+      let (a, b) = liftNextList xr
+       in (f : a, b)
+
+expand :: Formula a -> Formula a
+expand =
+  \case
+    TTrue -> TTrue
+    FFalse -> FFalse
+    Check p -> Check p
+    Update c st -> Update c st
+    Not f ->
+      case expand f of
+        TTrue -> FFalse
+        FFalse -> TTrue
+        And fs -> Or $ map (expand . Not) fs
+        Or fs -> And $ map (expand . Not) fs
+        Next f -> Next (Not f)
+        f -> Not f
+    And fs -> And (map expand fs)
+    Or fs -> Or (map expand fs)
+    Implies f1 f2 -> expand $ Or [Not f1, f2]
+    Equiv f1 f2 -> expand $ And [Implies f1 f2, Implies f2 f1]
+    Next f -> Next f
+    Previous f -> Previous f
+    Historically f -> Historically f
+    Triggered f1 f2 -> Triggered f1 f2
+    Globally f -> expand $ And [f, Next (Globally f)]
+    Finally f -> expand $ Or [f, Next (Finally f)]
+    Until f1 f2 -> expand $ Or [f2, And [f1, Next (Until f1 f2)]]
+    Weak f1 f2 -> expand $ Or [f2, And [f1, Next (Until f1 f2)]]
+    Release f1 f2 -> expand $ Weak f2 (And [f1, f2])
+    Once f -> expand $ Or [f, Previous (Once f)]
+    Since f1 f2 -> expand $ Or [f2, And [f1, Previous (Since f1 f2)]]
 
 -----------------------------------------------------------------------------
 -- | Data structure for a three value logic
