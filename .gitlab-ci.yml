@@ -1,4 +1,4 @@
-image: "registry.intelligent-conception.de/haskell-dev:lts-14.17"
+image: "registry.intelligent-conception.de/container_registry/container_registry/haskell-dev:lts-14.17"
 
 test:
   script:
