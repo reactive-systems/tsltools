@@ -42,7 +42,7 @@ import TSL.Simulation.AigerSimulator
   , simStep
   )
 
-import TSL.Simulation.FiniteTraceChecker as FTC (FiniteTrace, (|=), append)
+import TSL.Simulation.FiniteTraceChecker as FTC (FiniteTrace, append, sat)
 
 import qualified TSL.Simulation.FiniteTraceChecker as FTC (rewind)
 
@@ -119,7 +119,7 @@ violatedGuarantees :: TSLStringSpecification -> FiniteTrace String -> Witness
 violatedGuarantees TSLStringSpecification { assumptionsStr = assmpt
                                           , guaranteesStr = gar
                                           } trace =
-  List.filter (\f -> (not (trace |= f)) && trace |= (And assmpt)) gar
+  List.filter (\f -> not (trace |= Implies (And assmpt) f)) gar
 
 -----------------------------------------------------------------------------
 -- | Given an possible action option, simulate one step and calculate the

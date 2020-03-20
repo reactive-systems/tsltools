@@ -28,7 +28,11 @@ import TSL.Simulation.SystemSimulationBackend
   , step
   )
 
-import TSL.Logic (Formula, PredicateTerm)
+import TSL.Specification (TSLStringSpecification(..))
+
+import TSL.Simulation.FiniteTraceChecker (nextObligation)
+
+import TSL.Logic (Formula(And), PredicateTerm)
 
 import TSL.Simulation.InterfacePrintingUtils
   ( Color(..)
@@ -136,6 +140,19 @@ printTrace sim = do
          cPutStr Cyan "Environment:  "
          cPutStrLn White (predicateEvaluationListToString preds))
       log
+  _ <-
+    sequence $
+    map
+      (\c ->
+         cPutStrLn Red $
+         " DEBUG: " ++ (formulaToString id (nextObligation (trace sim) c)))
+      (guaranteesStr $ specification sim)
+  _ <-
+    cPutStrLn Red $
+    " DEBUG: " ++
+    (formulaToString
+       id
+       (nextObligation (trace sim) (And $ assumptionsStr $ specification sim)))
   return ()
 
 printImpossibleOptions ::

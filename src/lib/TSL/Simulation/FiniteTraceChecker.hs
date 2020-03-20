@@ -13,70 +13,73 @@ module TSL.Simulation.FiniteTraceChecker
   , append
   , rewind
   , emptyTrace
-  , (|=)
+  , sat
   , nextObligation
   ) where
 
 -----------------------------------------------------------------------------
 import TSL.Logic as Logic (Formula(..), PredicateTerm, SignalTerm)
 
+import Control.Exception (assert)
+
 import Data.Map as Map (Map, empty, insert, lookup, union)
 
 -----------------------------------------------------------------------------
--- | A Finite Trace is List of updates and predicate evalutations 
+-- | A Finite Trace is a stack of updates and predicate evalutations 
 -- (which are partial functions), a finite trace can be extended by append,
--- or rewind
+-- or rewind and the specification that should be fulfilled
 --
-newtype FiniteTrace c =
-  FiniteTrace [(c -> SignalTerm c, PredicateTerm c -> Bool)]
+data FiniteTrace c =
+  FiniteTrace
+    { trace :: [(c -> SignalTerm c, PredicateTerm c -> Bool)]
+    , obligations :: [Formula c]
+    }
 
 -----------------------------------------------------------------------------
 -- | Adds an update and predicate evaluation at the end of a finite trace
 append ::
-     FiniteTrace c
+     Ord c
+  => FiniteTrace c
   -> (c -> SignalTerm c)
   -> (PredicateTerm c -> Bool)
   -> FiniteTrace c
-append (FiniteTrace tr) updates predicates =
-  FiniteTrace $ tr ++ [(updates, predicates)]
+append (ft@FiniteTrace {..}) updates predicates =
+  let newTrace = (updates, predicates) : trace
+      newOb = fst $ checkNext newTrace empty (nextObligation ft)
+   in ft {trace = newTrace, obligations = newOb : obligations}
 
 -----------------------------------------------------------------------------
 -- | Reverts the last appending to the finite trace. If the trace is empty
 -- the trace stays empty
-rewind :: FiniteTrace c -> FiniteTrace c
-rewind (FiniteTrace ts) =
-  case reverse ts of
-    [] -> FiniteTrace []
-    (_:tr) -> FiniteTrace (reverse tr)
+rewind :: Ord c => FiniteTrace c -> FiniteTrace c
+rewind ft@(FiniteTrace {..}) =
+  case (trace, obligations) of
+    ([], _) -> ft
+    (_:tr, _:or) -> ft {trace = tr, obligations = or}
+    _ -> assert False undefined
 
 -----------------------------------------------------------------------------
 -- | The empty finite trace
-emptyTrace :: FiniteTrace c
-emptyTrace = FiniteTrace []
+emptyTrace :: Ord c => Formula c -> FiniteTrace c
+emptyTrace form =
+  FiniteTrace {trace = [], obligations = [fst $ checkNext [] empty form]}
 
 -----------------------------------------------------------------------------
 -- | This relation is the satisfcation relation of a finite trace of a TSL formula
--- Checking is done by expansion. The checking function uses a three value logic
--- where the neutral value is used if a trace ends. Satisifcation holds when 
--- the outcoming value is not false (in the three value logic). This means
--- that the finite trace is a bad prefix the formula
-(|=) :: Ord c => FiniteTrace c -> Formula c -> Bool
-(|=) (FiniteTrace ts) f = expandReverseTrace (reverse ts) f /= FFalse --check [] ts f /= FF
+-- Checking is done by expansion. 
+sat :: Eq c => FiniteTrace c -> Bool
+sat ft = nextObligation ft /= FFalse
+
+-----------------------------------------------------------------------------
+-- | The next obligation of the trace
+nextObligation :: FiniteTrace c -> Formula c
+nextObligation (FiniteTrace {..}) =
+  case obligations of
+    [] -> assert False undefined
+    o:_ -> o
 
 -----------------------------------------------------------------------------
 -- | TODO
-nextObligation :: Ord c => (FiniteTrace c) -> Formula c -> Formula c
-nextObligation (FiniteTrace tr) form = expandReverseTrace (reverse tr) form
-
-expandReverseTrace ::
-     Ord c
-  => [(c -> SignalTerm c, PredicateTerm c -> Bool)]
-  -> Formula c
-  -> Formula c
-expandReverseTrace [] form = fst $ checkNext [] empty form
-expandReverseTrace (t:tr) form =
-  fst $ checkNext (t : tr) empty $ expandReverseTrace tr form
-
 checkNext ::
      Ord c
   => [(c -> SignalTerm c, PredicateTerm c -> Bool)]
@@ -157,8 +160,8 @@ checkNext ts@(t:tr) cache form =
               , insert simpForm (simplify nextForm) (union cache cache'))
 
 -----------------------------------------------------------------------------
--- | TODO
-simplify :: Formula c -> Formula c
+-- | Simplifies a TSL formula
+simplify :: Eq c => Formula c -> Formula c
 simplify =
   \case
     Not f ->
@@ -167,11 +170,14 @@ simplify =
         FFalse -> TTrue
         f' -> Not f'
     And [] -> TTrue
+    And [f] -> simplify f
+    Or [f] -> simplify f
     And fs ->
       let fs' = map simplify fs
        in if exists isFalse fs'
             then FFalse
             else And $
+                 removeDoubles $
                  foldl
                    (\xs e ->
                       case e of
@@ -186,6 +192,7 @@ simplify =
        in if exists isTrue fs'
             then TTrue
             else Or $
+                 removeDoubles $
                  foldl
                    (\xs e ->
                       case e of
@@ -215,3 +222,10 @@ simplify =
     isTrue _ = False
     --
     exists p xs = not (all (\z -> not (p z)) xs)
+    -- 
+    removeDoubles :: Eq a => [a] -> [a]
+    removeDoubles [] = []
+    removeDoubles (x:xr) =
+      if x `elem` xr
+        then removeDoubles xr
+        else x : removeDoubles xr
