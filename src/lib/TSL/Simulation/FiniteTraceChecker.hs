@@ -14,10 +14,13 @@ module TSL.Simulation.FiniteTraceChecker
   , rewind
   , emptyTrace
   , (|=)
+  , nextObligation
   ) where
 
 -----------------------------------------------------------------------------
 import TSL.Logic as Logic (Formula(..), PredicateTerm, SignalTerm)
+
+import Data.Map as Map (Map, empty, insert, lookup, union)
 
 -----------------------------------------------------------------------------
 -- | A Finite Trace is List of updates and predicate evalutations 
@@ -57,184 +60,158 @@ emptyTrace = FiniteTrace []
 -- where the neutral value is used if a trace ends. Satisifcation holds when 
 -- the outcoming value is not false (in the three value logic). This means
 -- that the finite trace is a bad prefix the formula
-(|=) :: Eq c => FiniteTrace c -> Formula c -> Bool
-(|=) (FiniteTrace ts) f = check [] ts f /= FF
-
-check ::
-     Eq c
-  => [(c -> SignalTerm c, PredicateTerm c -> Bool)]
-  -> [(c -> SignalTerm c, PredicateTerm c -> Bool)]
-  -> Formula c
-  -> TBool
-check [] [] =
-  \case
-    FFalse -> FF
-    TTrue -> TT
-    Previous _ -> FF
-    _ -> NN
-check (o:old) [] =
-  \case
-    FFalse -> FF
-    TTrue -> TT
-    Previous f -> check old [o] f
-    Once f -> check old [o] (Once f)
-    Historically f -> check old [o] (Historically f)
-    Since f1 f2 -> check old [o] (Since f1 f2)
-    Triggered f1 f2 -> check old [o] (Triggered f1 f2)
-    _ -> NN
-check old ts@(t:tr) =
-  \formula ->
-    case optimize formula of
-      TTrue -> TT
-      FFalse -> FF
-    --None temporal Base
-      Check p -> fromBool $ (snd t) p
-      Update c st -> fromBool $ (fst t) c == st
-      Not f -> tNot $ check old ts f
-      And fs -> tConj $ map (check old ts) fs
-      Or fs -> tDisj $ map (check old ts) fs
-    --None temporal derived
-      Implies f1 f2 -> check old ts $ Or [Not f1, f2]
-      Equiv f1 f2 -> check old ts $ And [Implies f1 f2, Implies f2 f1]
-    -- Temporal, note that H, T cant be expanded due to the missing Z operator
-      Next f -> check (t : old) tr f
-      Previous f ->
-        case old of
-          [] -> FF
-          (o:ol) -> check ol (o : ts) f
-      Historically f ->
-        (check old ts f) &&&
-        case old of
-          [] -> TT
-          (o:ol) -> check ol (o : ts) (Historically f)
-      Triggered f1 f2 ->
-        (check old ts f2) &&&
-        ((check old ts f1) |||
-         case old of
-           [] -> TT
-           (o:ol) -> check ol (o : ts) (Triggered f1 f2))
-    -- Temporal Expanded
-      Globally f -> check old ts $ And [f, Next (Globally f)]
-      Finally f -> check old ts $ Or [f, Next (Finally f)]
-      Until f1 f2 -> check old ts $ Or [f2, And [f1, Next (Until f1 f2)]]
-      Weak f1 f2 -> check old ts $ Or [f2, And [f1, Next (Until f1 f2)]]
-      Release f1 f2 -> check old ts $ Weak f2 (And [f1, f2])
-      Once f -> check old ts $ Or [f, Previous (Once f)]
-      Since f1 f2 -> check old ts $ Or [f2, And [f1, Previous (Since f1 f2)]]
+(|=) :: Ord c => FiniteTrace c -> Formula c -> Bool
+(|=) (FiniteTrace ts) f = expandReverseTrace (reverse ts) f /= FFalse --check [] ts f /= FF
 
 -----------------------------------------------------------------------------
--- | Expansion and Lifting based optimizations 
-optimize :: Formula a -> Formula a
-optimize = liftNext . expand
+-- | TODO
+nextObligation :: Ord c => (FiniteTrace c) -> Formula c -> Formula c
+nextObligation (FiniteTrace tr) form = expandReverseTrace (reverse tr) form
 
-liftNext :: Formula a -> Formula a
-liftNext =
+expandReverseTrace ::
+     Ord c
+  => [(c -> SignalTerm c, PredicateTerm c -> Bool)]
+  -> Formula c
+  -> Formula c
+expandReverseTrace [] form = fst $ checkNext [] empty form
+expandReverseTrace (t:tr) form =
+  fst $ checkNext (t : tr) empty $ expandReverseTrace tr form
+
+checkNext ::
+     Ord c
+  => [(c -> SignalTerm c, PredicateTerm c -> Bool)]
+  -> Map (Formula c) (Formula c)
+  -> Formula c
+  -> (Formula c, Map (Formula c) (Formula c))
+checkNext [] cache form =
+  case form of
+    Historically _ -> (TTrue, cache)
+    Triggered _ _ -> (TTrue, cache)
+    f -> (f, cache)
+checkNext ts@(t:tr) cache form =
+  let simpForm = simplify form
+   in case Map.lookup simpForm cache of
+        Just f -> (f, cache)
+        Nothing ->
+          let (nextForm, cache') =
+                case form of
+                  TTrue -> (TTrue, empty)
+                  FFalse -> (FFalse, empty)
+                  Check p ->
+                    if (snd t) p
+                      then (TTrue, empty)
+                      else (FFalse, empty)
+                  Update c st ->
+                    if (fst t) c == st
+                      then (TTrue, empty)
+                      else (FFalse, empty)
+                  Not f ->
+                    let (f', c) = checkNext ts cache f
+                     in (Not f', c)
+                  And fs ->
+                    let (fs', c) =
+                          foldl
+                            (\(fr, c) e ->
+                               let (f', c') = checkNext ts c e
+                                in (f' : fr, c'))
+                            ([], cache)
+                            (reverse fs)
+                     in (And fs', c)
+                  Or fs ->
+                    let (fs', c) =
+                          foldl
+                            (\(fr, c) e ->
+                               let (f', c') = checkNext ts c e
+                                in (f' : fr, c'))
+                            ([], cache)
+                            (reverse fs)
+                     in (Or fs', c)
+                  Next f -> (f, cache)
+                  Previous f ->
+                    case tr of
+                      [] -> (FFalse, empty)
+                      _ -> checkNext ts cache $ fst $ checkNext tr empty f
+                  Historically f ->
+                    checkNext ts cache $
+                    And [f, fst $ checkNext tr empty (Historically f)]
+                  Triggered f1 f2 ->
+                    checkNext ts cache $
+                    And
+                      [f2, Or [f1, fst $ checkNext tr empty (Triggered f1 f2)]]
+                  -- Expanded
+                  Implies f1 f2 -> checkNext ts cache $ Or [Not f1, f2]
+                  Equiv f1 f2 ->
+                    checkNext ts cache $ And [Implies f1 f2, Implies f2 f1]
+                  Globally f -> checkNext ts cache $ And [f, Next (Globally f)]
+                  Finally f -> checkNext ts cache $ Or [f, Next (Finally f)]
+                  Until f1 f2 ->
+                    checkNext ts cache $ Or [f2, And [f1, Next (Until f1 f2)]]
+                  Weak f1 f2 ->
+                    checkNext ts cache $ Or [f2, And [f1, Next (Until f1 f2)]]
+                  Release f1 f2 -> checkNext ts cache $ Weak f2 (And [f1, f2])
+                  Once f -> checkNext ts cache $ Or [f, Previous (Once f)]
+                  Since f1 f2 ->
+                    checkNext ts cache $
+                    Or [f2, And [f1, Previous (Since f1 f2)]]
+           in ( (simplify nextForm)
+              , insert simpForm (simplify nextForm) (union cache cache'))
+
+-----------------------------------------------------------------------------
+-- | TODO
+simplify :: Formula c -> Formula c
+simplify =
   \case
     Not f ->
-      case liftNext f of
-        Next f' -> Next (Not f')
-        f' -> Not f'
-    And fs ->
-      case liftNextList $ map liftNext fs of
-        ([], []) -> TTrue
-        (gs, []) -> And gs
-        ([], hs) -> Next $ And hs
-        (gs, hs) -> And $ gs ++ [Next $ And hs]
-    Or fs ->
-      case liftNextList $ map liftNext fs of
-        ([], []) -> TTrue
-        (gs, []) -> Or gs
-        ([], hs) -> Next $ Or hs
-        (gs, hs) -> Or $ gs ++ [Next $ Or hs]
-    f -> f
-  where
-    liftNextList :: [Formula a] -> ([Formula a], [Formula a])
-    liftNextList [] = ([], [])
-    liftNextList (Next f:xr) =
-      let (a, b) = liftNextList xr
-       in (a, f : b)
-    liftNextList (f:xr) =
-      let (a, b) = liftNextList xr
-       in (f : a, b)
-
-expand :: Formula a -> Formula a
-expand =
-  \case
-    TTrue -> TTrue
-    FFalse -> FFalse
-    Check p -> Check p
-    Update c st -> Update c st
-    Not f ->
-      case expand f of
+      case simplify f of
         TTrue -> FFalse
         FFalse -> TTrue
-        And fs -> Or $ map (expand . Not) fs
-        Or fs -> And $ map (expand . Not) fs
-        Next f -> Next (Not f)
-        f -> Not f
-    And fs -> And (map expand fs)
-    Or fs -> Or (map expand fs)
-    Implies f1 f2 -> expand $ Or [Not f1, f2]
-    Equiv f1 f2 -> expand $ And [Implies f1 f2, Implies f2 f1]
-    Next f -> Next f
-    Previous f -> Previous f
-    Historically f -> Historically f
-    Triggered f1 f2 -> Triggered f1 f2
-    Globally f -> expand $ And [f, Next (Globally f)]
-    Finally f -> expand $ Or [f, Next (Finally f)]
-    Until f1 f2 -> expand $ Or [f2, And [f1, Next (Until f1 f2)]]
-    Weak f1 f2 -> expand $ Or [f2, And [f1, Next (Until f1 f2)]]
-    Release f1 f2 -> expand $ Weak f2 (And [f1, f2])
-    Once f -> expand $ Or [f, Previous (Once f)]
-    Since f1 f2 -> expand $ Or [f2, And [f1, Previous (Since f1 f2)]]
-
------------------------------------------------------------------------------
--- | Data structure for a three value logic
-data TBool
-  = TT
-  | NN
-  | FF
-  deriving (Eq, Ord, Show)
-
------------------------------------------------------------------------------
--- | Converts a bool to a three value bool
-fromBool :: Bool -> TBool
-fromBool True = TT
-fromBool False = FF
-
------------------------------------------------------------------------------
--- | Three value disjunction
-(|||) :: TBool -> TBool -> TBool
-(|||) TT _ = TT
-(|||) _ TT = TT
-(|||) NN _ = NN
-(|||) _ NN = NN
-(|||) _ _ = FF
-
------------------------------------------------------------------------------
--- | Three value conjunction
-(&&&) :: TBool -> TBool -> TBool
-(&&&) FF _ = FF
-(&&&) _ FF = FF
-(&&&) NN _ = NN
-(&&&) _ NN = NN
-(&&&) _ _ = TT
-
------------------------------------------------------------------------------
--- | Three value negation
-tNot :: TBool -> TBool
-tNot TT = FF
-tNot NN = NN
-tNot FF = NN
-
------------------------------------------------------------------------------
--- | Three value list conjunction (conjunct all elements of the list)
-tConj :: [TBool] -> TBool
-tConj [] = TT
-tConj (x:xr) = x &&& tConj xr
-
------------------------------------------------------------------------------
--- | Three value list disjunction (conjunct all elements of the list)
-tDisj :: [TBool] -> TBool
-tDisj [] = FF
-tDisj (x:xr) = x ||| tDisj xr
+        f' -> Not f'
+    And [] -> TTrue
+    And fs ->
+      let fs' = map simplify fs
+       in if exists isFalse fs'
+            then FFalse
+            else And $
+                 foldl
+                   (\xs e ->
+                      case e of
+                        And g -> g ++ xs
+                        TTrue -> xs
+                        g -> g : xs)
+                   []
+                   fs'
+    Or [] -> FFalse
+    Or fs ->
+      let fs' = map simplify fs
+       in if exists isTrue fs'
+            then TTrue
+            else Or $
+                 foldl
+                   (\xs e ->
+                      case e of
+                        Or g -> g ++ xs
+                        FFalse -> xs
+                        g -> g : xs)
+                   []
+                   fs'
+    Implies f1 f2 ->
+      case (simplify f1, simplify f2) of
+        (FFalse, _) -> TTrue
+        (TTrue, f) -> f
+        (f1', f2') -> Implies f1' f2'
+    Equiv f1 f2 ->
+      case (simplify f1, simplify f2) of
+        (FFalse, f) -> simplify (Not f)
+        (f, FFalse) -> simplify (Not f)
+        (f, TTrue) -> f
+        (TTrue, f) -> f
+        (f1', f2') -> Equiv f1' f2'
+    f -> f
+  where
+    isFalse FFalse = True
+    isFalse _ = False
+    --
+    isTrue TTrue = True
+    isTrue _ = False
+    --
+    exists p xs = not (all (\z -> not (p z)) xs)
