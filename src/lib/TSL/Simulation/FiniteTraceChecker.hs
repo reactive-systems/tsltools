@@ -13,8 +13,8 @@ module TSL.Simulation.FiniteTraceChecker
   , append
   , rewind
   , emptyTrace
-  , sat
-  , nextObligation
+  , violated
+  , nextObligations
   ) where
 
 -----------------------------------------------------------------------------
@@ -32,7 +32,7 @@ import Data.Map as Map (Map, empty, insert, lookup, union)
 data FiniteTrace c =
   FiniteTrace
     { trace :: [(c -> SignalTerm c, PredicateTerm c -> Bool)]
-    , obligations :: [Formula c]
+    , obligations :: [[(Formula c, Formula c)]]
     }
 
 -----------------------------------------------------------------------------
@@ -45,7 +45,10 @@ append ::
   -> FiniteTrace c
 append (ft@FiniteTrace {..}) updates predicates =
   let newTrace = (updates, predicates) : trace
-      newOb = fst $ checkNext newTrace empty (nextObligation ft)
+      newOb =
+        fmap
+          (\(next, gar) -> (fst (checkNext newTrace empty next), gar))
+          (nextObligations ft)
    in ft {trace = newTrace, obligations = newOb : obligations}
 
 -----------------------------------------------------------------------------
@@ -60,20 +63,26 @@ rewind ft@(FiniteTrace {..}) =
 
 -----------------------------------------------------------------------------
 -- | The empty finite trace
-emptyTrace :: Ord c => Formula c -> FiniteTrace c
-emptyTrace form =
-  FiniteTrace {trace = [], obligations = [fst $ checkNext [] empty form]}
+emptyTrace :: Ord c => ([Formula c], [Formula c]) -> FiniteTrace c
+emptyTrace (assumptions, guarantees) =
+  FiniteTrace
+    { trace = []
+    , obligations =
+        [ fmap
+            (\g -> (fst $ checkNext [] empty (Implies (And assumptions) g), g))
+            guarantees
+        ]
+    }
 
 -----------------------------------------------------------------------------
--- | This relation is the satisfcation relation of a finite trace of a TSL formula
--- Checking is done by expansion. 
-sat :: Eq c => FiniteTrace c -> Bool
-sat ft = nextObligation ft /= FFalse
+-- | This function returns the violated formulas
+violated :: Eq c => FiniteTrace c -> [Formula c]
+violated ft = fmap snd $ filter ((== FFalse) . fst) (nextObligations ft)
 
 -----------------------------------------------------------------------------
 -- | The next obligation of the trace
-nextObligation :: FiniteTrace c -> Formula c
-nextObligation (FiniteTrace {..}) =
+nextObligations :: FiniteTrace c -> [(Formula c, Formula c)]
+nextObligations (FiniteTrace {..}) =
   case obligations of
     [] -> assert False undefined
     o:_ -> o

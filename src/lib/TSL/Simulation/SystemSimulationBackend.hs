@@ -26,8 +26,6 @@ import Control.Exception (assert)
 
 import TSL.Specification (TSLStringSpecification(..))
 
-import qualified Data.List as List (filter)
-
 import qualified Data.Set as Set (filter)
 
 import Data.Set as Set (difference, fromList, isSubsetOf, map, powerSet, toList)
@@ -37,12 +35,13 @@ import TSL.Simulation.AigerSimulator
   , State
   , inputName
   , inputs
+  , latches
   , outputName
   , outputs
   , simStep
   )
 
-import TSL.Simulation.FiniteTraceChecker as FTC (FiniteTrace, append, sat)
+import TSL.Simulation.FiniteTraceChecker as FTC (FiniteTrace, append, violated)
 
 import qualified TSL.Simulation.FiniteTraceChecker as FTC (rewind)
 
@@ -83,14 +82,13 @@ type Witness = [Formula String]
 -- that would be violated
 options ::
      SystemSimulation
-  -> [(SystemOption, Witness, [(PredicateTerm String, Bool)])]
-options sim@SystemSimulation {counterStrategy = ct, specification = spec} =
-  zip3 options witnesses evaluations
-  where
-    options = possibleOptions ct
-    steps = fmap (step sim) options
-    witnesses = fmap ((violatedGuarantees spec) . trace . fst) steps
-    evaluations = fmap snd steps
+  -> IO [(SystemOption, Witness, [(PredicateTerm String, Bool)])]
+options sim@SystemSimulation {counterStrategy = ct} = do
+  let options = possibleOptions ct
+  steps <- sequence $ fmap (step sim) options
+  let witnesses = fmap (violated . trace . fst) steps
+  let evaluations = fmap snd steps
+  return $ zip3 options witnesses evaluations
 
 possibleOptions :: EnvironmentCounterStrategy -> [SystemOption]
 possibleOptions cst =
@@ -115,12 +113,6 @@ possibleOptions cst =
         updates
         cells
 
-violatedGuarantees :: TSLStringSpecification -> FiniteTrace String -> Witness
-violatedGuarantees TSLStringSpecification { assumptionsStr = assmpt
-                                          , guaranteesStr = gar
-                                          } trace =
-  List.filter (\f -> not (trace |= Implies (And assmpt) f)) gar
-
 -----------------------------------------------------------------------------
 -- | Given an possible action option, simulate one step and calculate the
 -- predicate evaluations
@@ -133,25 +125,30 @@ violatedGuarantees TSLStringSpecification { assumptionsStr = assmpt
 step ::
      SystemSimulation
   -> SystemOption
-  -> (SystemSimulation, [(PredicateTerm String, Bool)])
-step sim@SystemSimulation {..} updates =
-  (sim {stateStack = q : stateStack, trace = newTrace, logTrace = newLog}, eval)
+  -> IO (SystemSimulation, [(PredicateTerm String, Bool)])
+step sim@SystemSimulation {..} updates = do
+  input <- return $ \i -> elem (inputName counterStrategy i) updates -- The input for the c-strat circuit
+  putStrLn $ concatMap (\i -> show $ input i) (inputs counterStrategy)
+    --
+  (q, output) <- return $ simStep counterStrategy (head stateStack) input -- The c-strat simulation step
+  putStrLn $ concatMap (\i -> show $ output i) (outputs counterStrategy)
+  putStrLn $ concatMap (\i -> show $ q i) (latches counterStrategy)
+    --
+    --
+  eval <-
+    return $
+    [(outputName counterStrategy o, output o) | o <- outputs counterStrategy] --The predicate evaluation generated out of the output
+    --
+  newTrace <-
+    return $
+    append trace (\c -> findFirst (== c) updates) (\p -> findFirst (== p) eval)
+    --
+  newLog <- return $ (updates, eval) : logTrace
+    --
+  return
+    ( sim {stateStack = q : stateStack, trace = newTrace, logTrace = newLog}
+    , eval)
   where
-    input = \i -> elem (inputName counterStrategy i) updates -- The input for the c-strat circuit
-    --
-    (q, output) = simStep counterStrategy (head stateStack) input -- The c-strat simulation step
-    --
-    eval =
-      [(outputName counterStrategy o, output o) | o <- outputs counterStrategy] --The predicate evaluation generated out of the output
-    --
-    newTrace =
-      append
-        trace
-        (\c -> findFirst (== c) updates)
-        (\p -> findFirst (== p) eval)
-    --
-    newLog = (updates, eval) : logTrace
-    --
     findFirst :: (a -> Bool) -> [(a, b)] -> b
     findFirst _ [] = assert False undefined --THIS cant happend iff the simulation is sanitized
     findFirst p ((a, b):xr) =

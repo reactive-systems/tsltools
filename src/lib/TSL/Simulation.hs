@@ -54,7 +54,11 @@ import TSL.Logic (readInput, readOutput)
 
 import TSL.Error (Error)
 
-import TSL.Specification (TSLSpecification, tslSpecToTSLStrSpec)
+import TSL.Specification
+  ( TSLSpecification
+  , TSLStringSpecification(..)
+  , tslSpecToTSLStrSpec
+  )
 
 import TSL.Simulation.FiniteTraceChecker as FTC (emptyTrace)
 
@@ -68,12 +72,15 @@ createSimulation ::
 createSimulation aag spec =
   case normalize readOutput readInput aag of
     Right naag ->
-      let sim =
+      let stringSpec = tslSpecToTSLStrSpec spec
+          sim =
             SystemSimulation
               { counterStrategy = naag
-              , specification = tslSpecToTSLStrSpec spec
+              , specification = stringSpec
               , stateStack = [\_ -> False]
-              , trace = emptyTrace
+              , trace =
+                  emptyTrace
+                    (assumptionsStr stringSpec, guaranteesStr stringSpec)
               , logTrace = []
               }
        in case SysSim.sanitize sim of
@@ -82,12 +89,13 @@ createSimulation aag spec =
     Left _ ->
       case normalize readInput readOutput aag of
         Right naag ->
-          let sim =
+          let stringSpec = tslSpecToTSLStrSpec spec
+              sim =
                 EnvironmentSimulation
                   { strategy = naag
-                  , specification = tslSpecToTSLStrSpec spec
+                  , specification = stringSpec
                   , stateStack = [\_ -> False]
-                  , trace = emptyTrace
+                  , trace = emptyTrace ([], assumptionsStr stringSpec)
                   , logTrace = []
                   }
            in case EnvSim.sanitize sim of

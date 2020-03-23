@@ -28,11 +28,9 @@ import TSL.Simulation.SystemSimulationBackend
   , step
   )
 
-import TSL.Specification (TSLStringSpecification(..))
+import TSL.Simulation.FiniteTraceChecker (nextObligations)
 
-import TSL.Simulation.FiniteTraceChecker (nextObligation)
-
-import TSL.Logic (Formula(And), PredicateTerm)
+import TSL.Logic (Formula, PredicateTerm)
 
 import TSL.Simulation.InterfacePrintingUtils
   ( Color(..)
@@ -84,7 +82,7 @@ runSimulation sim = do
 
 execSimulation :: SystemSimulation -> IO ()
 execSimulation sim = do
-  let opts = options sim
+  opts <- options sim
   let posOpts = fmap (\(v, _, _) -> v) $ filter (\(_, xs, _) -> null xs) opts
   let imposOpts = filter (\(_, xs, _) -> not $ null xs) opts
   cPutStrLn Magenta "Your options are:"
@@ -122,7 +120,7 @@ execSimulation sim = do
       _ <- sequence $ map printImpossibleOptions imposOpts
       execSimulation sim
     Opt opt -> do
-      let (sim', _) = step sim opt
+      (sim', _) <- step sim opt
       resetInterface
       printTrace sim'
       putStrLn ""
@@ -143,16 +141,8 @@ printTrace sim = do
   _ <-
     sequence $
     map
-      (\c ->
-         cPutStrLn Red $
-         " DEBUG: " ++ (formulaToString id (nextObligation (trace sim) c)))
-      (guaranteesStr $ specification sim)
-  _ <-
-    cPutStrLn Red $
-    " DEBUG: " ++
-    (formulaToString
-       id
-       (nextObligation (trace sim) (And $ assumptionsStr $ specification sim)))
+      (\(c, _) -> cPutStrLn Red $ " DEBUG: " ++ formulaToString id c)
+      (nextObligations (trace sim))
   return ()
 
 printImpossibleOptions ::
