@@ -10,6 +10,7 @@
 -----------------------------------------------------------------------------
 module TSL.Simulation.FiniteTraceChecker
   ( FiniteTrace
+  , Obligation(..)
   , append
   , rewind
   , emptyTrace
@@ -32,7 +33,14 @@ import Data.Map as Map (Map, empty, insert, lookup, union)
 data FiniteTrace c =
   FiniteTrace
     { trace :: [(c -> SignalTerm c, PredicateTerm c -> Bool)]
-    , obligations :: [[(Formula c, Formula c)]]
+    , obligations :: [[Obligation c]]
+    }
+
+data Obligation c =
+  Obligation
+    { guarantee :: Formula c
+    , expTotalFormula :: Formula c
+    , expGuarantee :: Formula c
     }
 
 -----------------------------------------------------------------------------
@@ -47,7 +55,11 @@ append (ft@FiniteTrace {..}) updates predicates =
   let newTrace = (updates, predicates) : trace
       newOb =
         fmap
-          (\(next, gar) -> (fst (checkNext newTrace empty next), gar))
+          (\ob@Obligation {expTotalFormula = nextTot, expGuarantee = nextGar} ->
+             ob
+               { expTotalFormula = checkNext newTrace nextTot
+               , expGuarantee = checkNext newTrace nextGar
+               })
           (nextObligations ft)
    in ft {trace = newTrace, obligations = newOb : obligations}
 
@@ -69,38 +81,52 @@ emptyTrace (assumptions, guarantees) =
     { trace = []
     , obligations =
         [ fmap
-            (\g -> (fst $ checkNext [] empty (Implies (And assumptions) g), g))
+            (\g ->
+               Obligation
+                 { guarantee = g
+                 , expTotalFormula = checkNext [] (Implies (And assumptions) g)
+                 , expGuarantee = checkNext [] g
+                 })
             guarantees
         ]
     }
 
 -----------------------------------------------------------------------------
--- | This function returns the violated formulas
+-- | This function returns the violated guarantees
 violated :: Eq c => FiniteTrace c -> [Formula c]
-violated ft = fmap snd $ filter ((== FFalse) . fst) (nextObligations ft)
+violated ft =
+  fmap guarantee $ filter ((== FFalse) . expTotalFormula) (nextObligations ft)
 
 -----------------------------------------------------------------------------
--- | The next obligation of the trace
-nextObligations :: FiniteTrace c -> [(Formula c, Formula c)]
+-- | The next obligations of the trace
+nextObligations :: FiniteTrace c -> [Obligation c]
 nextObligations (FiniteTrace {..}) =
   case obligations of
     [] -> assert False undefined
     o:_ -> o
 
 -----------------------------------------------------------------------------
--- | TODO
+-- | Given a formula and a trace calculates (using (local time) caching) the next 
+-- obliation
 checkNext ::
+     Ord c
+  => [(c -> SignalTerm c, PredicateTerm c -> Bool)]
+  -> Formula c
+  -> Formula c
+checkNext trace form = fst $ checkNextC trace empty form
+
+checkNextC ::
      Ord c
   => [(c -> SignalTerm c, PredicateTerm c -> Bool)]
   -> Map (Formula c) (Formula c)
   -> Formula c
   -> (Formula c, Map (Formula c) (Formula c))
-checkNext [] cache form =
+checkNextC [] cache form =
   case form of
     Historically _ -> (TTrue, cache)
     Triggered _ _ -> (TTrue, cache)
     f -> (f, cache)
-checkNext ts@(t:tr) cache form =
+checkNextC ts@(t:tr) cache form =
   let simpForm = simplify form
    in case Map.lookup simpForm cache of
         Just f -> (f, cache)
@@ -118,13 +144,13 @@ checkNext ts@(t:tr) cache form =
                       then (TTrue, empty)
                       else (FFalse, empty)
                   Not f ->
-                    let (f', c) = checkNext ts cache f
+                    let (f', c) = checkNextC ts cache f
                      in (Not f', c)
                   And fs ->
                     let (fs', c) =
                           foldl
                             (\(fr, c) e ->
-                               let (f', c') = checkNext ts c e
+                               let (f', c') = checkNextC ts c e
                                 in (f' : fr, c'))
                             ([], cache)
                             (reverse fs)
@@ -133,7 +159,7 @@ checkNext ts@(t:tr) cache form =
                     let (fs', c) =
                           foldl
                             (\(fr, c) e ->
-                               let (f', c') = checkNext ts c e
+                               let (f', c') = checkNextC ts c e
                                 in (f' : fr, c'))
                             ([], cache)
                             (reverse fs)
@@ -142,28 +168,28 @@ checkNext ts@(t:tr) cache form =
                   Previous f ->
                     case tr of
                       [] -> (FFalse, empty)
-                      _ -> checkNext ts cache $ fst $ checkNext tr empty f
+                      _ -> checkNextC ts cache $ fst $ checkNextC tr empty f
                   Historically f ->
-                    checkNext ts cache $
-                    And [f, fst $ checkNext tr empty (Historically f)]
+                    checkNextC ts cache $
+                    And [f, fst $ checkNextC tr empty (Historically f)]
                   Triggered f1 f2 ->
-                    checkNext ts cache $
+                    checkNextC ts cache $
                     And
-                      [f2, Or [f1, fst $ checkNext tr empty (Triggered f1 f2)]]
+                      [f2, Or [f1, fst $ checkNextC tr empty (Triggered f1 f2)]]
                   -- Expanded
-                  Implies f1 f2 -> checkNext ts cache $ Or [Not f1, f2]
+                  Implies f1 f2 -> checkNextC ts cache $ Or [Not f1, f2]
                   Equiv f1 f2 ->
-                    checkNext ts cache $ And [Implies f1 f2, Implies f2 f1]
-                  Globally f -> checkNext ts cache $ And [f, Next (Globally f)]
-                  Finally f -> checkNext ts cache $ Or [f, Next (Finally f)]
+                    checkNextC ts cache $ And [Implies f1 f2, Implies f2 f1]
+                  Globally f -> checkNextC ts cache $ And [f, Next (Globally f)]
+                  Finally f -> checkNextC ts cache $ Or [f, Next (Finally f)]
                   Until f1 f2 ->
-                    checkNext ts cache $ Or [f2, And [f1, Next (Until f1 f2)]]
+                    checkNextC ts cache $ Or [f2, And [f1, Next (Until f1 f2)]]
                   Weak f1 f2 ->
-                    checkNext ts cache $ Or [f2, And [f1, Next (Until f1 f2)]]
-                  Release f1 f2 -> checkNext ts cache $ Weak f2 (And [f1, f2])
-                  Once f -> checkNext ts cache $ Or [f, Previous (Once f)]
+                    checkNextC ts cache $ Or [f2, And [f1, Next (Until f1 f2)]]
+                  Release f1 f2 -> checkNextC ts cache $ Weak f2 (And [f1, f2])
+                  Once f -> checkNextC ts cache $ Or [f, Previous (Once f)]
                   Since f1 f2 ->
-                    checkNext ts cache $
+                    checkNextC ts cache $
                     Or [f2, And [f1, Previous (Since f1 f2)]]
            in ( (simplify nextForm)
               , insert simpForm (simplify nextForm) (union cache cache'))
@@ -180,7 +206,6 @@ simplify =
         f' -> Not f'
     And [] -> TTrue
     And [f] -> simplify f
-    Or [f] -> simplify f
     And fs ->
       let fs' = map simplify fs
        in if exists isFalse fs'
@@ -196,6 +221,7 @@ simplify =
                    []
                    fs'
     Or [] -> FFalse
+    Or [f] -> simplify f
     Or fs ->
       let fs' = map simplify fs
        in if exists isTrue fs'

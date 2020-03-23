@@ -138,11 +138,11 @@ printTrace sim = do
          cPutStr Cyan "Environment:  "
          cPutStrLn White (predicateEvaluationListToString preds))
       log
-  _ <-
-    sequence $
-    map
-      (\(c, _) -> cPutStrLn Red $ " DEBUG: " ++ formulaToString id c)
-      (nextObligations (trace sim))
+   --_ <-
+   -- sequence $
+   -- map
+    --  (\(c, _) -> cPutStrLn Red $ " DEBUG: " ++ formulaToString id c)
+    --  (nextObligations (trace sim))
   return ()
 
 printImpossibleOptions ::
