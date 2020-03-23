@@ -35,7 +35,6 @@ import TSL.Simulation.AigerSimulator
   , State
   , inputName
   , inputs
-  , latches
   , outputName
   , outputs
   , simStep
@@ -82,13 +81,13 @@ type Witness = [Formula String]
 -- that would be violated
 options ::
      SystemSimulation
-  -> IO [(SystemOption, Witness, [(PredicateTerm String, Bool)])]
-options sim@SystemSimulation {counterStrategy = ct} = do
+  -> [(SystemOption, Witness, [(PredicateTerm String, Bool)])]
+options sim@SystemSimulation {counterStrategy = ct} =
   let options = possibleOptions ct
-  steps <- sequence $ fmap (step sim) options
-  let witnesses = fmap (violated . trace . fst) steps
-  let evaluations = fmap snd steps
-  return $ zip3 options witnesses evaluations
+      steps = fmap (step sim) options
+      witnesses = fmap (violated . trace . fst) steps
+      evaluations = fmap snd steps
+   in zip3 options witnesses evaluations
 
 possibleOptions :: EnvironmentCounterStrategy -> [SystemOption]
 possibleOptions cst =
@@ -125,29 +124,28 @@ possibleOptions cst =
 step ::
      SystemSimulation
   -> SystemOption
-  -> IO (SystemSimulation, [(PredicateTerm String, Bool)])
-step sim@SystemSimulation {..} updates = do
-  input <- return $ \i -> elem (inputName counterStrategy i) updates -- The input for the c-strat circuit
-  putStrLn $ concatMap (\i -> show $ input i) (inputs counterStrategy)
+  -> (SystemSimulation, [(PredicateTerm String, Bool)])
+step sim@SystemSimulation {..} updates =
+  let input = \i -> elem (inputName counterStrategy i) updates -- The input for the c-strat circuit
     --
-  (q, output) <- return $ simStep counterStrategy (head stateStack) input -- The c-strat simulation step
-  putStrLn $ concatMap (\i -> show $ output i) (outputs counterStrategy)
-  putStrLn $ concatMap (\i -> show $ q i) (latches counterStrategy)
+      (q, output) = simStep counterStrategy (head stateStack) input -- The c-strat simulation step
     --
     --
-  eval <-
-    return $
-    [(outputName counterStrategy o, output o) | o <- outputs counterStrategy] --The predicate evaluation generated out of the output
+      eval =
+        [ (outputName counterStrategy o, output o)
+        | o <- outputs counterStrategy
+        ] --The predicate evaluation generated out of the output
     --
-  newTrace <-
-    return $
-    append trace (\c -> findFirst (== c) updates) (\p -> findFirst (== p) eval)
+      newTrace =
+        append
+          trace
+          (\c -> findFirst (== c) updates)
+          (\p -> findFirst (== p) eval)
     --
-  newLog <- return $ (updates, eval) : logTrace
+      newLog = (updates, eval) : logTrace
     --
-  return
-    ( sim {stateStack = q : stateStack, trace = newTrace, logTrace = newLog}
-    , eval)
+   in ( sim {stateStack = q : stateStack, trace = newTrace, logTrace = newLog}
+      , eval)
   where
     findFirst :: (a -> Bool) -> [(a, b)] -> b
     findFirst _ [] = assert False undefined --THIS cant happend iff the simulation is sanitized

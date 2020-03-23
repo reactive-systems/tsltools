@@ -82,7 +82,7 @@ runSimulation sim = do
 
 execSimulation :: SystemSimulation -> IO ()
 execSimulation sim = do
-  opts <- options sim
+  let opts = options sim
   let posOpts = fmap (\(v, _, _) -> v) $ filter (\(_, xs, _) -> null xs) opts
   let imposOpts = filter (\(_, xs, _) -> not $ null xs) opts
   cPutStrLn Magenta "Your options are:"
@@ -120,7 +120,7 @@ execSimulation sim = do
       _ <- sequence $ map printImpossibleOptions imposOpts
       execSimulation sim
     Opt opt -> do
-      (sim', _) <- step sim opt
+      let (sim', _) = step sim opt
       resetInterface
       printTrace sim'
       putStrLn ""
