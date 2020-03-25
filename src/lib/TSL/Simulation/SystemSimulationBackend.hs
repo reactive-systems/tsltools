@@ -91,19 +91,18 @@ options sim@SystemSimulation {counterStrategy = ct} =
 
 possibleOptions :: EnvironmentCounterStrategy -> [SystemOption]
 possibleOptions cst =
-  Set.toList $ Set.fromList $ fmap extendUpdates filteredCombinations
+  let allUpdates = [inputName cst i | i <- inputs cst]
+      cells = removeDoubles $ fmap fst allUpdates
+      allCombinations = Set.map toList $ powerSet $ fromList allUpdates
+      filteredCombinations =
+        toList $ Set.filter (unique . (fmap fst)) $ allCombinations
+   in removeDoubles $
+      fmap (removeDoubles . (extendUpdates cells)) filteredCombinations
   where
-    allUpdates = [inputName cst i | i <- inputs cst]
-    cells = toList $ fromList $ fmap fst allUpdates
-    --
-    allCombinations = Set.map toList $ powerSet $ fromList allUpdates
-    filteredCombinations =
-      toList $ Set.filter (unique . (fmap fst)) $ allCombinations
-    --
     unique [] = True
     unique (c:cr) = (not (elem c cr)) && unique cr
     --
-    extendUpdates updates =
+    extendUpdates cells updates =
       foldl
         (\upds c ->
            if all ((/= c) . fst) upds
@@ -111,6 +110,9 @@ possibleOptions cst =
              else upds)
         updates
         cells
+    --
+    removeDoubles :: Ord a => [a] -> [a]
+    removeDoubles = Set.toList . Set.fromList
 
 -----------------------------------------------------------------------------
 -- | Given an possible action option, simulate one step and calculate the
