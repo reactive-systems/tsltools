@@ -32,6 +32,8 @@ import TSL.Aiger as Aiger
 import Data.Either (lefts, rights)
 import Data.List (find)
 
+import Data.Map as Map (Map, fromList, lookup)
+
 import Control.Exception (assert)
 
 -----------------------------------------------------------------------------
@@ -144,7 +146,17 @@ type Outputs = Output -> Bool
 -- | Evaluat on and simulation step of an normalized circuit
 simStep :: NormCircuit i o -> State -> Inputs -> (State, Outputs)
 simStep NormCircuit {..} state inpt =
-  (\l -> eval (latchCir l) state inpt, \o -> eval (outputCir o) state inpt)
+  let latchMap = functionToMap (latches) $ \l -> eval (latchCir l) state inpt
+      outputMap = functionToMap (outputs) $ \o -> eval (outputCir o) state inpt
+   in (strictLookup latchMap, strictLookup outputMap)
+  where
+    strictLookup m elem =
+      case Map.lookup elem m of
+        Just a -> a
+        Nothing -> assert False undefined
+    --
+    functionToMap :: Ord a => [a] -> (a -> b) -> Map a b
+    functionToMap keys f = fromList $ fmap (\k -> (k, f k)) keys
 
 eval :: CircuitTree -> State -> Inputs -> Bool
 eval ct state inpt =

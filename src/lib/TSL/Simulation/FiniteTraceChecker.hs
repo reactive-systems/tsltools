@@ -10,164 +10,257 @@
 -----------------------------------------------------------------------------
 module TSL.Simulation.FiniteTraceChecker
   ( FiniteTrace
+  , Obligation(..)
   , append
   , rewind
   , emptyTrace
-  , (|=)
+  , violated
+  , nextObligations
   ) where
 
 -----------------------------------------------------------------------------
 import TSL.Logic as Logic (Formula(..), PredicateTerm, SignalTerm)
 
+import Control.Exception (assert)
+
+import Data.Map as Map (Map, empty, insert, lookup, union)
+
 -----------------------------------------------------------------------------
--- | A Finite Trace is List of updates and predicate evalutations 
+-- | A Finite Trace is a stack of updates and predicate evalutations 
 -- (which are partial functions), a finite trace can be extended by append,
--- or rewind
+-- or rewind and the specification that should be fulfilled
 --
-newtype FiniteTrace c =
-  FiniteTrace [(c -> SignalTerm c, PredicateTerm c -> Bool)]
+data FiniteTrace c =
+  FiniteTrace
+    { trace :: [(c -> SignalTerm c, PredicateTerm c -> Bool)]
+    , obligations :: [[Obligation c]]
+    }
+
+data Obligation c =
+  Obligation
+    { guarantee :: Formula c
+    , expTotalFormula :: Formula c
+    , expGuarantee :: Formula c
+    }
 
 -----------------------------------------------------------------------------
 -- | Adds an update and predicate evaluation at the end of a finite trace
 append ::
-     FiniteTrace c
+     Ord c
+  => FiniteTrace c
   -> (c -> SignalTerm c)
   -> (PredicateTerm c -> Bool)
   -> FiniteTrace c
-append (FiniteTrace tr) updates predicates =
-  FiniteTrace $ tr ++ [(updates, predicates)]
+append (ft@FiniteTrace {..}) updates predicates =
+  let newTrace = (updates, predicates) : trace
+      newOb =
+        fmap
+          (\ob@Obligation {expTotalFormula = nextTot, expGuarantee = nextGar} ->
+             ob
+               { expTotalFormula = checkNext newTrace nextTot
+               , expGuarantee = checkNext newTrace nextGar
+               })
+          (nextObligations ft)
+   in ft {trace = newTrace, obligations = newOb : obligations}
 
 -----------------------------------------------------------------------------
 -- | Reverts the last appending to the finite trace. If the trace is empty
 -- the trace stays empty
-rewind :: FiniteTrace c -> FiniteTrace c
-rewind (FiniteTrace ts) =
-  case reverse ts of
-    [] -> FiniteTrace []
-    (_:tr) -> FiniteTrace (reverse tr)
+rewind :: Ord c => FiniteTrace c -> FiniteTrace c
+rewind ft@(FiniteTrace {..}) =
+  case (trace, obligations) of
+    ([], _) -> ft
+    (_:tr, _:or) -> ft {trace = tr, obligations = or}
+    _ -> assert False undefined
 
 -----------------------------------------------------------------------------
 -- | The empty finite trace
-emptyTrace :: FiniteTrace c
-emptyTrace = FiniteTrace []
+emptyTrace :: Ord c => ([Formula c], [Formula c]) -> FiniteTrace c
+emptyTrace (assumptions, guarantees) =
+  FiniteTrace
+    { trace = []
+    , obligations =
+        [ fmap
+            (\g ->
+               Obligation
+                 { guarantee = g
+                 , expTotalFormula = checkNext [] (Implies (And assumptions) g)
+                 , expGuarantee = checkNext [] g
+                 })
+            guarantees
+        ]
+    }
 
 -----------------------------------------------------------------------------
--- | This relation is the satisfcation relation of a finite trace of a TSL formula
--- Checking is done by expansion. The checking function uses a three value logic
--- where the neutral value is used if a trace ends. Satisifcation holds when 
--- the outcoming value is not false (in the three value logic). This means
--- that the finite trace is a bad prefix the formula
-(|=) :: Eq c => FiniteTrace c -> Formula c -> Bool
-(|=) (FiniteTrace ts) f = check [] ts f /= FF
+-- | This function returns the violated guarantees
+violated :: Eq c => FiniteTrace c -> [Formula c]
+violated ft =
+  fmap guarantee $ filter ((== FFalse) . expTotalFormula) (nextObligations ft)
 
-check ::
-     Eq c
+-----------------------------------------------------------------------------
+-- | The next obligations of the trace
+nextObligations :: FiniteTrace c -> [Obligation c]
+nextObligations (FiniteTrace {..}) =
+  case obligations of
+    [] -> assert False undefined
+    o:_ -> o
+
+-----------------------------------------------------------------------------
+-- | Given a formula and a trace calculates (using (local time) caching) the next 
+-- obliation
+checkNext ::
+     Ord c
   => [(c -> SignalTerm c, PredicateTerm c -> Bool)]
-  -> [(c -> SignalTerm c, PredicateTerm c -> Bool)]
   -> Formula c
-  -> TBool
-check [] [] =
+  -> Formula c
+checkNext trace form = fst $ checkNextC trace empty form
+
+checkNextC ::
+     Ord c
+  => [(c -> SignalTerm c, PredicateTerm c -> Bool)]
+  -> Map (Formula c) (Formula c)
+  -> Formula c
+  -> (Formula c, Map (Formula c) (Formula c))
+checkNextC [] cache form =
+  case form of
+    Historically _ -> (TTrue, cache)
+    Triggered _ _ -> (TTrue, cache)
+    f -> (f, cache)
+checkNextC ts@(t:tr) cache form =
+  let simpForm = simplify form
+   in case Map.lookup simpForm cache of
+        Just f -> (f, cache)
+        Nothing ->
+          let (nextForm, cache') =
+                case form of
+                  TTrue -> (TTrue, empty)
+                  FFalse -> (FFalse, empty)
+                  Check p ->
+                    if (snd t) p
+                      then (TTrue, empty)
+                      else (FFalse, empty)
+                  Update c st ->
+                    if (fst t) c == st
+                      then (TTrue, empty)
+                      else (FFalse, empty)
+                  Not f ->
+                    let (f', c) = checkNextC ts cache f
+                     in (Not f', c)
+                  And fs ->
+                    let (fs', c) =
+                          foldl
+                            (\(fr, c) e ->
+                               let (f', c') = checkNextC ts c e
+                                in (f' : fr, c'))
+                            ([], cache)
+                            (reverse fs)
+                     in (And fs', c)
+                  Or fs ->
+                    let (fs', c) =
+                          foldl
+                            (\(fr, c) e ->
+                               let (f', c') = checkNextC ts c e
+                                in (f' : fr, c'))
+                            ([], cache)
+                            (reverse fs)
+                     in (Or fs', c)
+                  Next f -> (f, cache)
+                  Previous f ->
+                    case tr of
+                      [] -> (FFalse, empty)
+                      _ -> checkNextC ts cache $ fst $ checkNextC tr empty f
+                  Historically f ->
+                    checkNextC ts cache $
+                    And [f, fst $ checkNextC tr empty (Historically f)]
+                  Triggered f1 f2 ->
+                    checkNextC ts cache $
+                    And
+                      [f2, Or [f1, fst $ checkNextC tr empty (Triggered f1 f2)]]
+                  -- Expanded
+                  Implies f1 f2 -> checkNextC ts cache $ Or [Not f1, f2]
+                  Equiv f1 f2 ->
+                    checkNextC ts cache $ And [Implies f1 f2, Implies f2 f1]
+                  Globally f -> checkNextC ts cache $ And [f, Next (Globally f)]
+                  Finally f -> checkNextC ts cache $ Or [f, Next (Finally f)]
+                  Until f1 f2 ->
+                    checkNextC ts cache $ Or [f2, And [f1, Next (Until f1 f2)]]
+                  Weak f1 f2 ->
+                    checkNextC ts cache $ Or [f2, And [f1, Next (Until f1 f2)]]
+                  Release f1 f2 -> checkNextC ts cache $ Weak f2 (And [f1, f2])
+                  Once f -> checkNextC ts cache $ Or [f, Previous (Once f)]
+                  Since f1 f2 ->
+                    checkNextC ts cache $
+                    Or [f2, And [f1, Previous (Since f1 f2)]]
+           in ( (simplify nextForm)
+              , insert simpForm (simplify nextForm) (union cache cache'))
+
+-----------------------------------------------------------------------------
+-- | Simplifies a TSL formula
+simplify :: Eq c => Formula c -> Formula c
+simplify =
   \case
-    FFalse -> FF
-    TTrue -> TT
-    Previous _ -> FF
-    _ -> NN
-check (o:old) [] =
-  \case
-    FFalse -> FF
-    TTrue -> TT
-    Previous f -> check old [o] f
-    Once f -> check old [o] (Once f)
-    Historically f -> check old [o] (Historically f)
-    Since f1 f2 -> check old [o] (Since f1 f2)
-    Triggered f1 f2 -> check old [o] (Triggered f1 f2)
-    _ -> NN
-check old ts@(t:tr) =
-  \case
-    TTrue -> TT
-    FFalse -> FF
-    --None temporal Base
-    Check p -> fromBool $ (snd t) p
-    Update c st -> fromBool $ (fst t) c == st
-    Not f -> tNot $ check old ts f
-    And fs -> tConj $ map (check old ts) fs
-    Or fs -> tDisj $ map (check old ts) fs
-    --None temporal derived
-    Implies f1 f2 -> check old ts $ Or [Not f1, f2]
-    Equiv f1 f2 -> check old ts $ And [Implies f1 f2, Implies f2 f1]
-    -- Temporal, note that H, T cant be expanded due to the missing Z operator
-    Next f -> check (t : old) tr f
-    Previous f ->
-      case old of
-        [] -> FF
-        (o:ol) -> check ol (o : ts) f
-    Historically f ->
-      (check old ts f) &&&
-      case old of
-        [] -> TT
-        (o:ol) -> check ol (o : ts) (Historically f)
-    Triggered f1 f2 ->
-      (check old ts f2) &&&
-      ((check old ts f1) |||
-       case old of
-         [] -> TT
-         (o:ol) -> check ol (o : ts) (Triggered f1 f2))
-    -- Temporal Expanded
-    Globally f -> check old ts $ And [f, Next (Globally f)]
-    Finally f -> check old ts $ Or [f, Next (Finally f)]
-    Until f1 f2 -> check old ts $ Or [f2, And [f1, Next (Until f1 f2)]]
-    Weak f1 f2 -> check old ts $ Or [f2, And [f1, Next (Until f1 f2)]]
-    Release f1 f2 -> check old ts $ Weak f2 (And [f1, f2])
-    Once f -> check old ts $ Or [f, Previous (Once f)]
-    Since f1 f2 -> check old ts $ Or [f2, And [f1, Previous (Since f1 f2)]]
-
------------------------------------------------------------------------------
--- | Data structure for a three value logic
-data TBool
-  = TT
-  | NN
-  | FF
-  deriving (Eq, Ord, Show)
-
------------------------------------------------------------------------------
--- | Converts a bool to a three value bool
-fromBool :: Bool -> TBool
-fromBool True = TT
-fromBool False = FF
-
------------------------------------------------------------------------------
--- | Three value disjunction
-(|||) :: TBool -> TBool -> TBool
-(|||) TT _ = TT
-(|||) _ TT = TT
-(|||) NN _ = NN
-(|||) _ NN = NN
-(|||) _ _ = FF
-
------------------------------------------------------------------------------
--- | Three value conjunction
-(&&&) :: TBool -> TBool -> TBool
-(&&&) FF _ = FF
-(&&&) _ FF = FF
-(&&&) NN _ = NN
-(&&&) _ NN = NN
-(&&&) _ _ = TT
-
------------------------------------------------------------------------------
--- | Three value negation
-tNot :: TBool -> TBool
-tNot TT = FF
-tNot NN = NN
-tNot FF = NN
-
------------------------------------------------------------------------------
--- | Three value list conjunction (conjunct all elements of the list)
-tConj :: [TBool] -> TBool
-tConj [] = TT
-tConj (x:xr) = x &&& tConj xr
-
------------------------------------------------------------------------------
--- | Three value list disjunction (conjunct all elements of the list)
-tDisj :: [TBool] -> TBool
-tDisj [] = FF
-tDisj (x:xr) = x ||| tDisj xr
+    Not f ->
+      case simplify f of
+        TTrue -> FFalse
+        FFalse -> TTrue
+        f' -> Not f'
+    And [] -> TTrue
+    And [f] -> simplify f
+    And fs ->
+      let fs' = map simplify fs
+       in if exists isFalse fs'
+            then FFalse
+            else And $
+                 removeDoubles $
+                 foldl
+                   (\xs e ->
+                      case e of
+                        And g -> g ++ xs
+                        TTrue -> xs
+                        g -> g : xs)
+                   []
+                   fs'
+    Or [] -> FFalse
+    Or [f] -> simplify f
+    Or fs ->
+      let fs' = map simplify fs
+       in if exists isTrue fs'
+            then TTrue
+            else Or $
+                 removeDoubles $
+                 foldl
+                   (\xs e ->
+                      case e of
+                        Or g -> g ++ xs
+                        FFalse -> xs
+                        g -> g : xs)
+                   []
+                   fs'
+    Implies f1 f2 ->
+      case (simplify f1, simplify f2) of
+        (FFalse, _) -> TTrue
+        (TTrue, f) -> f
+        (f1', f2') -> Implies f1' f2'
+    Equiv f1 f2 ->
+      case (simplify f1, simplify f2) of
+        (FFalse, f) -> simplify (Not f)
+        (f, FFalse) -> simplify (Not f)
+        (f, TTrue) -> f
+        (TTrue, f) -> f
+        (f1', f2') -> Equiv f1' f2'
+    f -> f
+  where
+    isFalse FFalse = True
+    isFalse _ = False
+    --
+    isTrue TTrue = True
+    isTrue _ = False
+    --
+    exists p xs = not (all (\z -> not (p z)) xs)
+    -- 
+    removeDoubles :: Eq a => [a] -> [a]
+    removeDoubles [] = []
+    removeDoubles (x:xr) =
+      if x `elem` xr
+        then removeDoubles xr
+        else x : removeDoubles xr

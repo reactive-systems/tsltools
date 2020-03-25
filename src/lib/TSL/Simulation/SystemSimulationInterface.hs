@@ -28,6 +28,11 @@ import TSL.Simulation.SystemSimulationBackend
   , step
   )
 
+import TSL.Simulation.FiniteTraceChecker
+  ( Obligation(expGuarantee)
+  , nextObligations
+  )
+
 import TSL.Logic (Formula, PredicateTerm)
 
 import TSL.Simulation.InterfacePrintingUtils
@@ -76,6 +81,8 @@ runSimulation :: SystemSimulation -> IO ()
 runSimulation sim = do
   initInterface
   resetInterface
+  printTrace sim
+  cPutStrLn White ""
   execSimulation sim
 
 execSimulation :: SystemSimulation -> IO ()
@@ -127,8 +134,7 @@ execSimulation sim = do
 printTrace :: SystemSimulation -> IO ()
 printTrace sim = do
   let log = getLog sim
-  _ <-
-    sequence $
+  sequence_ $
     map
       (\(opt, preds) -> do
          cPutStr Cyan "You (System): "
@@ -136,6 +142,12 @@ printTrace sim = do
          cPutStr Cyan "Environment:  "
          cPutStrLn White (predicateEvaluationListToString preds))
       log
+  cPutStrLn White ""
+  cPutStrLn Magenta "Your obligations are:"
+  sequence_ $
+    map
+      (\o -> cPutStrLn White ("> " ++ formulaToString id (expGuarantee o)))
+      (nextObligations (trace sim))
   return ()
 
 printImpossibleOptions ::

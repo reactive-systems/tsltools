@@ -26,8 +26,6 @@ import Control.Exception (assert)
 
 import TSL.Specification (TSLStringSpecification(..))
 
-import qualified Data.List as List (filter)
-
 import Data.Set as Set
   ( Set
   , difference
@@ -48,7 +46,7 @@ import TSL.Simulation.AigerSimulator
   , simStep
   )
 
-import TSL.Simulation.FiniteTraceChecker as FTC (FiniteTrace, (|=), append)
+import TSL.Simulation.FiniteTraceChecker as FTC (FiniteTrace, append, violated)
 
 import qualified TSL.Simulation.FiniteTraceChecker as FTC (rewind)
 
@@ -94,12 +92,12 @@ type Witness = [Formula String]
 options ::
      EnvironmentSimulation
   -> [(EnvironmentOption, Witness, [(String, SignalTerm String)])]
-options sim@EnvironmentSimulation {strategy = ct, specification = spec} =
+options sim@EnvironmentSimulation {strategy = ct} =
   zip3 options witnesses evaluations
   where
     options = possibleOptions ct
     steps = fmap (step sim) options
-    witnesses = fmap ((violatedAssumptions spec) . trace . fst) steps
+    witnesses = fmap (violated . trace . fst) steps
     evaluations = fmap snd steps
 
 possibleOptions :: SystemStrategy -> [EnvironmentOption]
@@ -109,10 +107,6 @@ possibleOptions cst =
    in fmap
         (\s -> (fromList allPredicates, \p -> p `member` s))
         allPredicateChoices
-
-violatedAssumptions :: TSLStringSpecification -> FiniteTrace String -> Witness
-violatedAssumptions TSLStringSpecification {assumptionsStr = assmpt} trace =
-  List.filter (\f -> not (trace |= f)) assmpt
 
 -----------------------------------------------------------------------------
 --  | Given an possible action option, simulate one step and calculate the
