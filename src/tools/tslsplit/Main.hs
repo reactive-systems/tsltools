@@ -99,7 +99,7 @@ main = do
           Right s  -> do
             let specs = if ignore then splitIgnoreAssumptions s else split s
             path <- getCurrentDirectory
-            let filepathN = \n -> path </> (takeBaseName (filepath)) <.> (show n) <.> "tsl"
+            let filepathN = \n -> path </> (takeBaseName filepath) ++ "_" ++ (show n) <.> "tsl"
             mapM_ (\(s,n) -> writeFile (filepathN n) (tslSpecToString s) ) $ zip specs [1::Int,2..]
 
   where
