@@ -229,8 +229,8 @@ evalExpression s a e =
         VEmpty ->
           assert (null $ stArgs s i) $
           case stBindings s i of
-            GuardedBinding xs -> vFirst xs
-            _                 -> assert False undefined
+            Just (GuardedBinding xs) -> vFirst xs
+            _                        -> assert False undefined
         v      -> return v
     BaseFn {}            -> evalFnApplication [] e
     Pattern {}           -> assert False undefined
@@ -262,8 +262,8 @@ evalExpression s a e =
                        zip as $ z':xs
               mapM_ (uncurry (writeArray a)) zs
               case stBindings s i of
-                GuardedBinding es -> vFirst es
-                _                 -> assert False undefined
+                Just (GuardedBinding es) -> vFirst es
+                _                        -> assert False undefined
             _         -> assert False undefined
           _         -> assert False undefined
       _          -> assert False undefined

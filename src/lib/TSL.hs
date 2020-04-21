@@ -43,7 +43,7 @@ module TSL
     -- * CFM Utilities  
   , fromCFM
   , statistics
-  , csvSymbolTable
+  , symbolTable
   , implement
     -- * Aiger Utilities
   , parseAag
@@ -87,7 +87,7 @@ import TSL.Simulation (simulate)
 
 import TSL.TLSF (toTLSF)
 
-import TSL.CFM (CFM, csvSymbolTable, fromCFM, statistics)
+import TSL.CFM (CFM, symbolTable, fromCFM, statistics)
 
 import qualified TSL.Writer.Clash as Clash (implement)
 

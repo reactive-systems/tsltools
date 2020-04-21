@@ -272,15 +272,15 @@ symtable RD.Specification{..} =
       $ toList
       $ foldl extractOutputAssignments empty es
 
-
     idT i = {-updType si so i $ -} fromMaybe (TPoly i) $ IM.lookup i types
 
     -- list of identifiers sorted by dependencies
-    is' = topSort
-         $ transposeG
-         $ buildG (minkey, maxkey)
-         $ concatMap (\(i,xs) -> map (i,) xs)
-         $ IM.toAscList dependencies
+    is' =
+      topSort
+      $ transposeG
+      $ buildG (minkey, maxkey)
+      $ concatMap (\(i,xs) -> map (i,) xs)
+      $ IM.toAscList dependencies
 
     -- update mapping accoording to dependency order
     uD = (IM.fromList $ zip is' [minkey, minkey + 1 .. maxkey])
@@ -306,9 +306,9 @@ symtable RD.Specification{..} =
     -- sorted identifiers by above ordering
     is = sortBy cmp $ IM.keys names
  in
-     SymbolTable
-   $ A.array (minkey, maxkey)
-   $ map (\i -> (i, entry oa si so i)) is
+   SymbolTable
+     $ A.array (minkey, maxkey)
+     $ map (\i -> (i, entry oa si so i)) is
 
   where
     getExprs = \case
@@ -325,9 +325,9 @@ symtable RD.Specification{..} =
       in
         IdRec
           { idName     = assert (IM.member i names) (names IM.! i)
-          , idPos      = assert (IM.member i positions) (positions IM.! i)
+          , idPos      = assert (IM.member i positions) $ Just (positions IM.! i)
           , idArgs     = as
-          , idBindings = assert (IM.member i bindings) (bindings IM.! i)
+          , idBindings = assert (IM.member i bindings) $ Just (bindings IM.! i)
           , idType     = t
           , idDeps     = if
               | member i so -> case IM.lookup i oa of
