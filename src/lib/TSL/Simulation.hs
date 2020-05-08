@@ -50,7 +50,7 @@ import TSL.Aiger (Circuit, parseAag)
 
 import TSL.Simulation.AigerSimulator (normalize)
 
-import TSL.Logic (readInput, readOutput)
+import TSL.Logic (decodeAPInput, decodeAPOutput)
 
 import TSL.Error (Error)
 
@@ -70,7 +70,7 @@ createSimulation ::
   -> TSLSpecification
   -> Either Error (Either SystemSimulation EnvironmentSimulation)
 createSimulation aag spec =
-  case normalize readOutput readInput aag of
+  case normalize decodeAPOutput decodeAPInput aag of
     Right naag ->
       let stringSpec = tslSpecToTSLStrSpec spec
           sim =
@@ -87,7 +87,7 @@ createSimulation aag spec =
             Nothing -> Right (Left sim)
             Just err -> genericError $ err
     Left _ ->
-      case normalize readInput readOutput aag of
+      case normalize decodeAPInput decodeAPOutput aag of
         Right naag ->
           let stringSpec = tslSpecToTSLStrSpec spec
               sim =

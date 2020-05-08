@@ -33,8 +33,8 @@ import TSL.Logic
   ( Formula(..)
   , SignalTerm(..)
   , tlsfFormula
-  , tlsfPredicates
-  , tlsfUpdates
+  , encodedPredicates
+  , encodedUpdates
   , exactlyOne
   )
 
@@ -81,22 +81,22 @@ toTLSF name Specification{..} = unlines
       , concatMap ((++ ";\n") . ("    " ++)) outputs ++ "  }"
       ]
   , "  GUARANTEE {"
-  , "    " ++ tlsfFormula (And [Globally mutual, fml])  ++ ";"
+  , "    " ++ toTLSF (And [Globally mutual, formula])  ++ ";"
   , "  }"
   , "}"
   ]
 
   where
-    fml = fmap (stName symboltable) formula
+    toTLSF = tlsfFormula (stName symboltable)
+
+    inputs = map (toTLSF . Check) $ encodedPredicates formula
+    outputs = map (toTLSF . uncurry Update) updates
 
     updates =
-      elems $ union (fromList $ tlsfUpdates fml) $
-      fromList $ map ((\x -> (x, Signal x)) . fst) $
-      tlsfUpdates fml
-
-    inputs = map (tlsfFormula . Check) $ tlsfPredicates fml
-
-    outputs = map (tlsfFormula . uncurry Update) updates
+      -- collect updates from the formula
+      elems $ union (fromList $ encodedUpdates formula) $
+      -- and add self updates
+      fromList $ map ((\x -> (x, Signal x)) . fst) $ encodedUpdates formula
 
     mutual =
       And

@@ -16,18 +16,17 @@
 -----------------------------------------------------------------------------
 
 module TSL.Logic
-  ( SignalTerm(..)
+  ( Formula(..)
+  , SignalTerm(..)
   , FunctionTerm(..)
   , PredicateTerm(..)
-  , Formula(..)
+  , encodeAPInput
+  , encodeAPOutput
+  , decodeAPInput
+  , decodeAPOutput
   , tlsfFormula
-  , tlsfPredicates
-  , tlsfUpdates
-  , readInput
-  , readOutput
-  , propInverseEscapeDescape
-  , propReadInput
-  , propReadOutput
+  , encodedPredicates
+  , encodedUpdates
   , exactlyOne
   , tslSize
   ) where
@@ -38,8 +37,6 @@ import Data.Char
   ( toLower
   , isUpper
   , toUpper
-  , chr
-  , ord
   )
 
 import Data.Set
@@ -76,7 +73,6 @@ import Test.QuickCheck
   ( Arbitrary
   , arbitrary
   , choose
-  , listOf
   )
 
 -----------------------------------------------------------------------------
@@ -307,15 +303,15 @@ exactlyOne xs =
 -- | Converts a formula to TLSF.
 
 tlsfFormula
-  :: Formula String -> String
+  :: (a -> String) -> Formula a -> String
 
-tlsfFormula = pr
+tlsfFormula f = pr
   where
     pr = \case
       TTrue          -> "true"
       FFalse         -> "false"
-      Check t        -> "p0" ++ tlsfPredicate t
-      Update s t     -> "u0" ++ escape s ++ "0" ++ tlsfSignal t
+      Check t        -> encodeAPInput f t
+      Update s t     -> encodeAPOutput f s t
       Not x          -> "! (" ++ pr x ++ ")"
       Implies x y    -> "(" ++ pr x ++ ") -> (" ++ pr y ++ ")"
       Equiv x y      -> "(" ++ pr x ++ ") <-> (" ++ pr y ++ ")"
@@ -339,113 +335,129 @@ tlsfFormula = pr
 
 -----------------------------------------------------------------------------
 
+encodeAPInput
+  :: (a -> String) -> PredicateTerm a -> String
+
+encodeAPInput f =
+  ("p0" ++) . encodeAPPredicate f
+
+-----------------------------------------------------------------------------
+
+encodeAPOutput
+  :: (a -> String) -> a -> SignalTerm a -> String
+
+encodeAPOutput f s t =
+  "u0" ++ escape (f s) ++ "0" ++ encodeAPSignal f t
+
+-----------------------------------------------------------------------------
+
 -- | Converts a function term to a TLSF identifier.
 
-tlsfFunction
-  :: FunctionTerm String -> String
+encodeAPFunction
+  :: (a -> String) -> FunctionTerm a -> String
 
-tlsfFunction = \case
-  FunctionSymbol s -> escape s
-  FApplied t t'    -> tlsfFunction t ++ "0" ++ tlsfSignal t'
+encodeAPFunction f = \case
+  FunctionSymbol s -> escape (f s)
+  FApplied t t'    -> encodeAPFunction f t ++ "0" ++ encodeAPSignal f t'
 
 -----------------------------------------------------------------------------
 
 -- | Converts a predicate term to a TLSF identifier.
 
-tlsfPredicate
-  :: PredicateTerm String -> String
+encodeAPPredicate
+  :: (a -> String) -> PredicateTerm a -> String
 
-tlsfPredicate = \case
+encodeAPPredicate f = \case
   BooleanTrue       -> "bt"
   BooleanFalse      -> "bf"
-  BooleanInput s    -> "b0" ++ escape s
-  PredicateSymbol s -> "p0" ++ escape s
-  PApplied t t'     -> tlsfPredicate t ++ "0" ++ tlsfSignal t'
+  BooleanInput s    -> "b0" ++ escape (f s)
+  PredicateSymbol s -> "p0" ++ escape (f s)
+  PApplied t t'     -> encodeAPPredicate f t ++ "0" ++ encodeAPSignal f t'
 
 -----------------------------------------------------------------------------
 
 -- | Conversts a signal term to a TLSF identifier.
 
-tlsfSignal
-  :: SignalTerm String -> String
+encodeAPSignal
+  :: (a -> String) -> SignalTerm a -> String
 
-tlsfSignal = \case
-  Signal s        -> escape s
-  FunctionTerm t  -> "f1d" ++ tlsfFunction t ++ "1b"
-  PredicateTerm t -> "p1d" ++ tlsfPredicate t ++ "1b"
+encodeAPSignal f = \case
+  Signal s        -> escape (f s)
+  FunctionTerm t  -> "f1d" ++ encodeAPFunction f t ++ "1b"
+  PredicateTerm t -> "p1d" ++ encodeAPPredicate f t ++ "1b"
 
 -----------------------------------------------------------------------------
 
--- | Adds all TLSF inputs, generated from a TSL formula, to the given
--- accumulator.
+-- | Adds all encoded input atomic propositions, generated from a TSL
+-- formula, to the given accumulator.
 
-tlsfPredicates
+encodedPredicates
   :: Ord a => Formula a -> [PredicateTerm a]
 
-tlsfPredicates = elems . tlsfPredicates' empty
+encodedPredicates = elems . preds empty
   where
-    tlsfPredicates' s = \case
+    preds s = \case
       TTrue          -> s
       FFalse         -> s
       Update {}      -> s
       Check p        -> insert p s
-      Not x          -> tlsfPredicates' s x
-      Implies x y    -> tlsfPredicates' (tlsfPredicates' s x) y
-      Equiv x y      -> tlsfPredicates' (tlsfPredicates' s x) y
-      And xs         -> foldl tlsfPredicates' s xs
-      Or xs          -> foldl tlsfPredicates' s xs
-      Next x         -> tlsfPredicates' s x
-      Previous x     -> tlsfPredicates' s x
-      Globally x     -> tlsfPredicates' s x
-      Finally x      -> tlsfPredicates' s x
-      Historically x -> tlsfPredicates' s x
-      Once x         -> tlsfPredicates' s x
-      Until x y      -> tlsfPredicates' (tlsfPredicates' s x) y
-      Release x y    -> tlsfPredicates' (tlsfPredicates' s x) y
-      Weak x y       -> tlsfPredicates' (tlsfPredicates' s x) y
-      Since x y      -> tlsfPredicates' (tlsfPredicates' s x) y
-      Triggered x y  -> tlsfPredicates' (tlsfPredicates' s x) y
+      Not x          -> preds s x
+      Implies x y    -> preds (preds s x) y
+      Equiv x y      -> preds (preds s x) y
+      And xs         -> foldl preds s xs
+      Or xs          -> foldl preds s xs
+      Next x         -> preds s x
+      Previous x     -> preds s x
+      Globally x     -> preds s x
+      Finally x      -> preds s x
+      Historically x -> preds s x
+      Once x         -> preds s x
+      Until x y      -> preds (preds s x) y
+      Release x y    -> preds (preds s x) y
+      Weak x y       -> preds (preds s x) y
+      Since x y      -> preds (preds s x) y
+      Triggered x y  -> preds (preds s x) y
 
 -----------------------------------------------------------------------------
 
--- | Adds all TLSF outputs, generated from a TSL formula, to the given
--- accumulator.
+-- | Adds all encoded output atomic propositions, generated from a TSL
+-- formula, to the given accumulator.
 
-tlsfUpdates
+encodedUpdates
   :: Ord a => Formula a -> [(a, SignalTerm a)]
 
-tlsfUpdates = elems . tlsfUpdates' empty
+encodedUpdates = elems . upds empty
   where
-    tlsfUpdates' s = \case
+    upds s = \case
       TTrue          -> s
       FFalse         -> s
       Check {}       -> s
       Update x t     -> insert (x,t) s
-      Not x          -> tlsfUpdates' s x
-      Implies x y    -> tlsfUpdates' (tlsfUpdates' s x) y
-      Equiv x y      -> tlsfUpdates' (tlsfUpdates' s x) y
-      And xs         -> foldl tlsfUpdates' s xs
-      Or xs          -> foldl tlsfUpdates' s xs
-      Next x         -> tlsfUpdates' s x
-      Previous x     -> tlsfUpdates' s x
-      Globally x     -> tlsfUpdates' s x
-      Finally x      -> tlsfUpdates' s x
-      Historically x -> tlsfUpdates' s x
-      Once x         -> tlsfUpdates' s x
-      Until x y      -> tlsfUpdates' (tlsfUpdates' s x) y
-      Release x y    -> tlsfUpdates' (tlsfUpdates' s x) y
-      Weak x y       -> tlsfUpdates' (tlsfUpdates' s x) y
-      Since x y      -> tlsfUpdates' (tlsfUpdates' s x) y
-      Triggered x y  -> tlsfUpdates' (tlsfUpdates' s x) y
+      Not x          -> upds s x
+      Implies x y    -> upds (upds s x) y
+      Equiv x y      -> upds (upds s x) y
+      And xs         -> foldl upds s xs
+      Or xs          -> foldl upds s xs
+      Next x         -> upds s x
+      Previous x     -> upds s x
+      Globally x     -> upds s x
+      Finally x      -> upds s x
+      Historically x -> upds s x
+      Once x         -> upds s x
+      Until x y      -> upds (upds s x) y
+      Release x y    -> upds (upds s x) y
+      Weak x y       -> upds (upds s x) y
+      Since x y      -> upds (upds s x) y
+      Triggered x y  -> upds (upds s x) y
 
 -----------------------------------------------------------------------------
 
 -- | Parses the term structure from a generated TSLF input.
 
-readInput
+decodeAPInput
   :: String -> Either Error (PredicateTerm String)
 
-readInput str =
+decodeAPInput str =
   case parse (string "p0" >> predicateParser) "Format Error" str of
     Left err -> parseError err
     Right x  -> return x
@@ -454,10 +466,10 @@ readInput str =
 
 -- | Parses the term structure from a generated TSLF output.
 
-readOutput
+decodeAPOutput
   :: String -> Either Error (String, SignalTerm String)
 
-readOutput str =
+decodeAPOutput str =
   case parse outputParser "Format Error" str of
     Left err -> parseError err
     Right x  -> return x
@@ -579,80 +591,5 @@ escape = escape' []
         _
           | isUpper c -> escape' (toLower c : '2' : a) cr
           | otherwise -> escape' (c : a) cr
-
------------------------------------------------------------------------------
-
-
-
------------------------------------------------------------------------------
------------------------------------------------------------------------------
--- Quick Check Properties
------------------------------------------------------------------------------
------------------------------------------------------------------------------
-
--- | String wrapper to create special arbitrary instance for identifiers.
-
-newtype Identifier = Identifier { identifier :: String }
-  deriving (Show, Ord, Eq)
-
------------------------------------------------------------------------------
-
--- | Arbitrary instance for identifiers.
-
-instance Arbitrary Identifier where
-  arbitrary = do
-    x <- choose (10 :: Int, 61 :: Int)
-    xr <- listOf $ choose (0 :: Int, 65 :: Int)
-    return $ Identifier $ map toC $ x : xr
-
-    where
-      toC c
-        | c < 10          = chr (ord '0' + c)
-        | c >= 10 && c < 36 = chr (ord 'a' + (c - 10))
-        | c >= 36 && c < 62 = chr (ord 'A' + (c - 36))
-        | c == 62          = '_'
-        | c == 63          = '@'
-        | c == 64          = '.'
-        | otherwise       = '\''
-
------------------------------------------------------------------------------
-
--- | The functions 'escape' and 'descape' are inverse of each other.
-
-propInverseEscapeDescape
-  :: Identifier -> Bool
-
-propInverseEscapeDescape s =
-  case parse identParser "check" $ escape $ identifier s of
-    Right x -> x == identifier s
-    Left _  -> False
-
------------------------------------------------------------------------------
-
--- | The printer or TSL predicates to TLSF inputs and the corresponing
--- reader are compatible with each other.
-
-propReadInput
-  :: PredicateTerm Identifier -> Bool
-
-propReadInput p =
-  case readInput $ tlsfFormula $
-       Check $ fmap identifier p of
-    Right x -> x == fmap identifier p
-    Left _  -> False
-
------------------------------------------------------------------------------
-
--- | The printer or TSL updates to TLSF outputs and the corresponing
--- reader are compatible with each other.
-
-propReadOutput
-  :: (Identifier, SignalTerm Identifier) -> Bool
-
-propReadOutput (o,s) =
-  case readOutput $ tlsfFormula $
-       Update (identifier o) (fmap identifier s) of
-    Right x -> x == (identifier o, fmap identifier s)
-    Left _  -> False
 
 -----------------------------------------------------------------------------

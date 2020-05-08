@@ -93,21 +93,6 @@ main = do
         str <- getContents
         case fromTSL str of
           Left err -> do
-            cPutStrLn Red "invalid"
-            resetColors
-            hPrint stderr err
-            hPutStrLn stderr ""
-            return False
-
-          Right _  -> do
-            cPutStrLn Green "valid"
-            resetColors
-            return True
-
-    checkStdIn = do
-        str <- getContents
-        case fromTSL str of
-          Left err -> do
             cPutStr Red "invalid"
             resetColors
             hPrint stderr err
@@ -132,4 +117,5 @@ main = do
       hSetSGR stderr [SetColor Foreground Vivid c]
       hPutStrLn stderr str
     resetColors = hSetSGR stderr [Reset]
+
 -----------------------------------------------------------------------------

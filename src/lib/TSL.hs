@@ -6,13 +6,22 @@
 -- TSL tools library interface.
 --
 -----------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase #-}
+
+{-# LANGUAGE
+
+    LambdaCase
+
+  #-}
 
 -----------------------------------------------------------------------------
+
 module TSL
   ( -- * Data Structures
     Error
-  , Formula
+  , Formula(..)
+  , SignalTerm(..)
+  , FunctionTerm(..)
+  , PredicateTerm(..)
   , Specification(..)
   , TSLSpecification(..)
   , CodeTarget(..)
@@ -22,6 +31,10 @@ module TSL
   , FunctionName
   , Circuit
     -- * Formula Utilities
+  , encodeAPInput
+  , encodeAPOutput
+  , decodeAPInput
+  , decodeAPOutput
   , getOutputs
   , getPossibleUpdates
   , getUpdates
@@ -40,7 +53,7 @@ module TSL
   , toTLSF
   , splitIgnoreAssumptions
   , split
-    -- * CFM Utilities  
+    -- * CFM Utilities
   , fromCFM
   , statistics
   , symbolTable
@@ -52,7 +65,18 @@ module TSL
   ) where
 
 -----------------------------------------------------------------------------
-import TSL.Logic (Formula, tslSize)
+
+import TSL.Logic
+  ( Formula(..)
+  , SignalTerm(..)
+  , FunctionTerm(..)
+  , PredicateTerm(..)
+  , encodeAPInput
+  , encodeAPOutput
+  , decodeAPInput
+  , decodeAPOutput
+  , tslSize
+  )
 
 import TSL.FormulaUtils
   ( conjunctFormulas
@@ -65,9 +89,14 @@ import TSL.FormulaUtils
   , negateFormula
   )
 
-import TSL.Error (Error)
+import TSL.Error
+  ( Error
+  )
 
-import TSL.SymbolTable (SymbolTable, st2csv)
+import TSL.SymbolTable
+  ( SymbolTable
+  , st2csv
+  )
 
 import TSL.Specification
   ( Specification(..)
@@ -98,6 +127,7 @@ import qualified TSL.Writer.Arrow as Arrow (implement)
 import qualified TSL.Writer.Monadic as Monadic (implement)
 
 -----------------------------------------------------------------------------
+
 data CodeTarget
   = Applicative
   | Monadic
@@ -106,19 +136,25 @@ data CodeTarget
   deriving (Show, Ord, Eq)
 
 -----------------------------------------------------------------------------
+
 type ModuleName = String
 
 type FunctionName = String
 
 -----------------------------------------------------------------------------
+
 -- | Generates code for a specific target from a CFM. The function
 -- uses the given module name to generate a module that exports a
 -- single function with the given function name.
-implement :: CodeTarget -> ModuleName -> FunctionName -> CFM -> String
+
+implement
+  :: CodeTarget -> ModuleName -> FunctionName -> CFM -> String
+
 implement =
   \case
     Applicative -> Applicative.implement
     Arrow -> Arrow.implement
     Clash -> Clash.implement
     Monadic -> Monadic.implement
+
 -----------------------------------------------------------------------------

@@ -19,7 +19,9 @@ source-repository head
 library
 
   ghc-options:
-    -Wall -Wno-name-shadowing -fno-ignore-asserts
+    -Wall
+    -Wno-name-shadowing
+    -fno-ignore-asserts
 
   build-depends:
       base >=4.7 && <4.13
@@ -72,7 +74,7 @@ library
     TSL.Simulation.AigerSimulator
     TSL.Simulation.FiniteTraceChecker
     TSL.Simulation.SystemSimulationBackend
-    TSL.Simulation.SystemSimulationInterface    
+    TSL.Simulation.SystemSimulationInterface
     TSL.Simulation.EnvironmentSimulationBackend
     TSL.Simulation.EnvironmentSimulationInterface
     TSL.Simulation.InterfacePrintingUtils
@@ -89,7 +91,9 @@ executable tsl2tlsf
     Main.hs
 
   ghc-options:
-    -Wall -Wno-name-shadowing
+    -Wall
+    -Wno-name-shadowing
+    -fno-ignore-asserts
 
   build-depends:
       tsl
@@ -107,11 +111,13 @@ executable tsl2tlsf
 
 executable tslsplit
 
+  ghc-options:
+    -Wall
+    -Wno-name-shadowing
+    -fno-ignore-asserts
+
   main-is:
     Main.hs
-
-  ghc-options:
-    -Wall -Wno-name-shadowing
 
   build-depends:
       tsl
@@ -129,14 +135,16 @@ executable tslsplit
 
 executable tslsym
 
+  ghc-options:
+    -Wall
+    -Wno-name-shadowing
+    -fno-ignore-asserts
+
   main-is:
     Main.hs
 
   other-modules:
     Config
-
-  ghc-options:
-    -Wall -Wno-name-shadowing
 
   build-depends:
       tsl
@@ -152,11 +160,13 @@ executable tslsym
 
 executable tslcheck
 
+  ghc-options:
+    -Wall
+    -Wno-name-shadowing
+    -fno-ignore-asserts
+
   main-is:
     Main.hs
-
-  ghc-options:
-    -Wall -Wno-name-shadowing
 
   build-depends:
       tsl
@@ -172,11 +182,13 @@ executable tslcheck
 
 executable tslsize
 
+  ghc-options:
+    -Wall
+    -Wno-name-shadowing
+    -fno-ignore-asserts
+
   main-is:
     Main.hs
-
-  ghc-options:
-    -Wall -Wno-name-shadowing
 
   build-depends:
       tsl
@@ -193,11 +205,13 @@ executable tslsize
 
 executable cfmcheck
 
+  ghc-options:
+    -Wall
+    -Wno-name-shadowing
+    -fno-ignore-asserts
+
   main-is:
     Main.hs
-
-  ghc-options:
-    -Wall -Wno-name-shadowing
 
   build-depends:
       tsl
@@ -213,11 +227,13 @@ executable cfmcheck
 
 executable cfminfo
 
+  ghc-options:
+    -Wall
+    -Wno-name-shadowing
+    -fno-ignore-asserts
+
   main-is:
     Main.hs
-
-  ghc-options:
-    -Wall -Wno-name-shadowing
 
   build-depends:
       tsl
@@ -234,11 +250,13 @@ executable cfminfo
 
 executable cfmsym
 
+  ghc-options:
+    -Wall
+    -Wno-name-shadowing
+    -fno-ignore-asserts
+
   main-is:
     Main.hs
-
-  ghc-options:
-    -Wall -Wno-name-shadowing
 
   build-depends:
       tsl
@@ -254,14 +272,16 @@ executable cfmsym
 
 executable cfm2code
 
+  ghc-options:
+    -Wall
+    -Wno-name-shadowing
+    -fno-ignore-asserts
+
   main-is:
     Main.hs
 
   other-modules:
     Config
-
-  ghc-options:
-    -Wall -Wno-name-shadowing
 
   build-depends:
       tsl
@@ -278,11 +298,13 @@ executable cfm2code
 
 executable tslplay
 
+  ghc-options:
+    -Wall
+    -Wno-name-shadowing
+    -fno-ignore-asserts
+
   main-is:
     Main.hs
-
-  ghc-options:
-    -Wall -Wno-name-shadowing
 
   build-depends:
       tsl
@@ -298,6 +320,11 @@ executable tslplay
     Haskell2010
 
 test-suite default
+
+  ghc-options:
+    -Wall
+    -Wno-name-shadowing
+    -fno-ignore-asserts
 
   type:
     detailed-0.9
