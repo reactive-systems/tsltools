@@ -19,8 +19,7 @@
 -----------------------------------------------------------------------------
 
 module TSL.Reader
-  ( fromTSL,
-    fromTSLtoTSLSpec 
+  ( fromTSL
   ) where
 
 -----------------------------------------------------------------------------
@@ -43,7 +42,6 @@ import TSL.SymbolTable
 
 import TSL.Specification
   ( Specification(..)
-  , TSLSpecification(..)
   )
 
 import TSL.Reader.Sugar
@@ -169,49 +167,26 @@ fromTSL str =
     es <- eval st $ map snd sections
     return Specification
       { formula     = join $ zip (map fst sections) es
+      , assumptions =
+          [ initiate (st, f)
+          | (st, f) <- zip (map fst sections) es
+          , assumption st
+          ]
+      , guarantees  =
+          [ initiate (st, f)
+          | (st, f) <- zip (map fst sections) es
+          , not (assumption st) ]
       , symboltable = st
       }
 
---------------------------------------------------------------------------------
-
--- | Parses a TSL specification and output another kind of specifcation
-
-fromTSLtoTSLSpec
-  :: String -> Either Error TSLSpecification
-
-fromTSLtoTSLSpec str = 
-  -- parse the input
-  parse str >>=
-
-  -- replace variable names by a unique identifier
-  abstract >>=
-
-  -- replace syntactic sugar constructs for later converison
-  replaceSugar >>=
-
-  -- retrieve the bindings of expression variables
-  specBindings >>=
-
-  -- infer types and typecheck
-  inferTypes >>=
-
-  -- lift reader specification to specification parts
-  \s@RD.Specification{..} -> do
-    let st = symtable s
-    es <- eval st $ map snd sections
-    return TSLSpecification
-      { assumptions    = [ initiate (st, f) | (st, f)<- zip (map fst sections) es, assumption st ]
-      , guarantees     = [ initiate (st, f) | (st, f)<- zip (map fst sections) es, not (assumption st) ]
-      , tslSymboltable = st
-      }
   where
-
     assumption = \case
       InitiallyAssume -> True
       Assume {}       -> True
       AlwaysAssume {} -> True
       _               -> False
------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
 
 join
   :: [(SectionType, Formula Int)] -> Formula Int
@@ -305,10 +280,10 @@ symtable RD.Specification{..} =
 
     -- sorted identifiers by above ordering
     is = sortBy cmp $ IM.keys names
- in
-   SymbolTable
-     $ A.array (minkey, maxkey)
-     $ map (\i -> (i, entry oa si so i)) is
+  in
+    SymbolTable
+      $ A.array (minkey, maxkey)
+      $ map (\i -> (i, entry oa si so i)) is
 
   where
     getExprs = \case
@@ -325,9 +300,11 @@ symtable RD.Specification{..} =
       in
         IdRec
           { idName     = assert (IM.member i names) (names IM.! i)
-          , idPos      = assert (IM.member i positions) $ Just (positions IM.! i)
+          , idPos      = assert (IM.member i positions) $
+                           Just (positions IM.! i)
           , idArgs     = as
-          , idBindings = assert (IM.member i bindings) $ Just (bindings IM.! i)
+          , idBindings = assert (IM.member i bindings) $
+                           Just (bindings IM.! i)
           , idType     = t
           , idDeps     = if
               | member i so -> case IM.lookup i oa of
@@ -341,8 +318,8 @@ symtable RD.Specification{..} =
                 | member i si -> Input
                 | predicate t -> Predicate
                 | otherwise   -> case t of
-                    TSignal {}                -> Constant
-                    _                         -> Function
+                    TSignal {} -> Constant
+                    _          -> Function
           }
 
     predicate = \case

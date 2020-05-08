@@ -37,7 +37,7 @@ import TSL.SymbolTable
   )
 
 import TSL.Specification
-  ( TSLSpecification(..)
+  ( Specification(..)
   )
 
 import TSL.Logic
@@ -93,7 +93,7 @@ import Data.Ix
 -- | Creates separate specifications for independent specification parts
 
 splitIgnoreAssumptions
-  :: TSLSpecification -> [TSLSpecification]
+  :: Specification -> [Specification]
 splitIgnoreAssumptions spec =
   let
     guarParts = splitFormulas (guarantees spec) parts
@@ -109,7 +109,7 @@ splitIgnoreAssumptions spec =
 -- | Splits including input dependencies
 
 split
- :: TSLSpecification -> [TSLSpecification]
+ :: Specification -> [Specification]
 split spec =
   let
     graph = createDepGraph spec
@@ -132,7 +132,7 @@ split spec =
 --  It respects impressionable inputs and outputs as nodes
 
 createDepGraph
- :: TSLSpecification -> Map.Map Int (Set Int)
+ :: Specification -> Map.Map Int (Set Int)
 createDepGraph spec =
   let  
     guaranteeOIIEdges = makeEdgesForNodes outsAndImpIns (guarantees spec)
@@ -144,7 +144,7 @@ createDepGraph spec =
     
     allOutputs = filter (\x -> stKind table x == Output) $ range $ stBounds table
     
-    table = tslSymboltable spec
+    table = symboltable spec
   in 
     fromListWith union $ concat $ guaranteeOIIEdges ++ assumptionOIIEdges
   where
@@ -184,25 +184,22 @@ makeEdges deps = if size deps < 1 then []
 -- | Filter Assumptions according to guarantees
 
 filterAssumptions
- :: TSLSpecification -> TSLSpecification
-filterAssumptions TSLSpecification{..} = 
+ :: Specification -> Specification
+filterAssumptions spec@Specification{..} = 
   let
     filteredAssumptions = 
                     filter (\x -> Set.isSubsetOf ((foldr Set.insert) Set.empty x) vars) assumptions
     vars = foldl (foldr Set.insert) Set.empty guarantees 
   in
-    TSLSpecification { guarantees     = guarantees
-                     , assumptions    = filteredAssumptions
-                     , tslSymboltable = tslSymboltable
-                     }
+    spec { assumptions = filteredAssumptions }
     
 -----------------------------------------------------------------------------
 
 -- | Create symboltable for specification part
 
 cleanSymboltable
-  :: TSLSpecification -> TSLSpecification
-cleanSymboltable TSLSpecification{..} =
+  :: Specification -> Specification
+cleanSymboltable spec@Specification{..} =
   let
     assVars = (foldl (foldr Set.insert) Set.empty assumptions)
     vars = toAscList $ foldl (foldr Set.insert) assVars guarantees 
@@ -211,13 +208,13 @@ cleanSymboltable TSLSpecification{..} =
     mapping = snd $ foldl (\(i, xs) -> \x -> (i+1,(x,i):xs)) (1,[]) vars
     
     oldNewArr = listArray (1,fst $ head mapping) $ reverse $ fmap fst mapping
-    table = fmap (\x -> updateRec ((Map.!) newSymbols) ((symtable tslSymboltable) Ar.! x)) oldNewArr
+    table = fmap (\x -> updateRec ((Map.!) newSymbols) ((symtable symboltable) Ar.! x)) oldNewArr
   in
-    TSLSpecification { assumptions    = fmap (fmap ((Map.!) newSymbols)) assumptions
-                     , guarantees     = fmap (fmap ((Map.!) newSymbols)) guarantees
-                     , tslSymboltable = SymbolTable{symtable=table}
-                     }
-
+    spec
+      { assumptions = fmap (fmap ((Map.!) newSymbols)) assumptions
+      , guarantees  = fmap (fmap ((Map.!) newSymbols)) guarantees
+      , symboltable = SymbolTable { symtable = table }
+      }
 
 -----------------------------------------------------------------------------
 

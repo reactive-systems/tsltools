@@ -23,13 +23,11 @@ module TSL
   , FunctionTerm(..)
   , PredicateTerm(..)
   , Specification(..)
-  , TSLSpecification(..)
   , CodeTarget(..)
   , CFM
   , SymbolTable
   , ModuleName
   , FunctionName
-  , Circuit
     -- * Formula Utilities
   , encodeAPInput
   , encodeAPOutput
@@ -45,8 +43,6 @@ module TSL
   , negateFormula
     -- * TSL Utilties
   , fromTSL
-  , fromTSLtoTSLSpec
-  , tslSpecToSpec
   , tslSize
   , tslSpecToString
   , st2csv
@@ -58,9 +54,7 @@ module TSL
   , statistics
   , symbolTable
   , implement
-    -- * Aiger Utilities
-  , parseAag
-    -- * Simulator Backend
+    -- * Simulation
   , simulate
   ) where
 
@@ -100,31 +94,51 @@ import TSL.SymbolTable
 
 import TSL.Specification
   ( Specification(..)
-  , TSLSpecification(..)
-  , tslSpecToSpec
   )
 
-import TSL.ToString (tslSpecToString)
+import TSL.Reader
+  ( fromTSL
+  )
 
-import TSL.Splitter (split, splitIgnoreAssumptions)
+import TSL.TLSF
+  ( toTLSF
+  )
 
-import TSL.Reader (fromTSL, fromTSLtoTSLSpec)
+import TSL.ToString
+  ( tslSpecToString
+  )
 
-import TSL.Aiger (Circuit, parseAag)
+import TSL.Splitter
+  ( split
+  , splitIgnoreAssumptions
+  )
 
-import TSL.Simulation (simulate)
+import TSL.Simulation
+  ( simulate
+  )
 
-import TSL.TLSF (toTLSF)
+import TSL.CFM
+  ( CFM
+  , symbolTable
+  , fromCFM
+  , statistics
+  )
 
-import TSL.CFM (CFM, symbolTable, fromCFM, statistics)
+import qualified TSL.Writer.Clash as Clash
+  ( implement
+  )
 
-import qualified TSL.Writer.Clash as Clash (implement)
+import qualified TSL.Writer.Applicative as Applicative
+  ( implement
+  )
 
-import qualified TSL.Writer.Applicative as Applicative (implement)
+import qualified TSL.Writer.Arrow as Arrow
+  ( implement
+  )
 
-import qualified TSL.Writer.Arrow as Arrow (implement)
-
-import qualified TSL.Writer.Monadic as Monadic (implement)
+import qualified TSL.Writer.Monadic as Monadic
+  ( implement
+  )
 
 -----------------------------------------------------------------------------
 
@@ -138,7 +152,6 @@ data CodeTarget
 -----------------------------------------------------------------------------
 
 type ModuleName = String
-
 type FunctionName = String
 
 -----------------------------------------------------------------------------
@@ -150,11 +163,10 @@ type FunctionName = String
 implement
   :: CodeTarget -> ModuleName -> FunctionName -> CFM -> String
 
-implement =
-  \case
-    Applicative -> Applicative.implement
-    Arrow -> Arrow.implement
-    Clash -> Clash.implement
-    Monadic -> Monadic.implement
+implement = \case
+  Applicative -> Applicative.implement
+  Arrow -> Arrow.implement
+  Clash -> Clash.implement
+  Monadic -> Monadic.implement
 
 -----------------------------------------------------------------------------

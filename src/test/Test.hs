@@ -34,7 +34,7 @@ import TSL.Logic
   )
 
 import TSL.Reader
-  ( fromTSLtoTSLSpec
+  ( fromTSL
   )
 
 import TSL.Splitter
@@ -250,7 +250,7 @@ splitTest
   :: FilePath -> [FilePath] -> IO (Bool, String)
 splitTest specPath expPaths = do
   str <- readFile specPath
-  case fromTSLtoTSLSpec str of
+  case fromTSL str of
     Left _ -> do
       return (False, "incorrect specification")
     Right s  -> do

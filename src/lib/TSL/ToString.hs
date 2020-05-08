@@ -18,7 +18,11 @@ module TSL.ToString
   ) where
 
 -----------------------------------------------------------------------------
-import TSL.Specification (Specification(..), TSLSpecification(..))
+
+import TSL.Specification
+  ( Specification(..)
+--  , TSLSpecification(..)
+  )
 
 import TSL.Logic
   ( Formula(..)
@@ -113,13 +117,13 @@ specToString Specification {..} =
 
 -----------------------------------------------------------------------------
 -- | Convert a TSL specification to a string
-tslSpecToString :: TSLSpecification -> String
-tslSpecToString TSLSpecification {..} =
+tslSpecToString :: Specification -> String
+tslSpecToString Specification {..} =
   "initially assume {\n" ++
   help assumptions ++ "}\n\ninitially guarantee {\n" ++ help guarantees ++ "}"
   where
     help :: [Formula Int] -> String
     help xs =
       concatMap
-        (\f -> "  " ++ formulaToString (stName tslSymboltable) f ++ ";\n")
+        (\f -> "  " ++ formulaToString (stName symboltable) f ++ ";\n")
         xs

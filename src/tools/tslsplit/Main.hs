@@ -14,8 +14,8 @@ module Main
 -----------------------------------------------------------------------------
 
 import TSL
-  ( fromTSLtoTSLSpec
-  , split
+  ( split
+  , fromTSL
   , tslSpecToString
   , splitIgnoreAssumptions
   )
@@ -89,7 +89,7 @@ main = do
         exitFailure
       else do
         str <- readFile $ filepath
-        case fromTSLtoTSLSpec str of
+        case fromTSL str of
           Left err -> do
             cPutStr Red "invalid: "
             cPutStrLn White $ filepath
@@ -97,10 +97,20 @@ main = do
             hPrint stderr err
             exitFailure
           Right s  -> do
-            let specs = if ignore then splitIgnoreAssumptions s else split s
             path <- getCurrentDirectory
-            let filepathN = \n -> path </> (takeBaseName filepath) ++ "_" ++ (show n) <.> "tsl"
-            mapM_ (\(s,n) -> writeFile (filepathN n) (tslSpecToString s) ) $ zip specs [1::Int,2..]
+
+            let
+              specs
+                | ignore    = splitIgnoreAssumptions s
+                | otherwise = split s
+
+              filepathN n =
+                path </> (takeBaseName filepath) ++
+                "_" ++ (show n) <.> "tsl"
+
+            mapM_
+              (\(s,n) -> writeFile (filepathN n) (tslSpecToString s))
+              (zip specs [1::Int,2..])
 
   where
     cPutStr c str = do
@@ -126,8 +136,8 @@ main = do
     parseArgs = do
       args <- getArgs
       case args of
-        [x,"--ignore"] -> return (True, Just x)
-        [x]            -> return (False, Just x)
-        _              -> return (False, Nothing)
+        [x, "--ignore"] -> return (True, Just x)
+        [x]             -> return (False, Just x)
+        _               -> return (False, Nothing)
 
 -----------------------------------------------------------------------------
