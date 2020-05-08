@@ -1,9 +1,9 @@
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Main
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
 --
--- Transforms TSL specifications into TLSF specifications.
+-- Allows to play against a stategies.
 --
 -----------------------------------------------------------------------------
 
@@ -14,20 +14,15 @@ module Main
 -----------------------------------------------------------------------------
 
 import TSL
-  ( fromTSL
-  , toTLSF
+  ( simulate
+  )
+
+import Control.Monad
+  ( unless
   )
 
 import System.Directory
   ( doesFileExist
-  )
-
-import System.FilePath
-  ( takeBaseName
-  )
-
-import System.Environment
-  ( getArgs
   )
 
 import System.Console.ANSI
@@ -35,13 +30,15 @@ import System.Console.ANSI
   , ConsoleLayer(..)
   , ColorIntensity(..)
   , Color(..)
-  , setSGR
   , hSetSGR
+  )
+
+import System.Environment
+  ( getArgs
   )
 
 import System.IO
   ( stderr
-  , hPrint
   , hPutStr
   , hPutStrLn
   )
@@ -55,6 +52,7 @@ import GHC.IO.Encoding
 
 import System.Exit
   ( exitFailure
+  , exitSuccess
   )
 
 -----------------------------------------------------------------------------
@@ -68,46 +66,40 @@ main = do
   setForeignEncoding utf8
   args <- getArgs
 
-  if null args
-  then do
-      str <- getContents
-      case fromTSL str of
-        Left err -> do
-          cPutStrLn Red "invalid"
-          resetColors
-          hPrint stderr err
-          exitFailure
-        Right s  ->
-          putStr $ toTLSF "stdin" s
-  else do
-    exists <- doesFileExist $ head args
+  case args of
+    [tsl, aag] -> do
+      (>>=) (doesFileExist tsl) $ flip unless $ do
+        cError Red "Not found: "
+        cErrorLn White tsl
+        resetColors
+        exitFailure
 
-    if not exists then do
-      cError Red "File not found: "
-      cErrorLn White $ head args
+      spec <- readFile tsl
+
+      (>>=) (doesFileExist aag) $ flip unless $ do
+        cError Red "Not found: "
+        cErrorLn White aag
+        resetColors
+        exitFailure
+
+      strat <- readFile aag
+
+      case simulate spec strat of
+        Right simulate -> do
+          simulate
+          exitSuccess
+        Left err       -> do
+          cError Red $ show err
+          resetColors
+          exitFailure
+
+    _ -> do
+      cError Yellow "Usage: "
+      cErrorLn White "tslplay <tsl-file> <aag-file>"
       resetColors
       exitFailure
-    else do
-      str <- readFile $ head args
-      case fromTSL str of
-        Left err -> do
-          cPutStr Red "invalid: "
-          cPutStrLn White $ head args
-          resetColors
-          hPrint stderr err
-          exitFailure
-        Right s  ->
-          putStr $ toTLSF (takeBaseName (head args)) s
 
   where
-    cPutStr c str = do
-      setSGR [ SetColor Foreground Vivid c ]
-      putStr str
-
-    cPutStrLn c str = do
-      setSGR [ SetColor Foreground Vivid c ]
-      putStrLn str
-
     cError c str = do
       hSetSGR stderr [ SetColor Foreground Vivid c ]
       hPutStr stderr str
@@ -116,8 +108,7 @@ main = do
       hSetSGR stderr [ SetColor Foreground Vivid c ]
       hPutStrLn stderr str
 
-    resetColors = do
+    resetColors =
       hSetSGR stderr [ Reset ]
-      setSGR [ Reset ]
 
 -----------------------------------------------------------------------------

@@ -6,6 +6,7 @@ license:             OtherLicense
 license-file:        LICENSE
 author:              Felix Klein <Klein@ProjectJARVIS.de>
                      Mark Santolucito <mark.santolucito@yale.edu>
+                     Philippe Heim <>
 maintainer:          Klein@ProjectJARVIS.de
 category:            Synthesis
 build-type:          Simple
@@ -29,6 +30,8 @@ library
     , mtl >=2.2 && <2.3
     , containers >=0.5 && <0.7
     , QuickCheck
+    , process >= 1.6.3.0
+    , ansi-terminal >= 0.6
 
   exposed-modules:
     TSL
@@ -52,15 +55,27 @@ library
     TSL.Reader.Data
     TSL.Reader.InferType
     TSL.Reader.Sugar
+    TSL.Splitter
     TSL.Writer.Clash
     TSL.Writer.Applicative
     TSL.Writer.Arrow
     TSL.Writer.Monadic
+    TSL.ToString
     TSL.Aiger
     TSL.Logic
     TSL.Eval
     TSL.TLSF
     TSL.CFM
+    TSL.ToString
+    TSL.FormulaUtils
+    TSL.Simulation
+    TSL.Simulation.AigerSimulator
+    TSL.Simulation.FiniteTraceChecker
+    TSL.Simulation.SystemSimulationBackend
+    TSL.Simulation.SystemSimulationInterface    
+    TSL.Simulation.EnvironmentSimulationBackend
+    TSL.Simulation.EnvironmentSimulationInterface
+    TSL.Simulation.InterfacePrintingUtils
 
   hs-source-dirs:
     src/lib
@@ -86,6 +101,28 @@ executable tsl2tlsf
 
   hs-source-dirs:
     src/tools/tsl2tlsf
+
+  default-language:
+    Haskell2010
+
+executable tslsplit
+
+  main-is:
+    Main.hs
+
+  ghc-options:
+    -Wall -Wno-name-shadowing
+
+  build-depends:
+      tsl
+    , base >=4.7 && <4.13
+    , directory >= 1.3
+    , filepath >= 1.4
+    , containers >=0.5 && <0.7
+    , ansi-terminal >= 0.6
+
+  hs-source-dirs:
+    src/tools/tslsplit
 
   default-language:
     Haskell2010
@@ -235,6 +272,76 @@ executable cfm2code
 
   hs-source-dirs:
     src/tools/cfm2code
+
+  default-language:
+    Haskell2010
+
+executable tslplay
+
+  main-is:
+    Main.hs
+
+  ghc-options:
+    -Wall -Wno-name-shadowing
+
+  build-depends:
+      tsl
+    , base >=4.7 && <4.13
+    , filepath >= 1.4
+    , directory >= 1.3
+    , ansi-terminal >= 0.6
+
+  hs-source-dirs:
+    src/tools/tslplay
+
+  default-language:
+    Haskell2010
+
+test-suite default
+
+  type:
+    detailed-0.9
+
+  test-module:
+    Test
+
+  hs-source-dirs:
+    src/test
+    src/lib
+
+  other-modules:
+    TSL.Error
+    TSL.Logic
+    TSL.Expression
+    TSL.Types
+    TSL.Reader
+    TSL.ToString
+    TSL.Binding
+    TSL.Eval
+    TSL.FormulaUtils
+    TSL.Parser
+    TSL.Parser.Data
+    TSL.Parser.Expression
+    TSL.Parser.Global
+    TSL.Parser.Utils
+    TSL.Reader.Abstraction
+    TSL.Reader.Bindings
+    TSL.Reader.Data
+    TSL.Reader.InferType
+    TSL.Reader.Sugar
+    TSL.Specification
+    TSL.StringMap
+    TSL.SymbolTable
+    TSL.Splitter
+
+  build-depends:
+      base >=4.7 && <4.13
+    , QuickCheck
+    , Cabal >=2.4
+    , containers >=0.5 && <0.7
+    , parsec >=3.1 && <3.2
+    , mtl >=2.2 && <2.3
+    , array >=0.5 && <0.6
 
   default-language:
     Haskell2010

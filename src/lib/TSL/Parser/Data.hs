@@ -67,7 +67,8 @@ globalDef
 globalDef =
   emptyDef
   { identStart     = letter <|> char '_' <|> char '@'
-  , identLetter    = alphaNum <|> char '_' <|> char '@' <|> char '\''
+  , identLetter    = alphaNum <|> char '_' <|> char '@' <|>
+                     char '\'' <|> char '.'
   , commentLine    = "//"
   , commentStart   = "/*"
   , commentEnd     = "*/"

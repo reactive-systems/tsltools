@@ -1,0 +1,6 @@
+initially assume {
+}
+
+initially guarantee {
+  (G ([out <- b()] U a));
+}

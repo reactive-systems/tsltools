@@ -110,21 +110,21 @@ data IdRec =
   IdRec
     { -- | The name of the identifier.
       idName :: String
-    , -- | The position of the identifer definition in the source file.
-      idPos :: ExprPos
-    , -- | The arguemnts, in case the identifier describes a function.
-      idArgs :: [Int]
-    , -- | The expression, the identifier is bound to.
-      idBindings :: BoundExpr Int
     , -- | The type of the identifier.
       idType :: ExprType
-    , -- | The list of identifiers, which have to be evaluated first
-      -- to evaluate this identifier.
-      idDeps :: [Int]
     , -- | Categorization to distinguish between globally or locally
       -- bound indentifiers and functions, predicates, input or output
       -- signals.
       idKind :: Kind
+    , -- | The list of identifiers, which have to be evaluated first
+      -- to evaluate this identifier.
+      idDeps :: [Int]
+    , -- | The arguemnts, in case the identifier describes a function.
+      idArgs :: [Int]
+    , -- | The position of the identifer definition in the source file.
+      idPos :: Maybe ExprPos
+    , -- | The expression, the identifier is bound to.
+      idBindings :: Maybe (BoundExpr Int)
     }
 
 -----------------------------------------------------------------------------
@@ -141,7 +141,7 @@ stName SymbolTable{..} x = idName (symtable ! x)
 
 -----------------------------------------------------------------------------
 
-stPos :: SymbolTable -> Int -> ExprPos
+stPos :: SymbolTable -> Int -> Maybe ExprPos
 
 stPos SymbolTable{..} x = idPos (symtable ! x)
 
@@ -153,7 +153,7 @@ stArgs SymbolTable{..} x = idArgs (symtable ! x)
 
 -----------------------------------------------------------------------------
 
-stBindings :: SymbolTable -> Int -> BoundExpr Int
+stBindings :: SymbolTable -> Int -> Maybe (BoundExpr Int)
 
 stBindings SymbolTable{..} x = idBindings (symtable ! x)
 
@@ -231,18 +231,20 @@ st2csv SymbolTable{..} =
       (x:xr) -> show x ++ concatMap ((',':) . (' ':) . show) xr
       []     -> ""
 
-    prExprPos pos =
-      let
-        bl = srcLine $ srcBegin pos
-        bc = srcColumn $ srcBegin pos
-        el = srcLine $ srcEnd pos
-        ec = srcColumn $ srcEnd pos
-      in
-        "(" ++ show bl ++ "," ++ show bc ++
-        if bl == el then
-          "-" ++ show ec ++ ")"
-        else
-          show el ++ ":" ++ show ec ++ ")"
+    prExprPos = \case
+      Nothing  -> ""
+      Just pos ->
+        let
+          bl = srcLine $ srcBegin pos
+          bc = srcColumn $ srcBegin pos
+          el = srcLine $ srcEnd pos
+          ec = srcColumn $ srcEnd pos
+        in
+          "(" ++ show bl ++ "," ++ show bc ++
+          if bl == el then
+            "-" ++ show ec ++ ")"
+          else
+            show el ++ ":" ++ show ec ++ ")"
 
 -----------------------------------------------------------------------------
 

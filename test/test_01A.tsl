@@ -1,0 +1,6 @@
+initially assume {
+}
+
+initially guarantee {
+  (G (c <-> [out2 <- (fun a)]));
+}

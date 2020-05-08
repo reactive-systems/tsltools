@@ -17,7 +17,8 @@ module Main
 
 import TSL
   ( fromCFM
-  , csvSymbolTable
+  , symbolTable
+  , st2csv
   )
 
 import System.Directory
@@ -84,12 +85,12 @@ main = do
         Left err -> invalid (head args) $ show err
         Right m  -> do
           let
-            table =  csvSymbolTable m
+            table = st2csv $ symbolTable m
             (h:es) = lines table
 
-          header h
-          sep h
-          mapM_ entries es
+          header $ dropLast h
+          sep $ dropLast h
+          mapM_ (entries . dropLast) es
 
           resetColors
 
@@ -100,6 +101,12 @@ main = do
       cErrStrLn Dull White err
       resetColors
       exitFailure
+
+    dropLast x = case span (/= ';') $ reverse x of
+      (_, ';':y) -> case span (/= ';') y of
+        (_, ';':z) -> reverse z
+        _          -> reverse y
+      _          -> x
 
     header h = case span (/= ';') h of
       ([], [])     -> return ()

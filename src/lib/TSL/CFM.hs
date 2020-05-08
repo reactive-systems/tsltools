@@ -30,7 +30,7 @@ module TSL.CFM
   , CFM(..)
   , fromCFM
   , fromCircuit
-  , csvSymbolTable
+  , symbolTable
   , rmDouble
   , termType
   , prType
@@ -117,7 +117,12 @@ import Data.Array.ST
   )
 
 import TSL.SymbolTable
-  ( csvFormat
+  ( SymbolTable(..)
+  , IdRec(..)
+  )
+
+import qualified TSL.SymbolTable as ST
+  ( Kind(..)
   )
 
 import TSL.Logic
@@ -342,67 +347,97 @@ statistics cfm@CFM{..} =
 
 -----------------------------------------------------------------------------
 
--- | Prints a symbol table in the CSV format.
+-- | Creates a symbol table from the CFM.
 
-csvSymbolTable
-  :: CFM -> String
+symbolTable
+  :: CFM -> SymbolTable
 
-csvSymbolTable cfm@CFM{..} =
-  csvFormat
-    $ ([ "Id"
-       , "Name"
-       , "Type"
-       , "Kind"
-       , "Depends"
-       ] :)
-    $ sortIds
-    $ [ ( sourceId $ Left  i                                  -- id
-        , inputName i                                         -- name
-        , [ wireType $ inputWire i ]                          -- type
-        , "input"                                             -- kind
-        , []                                                  -- depends
+symbolTable cfm@CFM{..} =
+  let
+    xs =
+      [ ( sourceId $ Left i
+        , IdRec
+            { idName     = inputName i
+            , idType     = t2et [wireType $ inputWire i]
+            , idKind     = ST.Input
+            , idDeps     = []
+            , idArgs     = []
+            , idPos      = Nothing
+            , idBindings = Nothing
+            }
         )
       | i <- inputs
       , not $ loopedInput i
       ]
       ++
-      [ ( outputId o                                          -- id
-        , outputName o                                        -- name
-        , [ wireType $ fst $ head $ outputSwitch o ]          -- type
-        , "output"                                            -- kind
-        , transitive empty empty $ map fst $ outputSwitch o   -- depends
+      [ ( outputId o
+        , IdRec
+            { idName     = outputName o
+            , idType     = t2et [wireType $ fst $ head $ outputSwitch o]
+            , idKind     = ST.Output
+            , idDeps     = transitive empty empty $ map fst $ outputSwitch o
+            , idArgs     = []
+            , idPos      = Nothing
+            , idBindings = Nothing
+            }
         )
       | o <- outputs
       ]
       ++
-      [ ( sourceId $ Right t                                  -- id
-        , termName t                                          -- name
-        , termType cfm t                                      -- type
-        , "constant"                                          -- kind
-        , []                                                  -- depends
+      [ ( sourceId $ Right t
+        , IdRec
+            { idName     = termName t
+            , idType     = t2et $ termType cfm t
+            , idKind     = ST.Constant
+            , idDeps     = []
+            , idArgs     = []
+            , idPos      = Nothing
+            , idBindings = Nothing
+            }
         )
       | t <- constants cfm
       ]
       ++
-      [ ( sourceId $ Right t                                  -- id
-        , termName t                                          -- name
-        , termType cfm t                                      -- type
-        , "predicate"                                         -- kind
-        , []                                                  -- depends
+      [ ( sourceId $ Right t
+        , IdRec
+            { idName     = termName t
+            , idType     = t2et $ termType cfm t
+            , idKind     = ST.Predicate
+            , idDeps     = []
+            , idArgs     = []
+            , idPos      = Nothing
+            , idBindings = Nothing
+            }
         )
       | t <- predicates cfm
       ]
       ++
-      [ ( sourceId $ Right t                                  -- id
-        , termName t                                          -- name
-        , termType cfm t                                      -- type
-        , "function"                                          -- kind
-        , []                                                  -- depends
+      [ ( sourceId $ Right t
+        , IdRec
+            { idName     = termName t
+            , idType     = t2et $ termType cfm t
+            , idKind     = ST.Function
+            , idDeps     = []
+            , idArgs     = []
+            , idPos      = Nothing
+            , idBindings = Nothing
+            }
         )
       | t <- functions cfm
       ]
+  in
+    SymbolTable
+      { symtable = array (0,length xs - 1) $ sortIds $ xs
+      }
 
   where
+    t2et = \case
+      []           -> assert False undefined
+      [Boolean]    -> TBoolean
+      [Poly x]     -> TPoly x
+      Boolean : xr -> TFml TBoolean $ t2et xr
+      Poly x : xr  -> TFml (TPoly x) $ t2et xr
+
     -- | Computes the transitive closure of the dependencies
 
     transitive is ws = \case
@@ -438,7 +473,7 @@ csvSymbolTable cfm@CFM{..} =
     sortIds xs =
       let
         -- get the current id ordern
-        is = map (\(i,_,_,_,_) -> i) xs
+        is = map fst xs
 
         -- create an update mapping to rearrange them in order
         rearrange =
@@ -446,24 +481,11 @@ csvSymbolTable cfm@CFM{..} =
           Map.fromList $ zip is [0,1..length is - 1]
 
         -- create an update function to update the entry
-        updEntry (i, n, t, k, is) =
-          [ show $ rearrange i
-          , n
-          , prTypeFnChain t
-          , k
-          , prDeps $ map (rearrange . upd) is
-          ]
+        updEntry (i, x@IdRec{..}) =
+          (rearrange i, x { idDeps = map (rearrange . upd)  idDeps })
       in
         -- apply everthing
         map updEntry xs
-
-
-    -- | The dependency list is printed as a comma separated list.
-
-    prDeps xs = case toList $ fromList xs of
-      (x:xr) -> show x ++ concatMap ((',':) . (' ':) . show) xr
-      []     -> ""
-
 
     -- | Updates the output index with respect to the looped signals.
 

@@ -1,9 +1,9 @@
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Main
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Gideon Geier
 --
--- Transforms TSL specifications into TLSF specifications.
+-- Splits TSL specifications into many TSL specifications (if possible).
 --
 -----------------------------------------------------------------------------
 
@@ -14,16 +14,21 @@ module Main
 -----------------------------------------------------------------------------
 
 import TSL
-  ( fromTSL
-  , toTLSF
+  ( fromTSLtoTSLSpec
+  , split
+  , tslSpecToString
+  , splitIgnoreAssumptions
   )
 
 import System.Directory
   ( doesFileExist
+  , getCurrentDirectory
   )
 
 import System.FilePath
   ( takeBaseName
+  , (</>)
+  , (<.>)
   )
 
 import System.Environment
@@ -66,38 +71,36 @@ main = do
   setLocaleEncoding utf8
   setFileSystemEncoding utf8
   setForeignEncoding utf8
-  args <- getArgs
-
-  if null args
-  then do
-      str <- getContents
-      case fromTSL str of
-        Left err -> do
-          cPutStrLn Red "invalid"
-          resetColors
-          hPrint stderr err
-          exitFailure
-        Right s  ->
-          putStr $ toTLSF "stdin" s
-  else do
-    exists <- doesFileExist $ head args
-
-    if not exists then do
-      cError Red "File not found: "
-      cErrorLn White $ head args
+  (ignore, file) <- parseArgs
+  case file of
+    Nothing -> do
+      cError Yellow "Usage: "
+      cErrorLn White "tslsplit <file> [--ignore]"
+      cErrorLn White "--ignore : ignore assumptions in splitting process"
       resetColors
       exitFailure
-    else do
-      str <- readFile $ head args
-      case fromTSL str of
-        Left err -> do
-          cPutStr Red "invalid: "
-          cPutStrLn White $ head args
-          resetColors
-          hPrint stderr err
-          exitFailure
-        Right s  ->
-          putStr $ toTLSF (takeBaseName (head args)) s
+    Just filepath -> do
+      exists <- doesFileExist filepath
+
+      if not exists then do
+        cError Red "File not found: "
+        cErrorLn White $ filepath
+        resetColors
+        exitFailure
+      else do
+        str <- readFile $ filepath
+        case fromTSLtoTSLSpec str of
+          Left err -> do
+            cPutStr Red "invalid: "
+            cPutStrLn White $ filepath
+            resetColors
+            hPrint stderr err
+            exitFailure
+          Right s  -> do
+            let specs = if ignore then splitIgnoreAssumptions s else split s
+            path <- getCurrentDirectory
+            let filepathN = \n -> path </> (takeBaseName filepath) ++ "_" ++ (show n) <.> "tsl"
+            mapM_ (\(s,n) -> writeFile (filepathN n) (tslSpecToString s) ) $ zip specs [1::Int,2..]
 
   where
     cPutStr c str = do
@@ -119,5 +122,12 @@ main = do
     resetColors = do
       hSetSGR stderr [ Reset ]
       setSGR [ Reset ]
+
+    parseArgs = do
+      args <- getArgs
+      case args of
+        [x,"--ignore"] -> return (True, Just x)
+        [x]            -> return (False, Just x)
+        _              -> return (False, Nothing)
 
 -----------------------------------------------------------------------------
