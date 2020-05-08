@@ -77,15 +77,12 @@ import TSL.Logic
   ( Formula(..)
   , PredicateTerm
   , SignalTerm(..)
+  , tslFormula
+  , checks
   )
 
-import TSL.FormulaUtils
-  ( getOutputs
-  , getPredicates
-  )
-
-import TSL.ToString
-  ( predicateTermToString
+import qualified TSL.Logic as L
+  ( outputs
   )
 
 -----------------------------------------------------------------------------
@@ -231,8 +228,8 @@ sanitize
 sanitize EnvironmentSimulation{strategy = cst, specification = spec} =
   let
     specForm = Implies (And $ assumptionsStr spec) (And $ guaranteesStr spec)
-    specUpatedCells = getOutputs specForm
-    specPredicates = getPredicates specForm
+    specUpatedCells = L.outputs specForm
+    specPredicates = checks specForm
 
     strategyUpdatedCells =
       fromList $ fmap fst [outputName cst o | o <- outputs cst]
@@ -249,7 +246,7 @@ sanitize EnvironmentSimulation{strategy = cst, specification = spec} =
       "Simulator: Specification does not match the " ++
       "strategy as the following predicates differ:  " ++
       concatMap
-        (\p -> predicateTermToString id p ++ " ")
+        (\p -> tslFormula id (Check p) ++ " ")
         (toList $ difference specPredicates strategyPredicates)
 
    in

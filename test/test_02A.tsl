@@ -1,6 +1,0 @@
-initially assume {
-}
-
-initially guarantee {
-  (G (((in2 || in3) || in4) -> [g <- c3()]));
-}

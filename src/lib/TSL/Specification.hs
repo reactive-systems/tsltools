@@ -19,16 +19,19 @@
 
 module TSL.Specification
   ( Specification(..)
+  , toTSL
   ) where
 
 -----------------------------------------------------------------------------
 
 import TSL.Logic
   ( Formula(..)
+  , tslFormula
   )
 
 import TSL.SymbolTable
   ( SymbolTable
+  , stName
   )
 
 -----------------------------------------------------------------------------
@@ -44,5 +47,20 @@ data Specification =
     , -- | symbol table containing information about identifiers
       symboltable :: SymbolTable
     }
+
+-----------------------------------------------------------------------------
+
+-- | Prints a TSL specification in the TSL format
+
+toTSL
+  :: Specification -> String
+
+toTSL Specification{..} =
+  "assume {" ++ prFormulas assumptions ++ "\n}\n\n" ++
+  "guarantee {" ++ prFormulas guarantees ++ "\n}"
+
+  where
+    prFormulas =
+      concatMap $ ("\n  " ++) . (++ ";") . tslFormula (stName symboltable)
 
 -----------------------------------------------------------------------------

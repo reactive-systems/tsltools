@@ -1,5 +1,5 @@
 name:                tsl
-version:             1.2.0.2
+version:             1.2.1.0
 synopsis:            Library and tools for the TSL specification format
 description:         Library and tools for the TSL specification format
 license:             OtherLicense
@@ -62,14 +62,11 @@ library
     TSL.Writer.Applicative
     TSL.Writer.Arrow
     TSL.Writer.Monadic
-    TSL.ToString
     TSL.Aiger
     TSL.Logic
     TSL.Eval
     TSL.TLSF
     TSL.CFM
-    TSL.ToString
-    TSL.FormulaUtils
     TSL.Simulation
     TSL.Simulation.AigerSimulator
     TSL.Simulation.FiniteTraceChecker
@@ -332,43 +329,17 @@ test-suite default
   test-module:
     Test
 
+  other-modules:
+    SplitTests
+
   hs-source-dirs:
     src/test
-    src/lib
-
-  other-modules:
-    TSL.Error
-    TSL.Logic
-    TSL.Expression
-    TSL.Types
-    TSL.Reader
-    TSL.ToString
-    TSL.Binding
-    TSL.Eval
-    TSL.FormulaUtils
-    TSL.Parser
-    TSL.Parser.Data
-    TSL.Parser.Expression
-    TSL.Parser.Global
-    TSL.Parser.Utils
-    TSL.Reader.Abstraction
-    TSL.Reader.Bindings
-    TSL.Reader.Data
-    TSL.Reader.InferType
-    TSL.Reader.Sugar
-    TSL.Specification
-    TSL.StringMap
-    TSL.SymbolTable
-    TSL.Splitter
 
   build-depends:
-      base >=4.7 && <4.13
+      tsl
+    , base >=4.7 && <4.13
     , QuickCheck
     , Cabal >=2.4
-    , containers >=0.5 && <0.7
-    , parsec >=3.1 && <3.2
-    , mtl >=2.2 && <2.3
-    , array >=0.5 && <0.6
 
   default-language:
     Haskell2010

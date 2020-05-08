@@ -24,7 +24,7 @@ module Main
 import TSL
   ( Specification(..)
   , fromTSL
-  , tslSize
+  , size
   )
 
 import System.Directory
@@ -99,7 +99,7 @@ main = do
             cPutStr Yellow $ takeFileName file
             cPutStrLn White ":"
             cPutStr White "  size:       "
-            cPutStrLn White $ show $ tslSize formula
+            cPutStrLn White $ show $ size formula
             resetColors
     _ -> do
       cError Yellow "Usage: "

@@ -15,8 +15,8 @@ module Main
 
 import TSL
   ( split
+  , toTSL
   , fromTSL
-  , tslSpecToString
   , splitIgnoreAssumptions
   )
 
@@ -109,7 +109,7 @@ main = do
                 "_" ++ (show n) <.> "tsl"
 
             mapM_
-              (\(s,n) -> writeFile (filepathN n) (tslSpecToString s))
+              (\(s,n) -> writeFile (filepathN n) (toTSL s))
               (zip specs [1::Int,2..])
 
   where

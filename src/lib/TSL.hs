@@ -29,26 +29,24 @@ module TSL
   , ModuleName
   , FunctionName
     -- * Formula Utilities
-  , encodeAPInput
-  , encodeAPOutput
-  , decodeAPInput
-  , decodeAPOutput
-  , getOutputs
-  , getPossibleUpdates
-  , getUpdates
-  , constantTrue
-  , constantFalse
-  , conjunctFormulas
-  , disjunctFormulas
-  , negateFormula
+  , updates
+  , checks
+  , inputs
+  , outputs
+  , functions
+  , predicates
+  , encodeInputAP
+  , encodeOutputAP
+  , decodeInputAP
+  , decodeOutputAP
     -- * TSL Utilties
+  , size
+  , toTSL
   , fromTSL
-  , tslSize
-  , tslSpecToString
   , st2csv
   , toTLSF
-  , splitIgnoreAssumptions
   , split
+  , splitIgnoreAssumptions
     -- * CFM Utilities
   , fromCFM
   , statistics
@@ -65,22 +63,17 @@ import TSL.Logic
   , SignalTerm(..)
   , FunctionTerm(..)
   , PredicateTerm(..)
-  , encodeAPInput
-  , encodeAPOutput
-  , decodeAPInput
-  , decodeAPOutput
-  , tslSize
-  )
-
-import TSL.FormulaUtils
-  ( conjunctFormulas
-  , constantFalse
-  , constantTrue
-  , disjunctFormulas
-  , getOutputs
-  , getPossibleUpdates
-  , getUpdates
-  , negateFormula
+  , updates
+  , checks
+  , inputs
+  , outputs
+  , functions
+  , predicates
+  , encodeInputAP
+  , encodeOutputAP
+  , decodeInputAP
+  , decodeOutputAP
+  , size
   )
 
 import TSL.Error
@@ -94,6 +87,7 @@ import TSL.SymbolTable
 
 import TSL.Specification
   ( Specification(..)
+  , toTSL
   )
 
 import TSL.Reader
@@ -102,10 +96,6 @@ import TSL.Reader
 
 import TSL.TLSF
   ( toTLSF
-  )
-
-import TSL.ToString
-  ( tslSpecToString
   )
 
 import TSL.Splitter

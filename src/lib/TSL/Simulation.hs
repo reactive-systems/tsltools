@@ -75,8 +75,8 @@ import TSL.Simulation.AigerSimulator
   )
 
 import TSL.Logic
-  ( decodeAPInput
-  , decodeAPOutput
+  ( decodeInputAP
+  , decodeOutputAP
   )
 
 import TSL.Error
@@ -102,7 +102,7 @@ createSimulation
   -> Either Error (Either SystemSimulation EnvironmentSimulation)
 
 createSimulation aag spec =
-  case normalize decodeAPOutput decodeAPInput aag of
+  case normalize decodeOutputAP decodeInputAP aag of
     Right naag ->
       let
         sim =
@@ -120,7 +120,7 @@ createSimulation aag spec =
            Nothing -> Right (Left sim)
            Just err -> genericError $ err
     Left _ ->
-      case normalize decodeAPInput decodeAPOutput aag of
+      case normalize decodeInputAP decodeOutputAP aag of
         Left err   -> Left err
         Right naag ->
           let

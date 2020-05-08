@@ -33,15 +33,20 @@ import TSL.Logic
   ( Formula(..)
   , SignalTerm(..)
   , tlsfFormula
-  , encodedPredicates
-  , encodedUpdates
+  , updates
+  , checks
+  , outputs
   , exactlyOne
   )
 
 import Data.Set
   ( elems
-  , fromList
   , union
+  , toList
+  )
+
+import qualified Data.Set as S
+  ( map
   )
 
 import Data.List
@@ -68,17 +73,17 @@ toTLSF name Specification{..} = unlines
   , "  TARGET:      Mealy"
   , "}"
   , "MAIN {"
-  , if null inputs
+  , if null ins
     then ""
     else unlines
       [ "  INPUTS {"
-      , concatMap ((++ ";\n") . ("    " ++)) inputs ++  "  }"
+      , concatMap ((++ ";\n") . ("    " ++)) ins ++  "  }"
       ]
-  , if null outputs
+  , if null outs
     then ""
     else unlines
       [ "  OUTPUTS {"
-      , concatMap ((++ ";\n") . ("    " ++)) outputs ++ "  }"
+      , concatMap ((++ ";\n") . ("    " ++)) outs ++ "  }"
       ]
   , "  GUARANTEE {"
   , "    " ++ toTLSF (And [Globally mutual, formula])  ++ ";"
@@ -87,20 +92,26 @@ toTLSF name Specification{..} = unlines
   ]
 
   where
-    toTLSF = tlsfFormula (stName symboltable)
+    toTLSF =
+      tlsfFormula (stName symboltable)
 
-    inputs = map (toTLSF . Check) $ encodedPredicates formula
-    outputs = map (toTLSF . uncurry Update) updates
+    ins =
+        map (toTLSF . Check)
+      $ toList
+      $ checks formula
 
-    updates =
-      -- collect updates from the formula
-      elems $ union (fromList $ encodedUpdates formula) $
-      -- and add self updates
-      fromList $ map ((\x -> (x, Signal x)) . fst) $ encodedUpdates formula
+    outs =
+      map (toTLSF . uncurry Update) upds
+
+    upds =
+        elems
+      $ union (updates formula)
+      $ S.map (\x -> (x, Signal x))
+      $ outputs formula
 
     mutual =
-      And
-        $ map (exactlyOne . map (uncurry Update))
-        $ groupBy ((==) `on` fst) updates
+        And
+      $ map (exactlyOne . map (uncurry Update))
+      $ groupBy ((==) `on` fst) upds
 
 -----------------------------------------------------------------------------

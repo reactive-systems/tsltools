@@ -1,7 +1,0 @@
-initially assume {
-  (G (F a));
-}
-
-initially guarantee {
-  (G ([out <- b()] U a));
-}

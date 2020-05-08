@@ -19,7 +19,6 @@
 module TSL.Splitter
   ( splitIgnoreAssumptions
   , split
-  , getInputs
   , splitFormulas
   , makeEdges
   , connectedParts
@@ -42,11 +41,8 @@ import TSL.Specification
 
 import TSL.Logic
   ( Formula(..)
-  )
-
-import TSL.FormulaUtils as Util
-  ( getOutputs
-  , getInputs
+  , inputs
+  , outputs
   )
 
 import Data.Map.Strict as Map
@@ -99,7 +95,7 @@ splitIgnoreAssumptions spec =
     guarParts = splitFormulas (guarantees spec) parts
     parts = connectedParts graph
     graph = fromListWith union $ concat outputEdges
-    outputEdges = foldl (\xs -> \x -> makeEdges (getOutputs x):xs) [] (guarantees spec)
+    outputEdges = foldl (\xs -> \x -> makeEdges (outputs x):xs) [] (guarantees spec)
   in
     fmap (filterAssumptions . cleanSymboltable) $ buildSpecs guarParts
   where
@@ -117,15 +113,15 @@ split spec =
     parts = connectedParts graph
 
     splitGuars = splitFormulas (guarantees spec) parts
-    
-    splitInOutputs = map (uncurry union) 
+
+    splitInOutputs = map (uncurry union)
         $ zip (map (unions . (map getInOutputs)) splitGuars) (parts ++ cycle [Set.empty])
 
-    splitAssmpts = distributeAssumptions (assumptions spec) splitInOutputs 
-  in  
+    splitAssmpts = distributeAssumptions (assumptions spec) splitInOutputs
+  in
     fmap cleanSymboltable $ buildSpecs $ zip splitAssmpts splitGuars
   where
-    buildSpecs  = foldl (\xs -> \(a,g) -> spec{assumptions = a, guarantees = g}:xs) [] 
+    buildSpecs  = foldl (\xs -> \(a,g) -> spec{assumptions = a, guarantees = g}:xs) []
 
 
 -- | Creates the dependency graph of the specification
@@ -134,18 +130,18 @@ split spec =
 createDepGraph
  :: Specification -> Map.Map Int (Set Int)
 createDepGraph spec =
-  let  
+  let
     guaranteeOIIEdges = makeEdgesForNodes outsAndImpIns (guarantees spec)
     assumptionOIIEdges = makeEdgesForNodes outsAndImpIns (assumptions spec)
 
-    assumptionGraph = createOIGraph $ assumptions spec 
-    
+    assumptionGraph = createOIGraph $ assumptions spec
+
     outsAndImpIns = explore allOutputs Set.empty assumptionGraph
-    
+
     allOutputs = filter (\x -> stKind table x == Output) $ range $ stBounds table
-    
+
     table = symboltable spec
-  in 
+  in
     fromListWith union $ concat $ guaranteeOIIEdges ++ assumptionOIIEdges
   where
     getOutInsAlsoIn fml nodes = (intersection (getInOutputs fml) nodes)
@@ -156,13 +152,13 @@ createDepGraph spec =
 --  edges are created for:
 --   - every pair of inputs appearing in the same formula (bidirectional)
 --   - every pair of an out- and an input appearing in the same formula (only out->in)
-   
+
 createOIGraph
  :: [Formula Int] -> Map.Map Int (Set Int)
 createOIGraph fmls =
   let
-    assumptionIIEdges = foldl (\xs -> \x -> makeEdges (getInputs x):xs) [] fmls
-    assumptionOIEdges = foldl (\xs -> \x -> makeOIEdges (getInputs x) (getOutputs x):xs) [] fmls
+    assumptionIIEdges = foldl (\xs -> \x -> makeEdges (inputs x):xs) [] fmls
+    assumptionOIEdges = foldl (\xs -> \x -> makeOIEdges (inputs x) (outputs x):xs) [] fmls
 
   in
     fromListWith union $ concat $ assumptionIIEdges ++ assumptionOIEdges
@@ -179,20 +175,20 @@ makeEdges deps = if size deps < 1 then []
 
 -----------------------------------------------------------------------------
 
--- TODO replace folding over tree by getting (foldr Set.insert Set.empty x) -> (union (getInputs x) (getOutputs x))
+-- TODO replace folding over tree by getting (foldr Set.insert Set.empty x) -> (union (inputs x) (outputs x))
 
 -- | Filter Assumptions according to guarantees
 
 filterAssumptions
  :: Specification -> Specification
-filterAssumptions spec@Specification{..} = 
+filterAssumptions spec@Specification{..} =
   let
-    filteredAssumptions = 
+    filteredAssumptions =
                     filter (\x -> Set.isSubsetOf ((foldr Set.insert) Set.empty x) vars) assumptions
-    vars = foldl (foldr Set.insert) Set.empty guarantees 
+    vars = foldl (foldr Set.insert) Set.empty guarantees
   in
     spec { assumptions = filteredAssumptions }
-    
+
 -----------------------------------------------------------------------------
 
 -- | Create symboltable for specification part
@@ -202,11 +198,11 @@ cleanSymboltable
 cleanSymboltable spec@Specification{..} =
   let
     assVars = (foldl (foldr Set.insert) Set.empty assumptions)
-    vars = toAscList $ foldl (foldr Set.insert) assVars guarantees 
+    vars = toAscList $ foldl (foldr Set.insert) assVars guarantees
 
     newSymbols  = fromDescList $ mapping
     mapping = snd $ foldl (\(i, xs) -> \x -> (i+1,(x,i):xs)) (1,[]) vars
-    
+
     oldNewArr = listArray (1,fst $ head mapping) $ reverse $ fmap fst mapping
     table = fmap (\x -> updateRec ((Map.!) newSymbols) ((symtable symboltable) Ar.! x)) oldNewArr
   in
@@ -218,7 +214,7 @@ cleanSymboltable spec@Specification{..} =
 
 -----------------------------------------------------------------------------
 
--- | Update the identifiers in one symboltable record 
+-- | Update the identifiers in one symboltable record
 -- TODO update Bindings
 updateRec
   :: (Int -> Int) -> IdRec -> IdRec
@@ -226,7 +222,7 @@ updateRec dict rec = rec {idArgs = fmap dict $ idArgs rec, idDeps = fmap dict $ 
 
 -----------------------------------------------------------------------------
 
--- | Splits a list of formulas by disjoint sets of variables 
+-- | Splits a list of formulas by disjoint sets of variables
 
 splitFormulas
   :: [Formula Int] -> [Set Int] -> [[Formula Int]]
@@ -237,7 +233,7 @@ splitFormulas guars parts = map fst guarParts
 
 insertFormula
  :: Formula Int -> [([Formula Int], Set Int)] -> [([Formula Int], Set Int)]
-insertFormula fml   []        = [([fml], empty)] 
+insertFormula fml   []        = [([fml], empty)]
 insertFormula fml ((fs,s):xr) = if not $ disjoint (getInOutputs fml) s
                                 -- since s only contains outputs and impressionable inputs,
                                 -- checking for disjunctness with all inputs suffices
@@ -246,7 +242,7 @@ insertFormula fml ((fs,s):xr) = if not $ disjoint (getInOutputs fml) s
 
 -----------------------------------------------------------------------------
 
--- | Distributes assumptions over sets of in-/ouputs 
+-- | Distributes assumptions over sets of in-/ouputs
 
 distributeAssumptions
   :: [Formula Int] -> [Set Int] -> [[Formula Int]]
@@ -273,13 +269,13 @@ connectedParts graph = if null graph then [] else parts
 explore
   :: [Int] -> Set Int -> Map.Map Int (Set Int) -> Set Int
 explore []      explored   _    = explored
-explore (x:xr)  explored graph  = explore 
-                        -- add neighbour nodes to queue, but only if not yet explored 
+explore (x:xr)  explored graph  = explore
+                        -- add neighbour nodes to queue, but only if not yet explored
                         (toList (difference (fromMaybe Set.empty (graph Map.!? x)) explored) ++ xr)
                         (insert x explored)
                         graph
 
 
 getInOutputs
-  :: Formula Int -> Set Int 
-getInOutputs fml = (union (getInputs fml) (getOutputs fml))
+  :: Formula Int -> Set Int
+getInOutputs fml = (union (inputs fml) (outputs fml))

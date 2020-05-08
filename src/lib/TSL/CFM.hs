@@ -129,8 +129,8 @@ import TSL.Logic
   ( SignalTerm(..)
   , FunctionTerm(..)
   , PredicateTerm(..)
-  , decodeAPInput
-  , decodeAPOutput
+  , decodeInputAP
+  , decodeOutputAP
   )
 
 import TSL.Error
@@ -677,14 +677,14 @@ fromCircuit circuit = do
     -- | Parses the predicate terms from the circuit input names.
 
     inputTerms =
-      mapM (decodeAPInput . Circuit.inputName circuit)
+      mapM (decodeInputAP . Circuit.inputName circuit)
         $ Circuit.inputs circuit
 
     -- | Parses the update terms from the circuit output names.
 
     outputTerms = do
       xs <-
-        mapM (decodeAPOutput . Circuit.outputName circuit)
+        mapM (decodeOutputAP . Circuit.outputName circuit)
           $ Circuit.outputs circuit
 
       return $ zip xs $ Circuit.outputs circuit

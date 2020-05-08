@@ -1,7 +1,0 @@
-initially assume {
-}
-
-initially guarantee {
-  (G (in1 <-> [c <- c3()]));
-  (G ([c <- c3()] || [c <- c2()]));
-}

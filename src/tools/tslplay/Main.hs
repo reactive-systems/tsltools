@@ -67,7 +67,7 @@ main = do
   args <- getArgs
 
   case args of
-    [tsl, aag] -> do
+    [tsl, cfm] -> do
       (>>=) (doesFileExist tsl) $ flip unless $ do
         cError Red "Not found: "
         cErrorLn White tsl
@@ -76,13 +76,13 @@ main = do
 
       spec <- readFile tsl
 
-      (>>=) (doesFileExist aag) $ flip unless $ do
+      (>>=) (doesFileExist cfm) $ flip unless $ do
         cError Red "Not found: "
-        cErrorLn White aag
+        cErrorLn White cfm
         resetColors
         exitFailure
 
-      strat <- readFile aag
+      strat <- readFile cfm
 
       case simulate spec strat of
         Right simulate -> do
@@ -95,7 +95,7 @@ main = do
 
     _ -> do
       cError Yellow "Usage: "
-      cErrorLn White "tslplay <tsl-file> <aag-file>"
+      cErrorLn White "tslplay <tsl-file> <cfm-file>"
       resetColors
       exitFailure
 

@@ -1,6 +1,0 @@
-initially assume {
-}
-
-initially guarantee {
-  (G (in3 <-> [b <- (fun a)]));
-}

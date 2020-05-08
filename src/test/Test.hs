@@ -23,26 +23,26 @@ module Test
 -----------------------------------------------------------------------------
 
 import Distribution.TestSuite
+  ( TestInstance(..)
+  , Progress(..)
+  , Result(..)
+  , Test(..)
+  )
 
-import TSL.Logic
+import TSL
   ( PredicateTerm
   , SignalTerm
-  , encodeAPInput
-  , encodeAPOutput
-  , decodeAPInput
-  , decodeAPOutput
+  , encodeInputAP
+  , encodeOutputAP
+  , decodeInputAP
+  , decodeOutputAP
+  , fromTSL
+  , toTSL
+  , split
   )
 
-import TSL.Reader
-  ( fromTSL
-  )
-
-import TSL.Splitter
-  ( split
-  )
-
-import TSL.ToString
-  ( tslSpecToString
+import SplitTests
+  ( splitTests
   )
 
 import Test.QuickCheck
@@ -99,7 +99,7 @@ propReadInput
   :: PredicateTerm Identifier -> Bool
 
 propReadInput p =
-  case decodeAPInput $ encodeAPInput identifier p of
+  case decodeInputAP $ encodeInputAP identifier p of
     Right x -> x == fmap identifier p
     Left _  -> False
 
@@ -112,7 +112,7 @@ propReadOutput
   :: (Identifier, SignalTerm Identifier) -> Bool
 
 propReadOutput (o,s) =
-  case decodeAPOutput $ encodeAPOutput identifier o s of
+  case decodeOutputAP $ encodeOutputAP identifier o s of
     Right x -> x == (identifier o, fmap identifier s)
     Left _  -> False
 
@@ -121,115 +121,21 @@ propReadOutput (o,s) =
 tests
   :: IO [Test]
 
-tests = return
+tests = return $
   [ test "QuickCheck: Read Input" qc01
   , test "QuickCheck: Read Output" qc02
-  , test "split01" split01
-  , test "split02" split02
-  , test "split03" split03
-  , test "split04" split04
-  , test "split05" split05
-  , test "split06" split06
-  , test "split07" split07
-  , test "split08" split08
-  , test "split09" split09
-  , test "split10" split10
-  ]
+  ] ++ map splitTest (zip [1 :: Int, 2..] splitTests)
 
   where
-    qc01 = do
-      putStrLn ""
+    qc01 =
       quickCheckResult propReadInput >>= \case
         Success{..} -> return $ Finished Pass
         x           -> return $ Finished $ Fail $ show x
 
-    qc02 = do
-      putStrLn ""
+    qc02 =
       quickCheckResult propReadOutput >>= \case
         Success{..} -> return $ Finished Pass
         x           -> return $ Finished $ Fail $ show x
-
-    split01 = do
-      putStrLn ""
-      splitTest "test/test_01.tsl" ["test/test_01A.tsl", "test/test_01B.tsl"] >>= \case
-        (True, _)   -> return $ Finished Pass
-        (False, x)  -> do
-                    putStrLn x
-                    return $ Finished $ Fail "split did not return the expected result"
-
-    split02 = do
-      putStrLn ""
-      splitTest "test/test_02.tsl" ["test/test_02A.tsl",
-                "test/test_02B.tsl", "test/test_02C.tsl"] >>= \case
-        (True, _)   -> return $ Finished Pass
-        (False, x)  -> do
-                    putStrLn x
-                    return $ Finished $ Fail "split did not return the expected result"
-
-    split03 = do
-      putStrLn ""
-      splitTest "test/test_03.tsl" ["test/test_03A.tsl"] >>= \case
-        (True, _)   -> return $ Finished Pass
-        (False, x)  -> do
-                    putStrLn x
-                    return $ Finished $ Fail "split did not return the expected result"
-
-    split04 = do
-      putStrLn ""
-      splitTest "test/test_04.tsl" ["test/test_04A.tsl",
-                "test/test_04B.tsl", "test/test_04C.tsl"] >>= \case
-        (True, _)   -> return $ Finished Pass
-        (False, x)  -> do
-                    putStrLn x
-                    return $ Finished $ Fail "split did not return the expected result"
-
-    split05 = do
-      putStrLn ""
-      splitTest "test/test_05.tsl" ["test/test_05A.tsl"] >>= \case
-        (True, _)   -> return $ Finished Pass
-        (False, x)  -> do
-                    putStrLn x
-                    return $ Finished $ Fail "split did not return the expected result"
-
-    split06 = do
-      putStrLn ""
-      splitTest "test/test_06.tsl" ["test/test_06A.tsl"] >>= \case
-        (True, _)   -> return $ Finished Pass
-        (False, x)  -> do
-                    putStrLn x
-                    return $ Finished $ Fail "split did not return the expected result"
-
-    split07 = do
-      putStrLn ""
-      splitTest "test/test_07.tsl" ["test/test_07A.tsl"] >>= \case
-        (True, _)   -> return $ Finished Pass
-        (False, x)  -> do
-                    putStrLn x
-                    return $ Finished $ Fail "split did not return the expected result"
-
-    split08 = do
-      putStrLn ""
-      splitTest "test/test_08.tsl" ["test/test_08A.tsl"] >>= \case
-        (True, _)   -> return $ Finished Pass
-        (False, x)  -> do
-                    putStrLn x
-                    return $ Finished $ Fail "split did not return the expected result"
-
-    split09 = do
-      putStrLn ""
-      splitTest "test/test_09.tsl" ["test/test_09A.tsl", "test/test_09B.tsl"] >>= \case
-        (True, _)   -> return $ Finished Pass
-        (False, x)  -> do
-                    putStrLn x
-                    return $ Finished $ Fail "split did not return the expected result"
-
-    split10 = do
-      putStrLn ""
-      splitTest "test/test_10.tsl" ["test/test_10A.tsl", "test/test_10B.tsl"] >>= \case
-        (True, _)   -> return $ Finished Pass
-        (False, x)  -> do
-                    putStrLn x
-                    return $ Finished $ Fail "split did not return the expected result"
 
     test testname run =
       let
@@ -244,33 +150,41 @@ tests = return
       in
         Test t
 
+    splitTest (i,t) =
+      let
+        x =
+          TestInstance
+            { run = case splitTest' t of
+                Right () -> return $ Finished Pass
+                Left err -> do
+                  putStrLn err
+                  return $ Finished $ Fail $
+                    "Split test " ++ show i ++ " failed."
+            , name = "split" ++ show i
+            , tags = []
+            , options = []
+            , setOption = \_ _ -> Right x
+            }
+      in
+        Test x
+
+
+    splitTest' (spec, splits) = case fromTSL spec of
+      Left _  -> Left $ "Incorrect Specification:\n\n" ++ spec
+      Right s ->
+        let specs = split s
+        in if (length specs == length splits)
+        then mapM_ check $ zip splits $ map toTSL specs
+        else Left $ "Expected " ++ show (length splits) ++
+                    " many splits, " ++ "but got " ++
+                    show (length specs) ++ "."
+
+    check (exp, res)
+      | trim exp == trim res = return ()
+      | otherwise =
+          Left $ "Expected:\n\n" ++ exp ++ "\nbut Got:\n\n" ++ res ++ "\n"
+
+    trim = f . f
+    f = reverse . dropWhile isSpace
+
 -----------------------------------------------------------------------------
-
-splitTest
-  :: FilePath -> [FilePath] -> IO (Bool, String)
-splitTest specPath expPaths = do
-  str <- readFile specPath
-  case fromTSL str of
-    Left _ -> do
-      return (False, "incorrect specification")
-    Right s  -> do
-      let specs = split s
-      let expLength = length expPaths
-      case assertEqual expLength (length specs) of
-        (True, _)   -> do
-          expSpecs <- mapM readFile expPaths
-          return $ foldr (\(e, a) -> \(b, s) -> if b then assertStringEqual e a else (b, s)) (True, "")
-            $ zip expSpecs $ map tslSpecToString specs
-        r           -> return r
-
-assertEqual :: (Eq a, Show a) => a -> a -> (Bool, String)
-assertEqual exp act = if exp == act then (True, "")
-  else (False, "expected:\n" ++ show exp ++ "\nwas:\n" ++ show act)
-
-assertStringEqual :: String -> String -> (Bool, String)
-assertStringEqual exp act = if trim exp == trim act then (True, "")
-  else (False, "expected:\n" ++ exp ++ "\nwas:\n" ++ act)
-
-trim :: String -> String
-trim = f . f
-  where f = reverse . dropWhile isSpace
