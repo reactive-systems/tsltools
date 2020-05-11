@@ -123,6 +123,7 @@ import TSL.SymbolTable
 
 import qualified TSL.SymbolTable as ST
   ( Kind(..)
+  , symbolTable
   )
 
 import TSL.Logic
@@ -426,9 +427,7 @@ symbolTable cfm@CFM{..} =
       | t <- functions cfm
       ]
   in
-    SymbolTable
-      { symtable = array (0,length xs - 1) $ sortIds $ xs
-      }
+    ST.symbolTable $ array (0,length xs - 1) $ sortIds $ xs
 
   where
     t2et = \case

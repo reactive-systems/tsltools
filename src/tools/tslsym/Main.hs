@@ -24,7 +24,7 @@ module Main
 import TSL
   ( Specification(..)
   , fromTSL
-  , st2csv
+  , toCSV
   )
 
 import Config
@@ -120,7 +120,7 @@ main = do
       exitFailure
     Right s -> do
       let
-        table = st2csv $ symboltable s
+        table = toCSV $ symboltable s
         (is,ts') = partition (isInfixOf "internal") es
         (h':es) = lines table
 

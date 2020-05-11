@@ -35,9 +35,10 @@ import TSL.Error
   )
 
 import TSL.SymbolTable
-  ( SymbolTable ( SymbolTable )
+  ( SymbolTable
   , IdRec(..)
   , Kind(..)
+  , symbolTable
   )
 
 import TSL.Specification
@@ -281,7 +282,7 @@ symtable RD.Specification{..} =
     -- sorted identifiers by above ordering
     is = sortBy cmp $ IM.keys names
   in
-    SymbolTable
+    symbolTable
       $ A.array (minkey, maxkey)
       $ map (\i -> (i, entry oa si so i)) is
 

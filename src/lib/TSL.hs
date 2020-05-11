@@ -16,19 +16,11 @@
 -----------------------------------------------------------------------------
 
 module TSL
-  ( -- * Data Structures
-    Error
-  , Formula(..)
+  ( -- * Formula Structure
+    Formula(..)
   , SignalTerm(..)
   , FunctionTerm(..)
   , PredicateTerm(..)
-  , Specification(..)
-  , CodeTarget(..)
-  , CFM
-  , SymbolTable
-  , ModuleName
-  , FunctionName
-    -- * Formula Utilities
   , updates
   , checks
   , inputs
@@ -39,21 +31,35 @@ module TSL
   , encodeOutputAP
   , decodeInputAP
   , decodeOutputAP
-    -- * TSL Utilties
   , size
-  , toTSL
+    -- * TSL Utilities
+  , Specification(..)
   , fromTSL
-  , st2csv
+  , toTSL
   , toTLSF
   , split
   , splitIgnoreAssumptions
     -- * CFM Utilities
+  , CodeTarget(..)
+  , CFM
+  , ModuleName
+  , FunctionName
   , fromCFM
   , statistics
   , symbolTable
   , implement
+    -- * Symbol Table
+  , SymbolTable
+  , Kind(..)
+  , stName
+  , stArgs
+  , stDeps
+  , stKind
+  , toCSV
     -- * Simulation
   , simulate
+    -- * Error Handling
+  , Error
   ) where
 
 -----------------------------------------------------------------------------
@@ -81,8 +87,9 @@ import TSL.Error
   )
 
 import TSL.SymbolTable
-  ( SymbolTable
-  , st2csv
+  ( SymbolTable(..)
+  , Kind(..)
+  , toCSV
   )
 
 import TSL.Specification

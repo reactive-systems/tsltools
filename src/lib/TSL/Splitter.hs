@@ -30,9 +30,8 @@ module TSL.Splitter
 import TSL.SymbolTable
   ( SymbolTable(..)
   , IdRec(..)
-  , stBounds
-  , stKind
   , Kind(..)
+  , symbolTable
   )
 
 import TSL.Specification
@@ -209,7 +208,7 @@ cleanSymboltable spec@Specification{..} =
     spec
       { assumptions = fmap (fmap ((Map.!) newSymbols)) assumptions
       , guarantees  = fmap (fmap ((Map.!) newSymbols)) guarantees
-      , symboltable = SymbolTable { symtable = table }
+      , symboltable = symbolTable table
       }
 
 -----------------------------------------------------------------------------

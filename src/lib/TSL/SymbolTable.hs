@@ -21,15 +21,8 @@ module TSL.SymbolTable
   ( SymbolTable(..)
   , IdRec(..)
   , Kind(..)
-  , stBounds
-  , stName
-  , stPos
-  , stArgs
-  , stBindings
-  , stType
-  , stDeps
-  , stKind
-  , st2csv
+  , toCSV
+  , symbolTable
   , csvFormat
   ) where
 
@@ -94,13 +87,46 @@ import Data.Set
 
 -----------------------------------------------------------------------------
 
-newtype SymbolTable = SymbolTable { symtable :: Array Int IdRec }
+type Id = Int
 
 -----------------------------------------------------------------------------
 
 data Kind =
   Input | Output | Constant | Predicate | Function | Internal
   deriving (Eq, Ord, Show)
+
+-----------------------------------------------------------------------------
+
+data SymbolTable =
+  SymbolTable
+    { symtable :: Array Id IdRec
+    , stBounds :: (Id, Id)
+    , stName :: Id -> String
+    , stPos :: Id -> Maybe ExprPos
+    , stArgs ::  Id -> [Id]
+    , stBindings :: Id -> Maybe (BoundExpr Id)
+    , stType :: Id -> ExprType
+    , stDeps :: Id -> [Id]
+    , stKind :: Id -> Kind
+    }
+
+-----------------------------------------------------------------------------
+
+symbolTable
+  :: Array Int IdRec -> SymbolTable
+
+symbolTable a =
+  SymbolTable
+    { symtable = a
+    , stBounds = bounds a
+    , stName = idName . (a !)
+    , stPos = idPos . (a !)
+    , stArgs = idArgs . (a !)
+    , stBindings = idBindings . (a !)
+    , stType = idType . (a !)
+    , stDeps = idDeps . (a !)
+    , stKind = idKind . (a !)
+    }
 
 -----------------------------------------------------------------------------
 
@@ -118,71 +144,23 @@ data IdRec =
       idKind :: Kind
     , -- | The list of identifiers, which have to be evaluated first
       -- to evaluate this identifier.
-      idDeps :: [Int]
+      idDeps :: [Id]
     , -- | The arguemnts, in case the identifier describes a function.
-      idArgs :: [Int]
+      idArgs :: [Id]
     , -- | The position of the identifer definition in the source file.
       idPos :: Maybe ExprPos
     , -- | The expression, the identifier is bound to.
-      idBindings :: Maybe (BoundExpr Int)
+      idBindings :: Maybe (BoundExpr Id)
     }
-
------------------------------------------------------------------------------
-
-stBounds :: SymbolTable -> (Int, Int)
-
-stBounds = bounds . symtable
-
------------------------------------------------------------------------------
-
-stName :: SymbolTable -> Int -> String
-
-stName SymbolTable{..} x = idName (symtable ! x)
-
------------------------------------------------------------------------------
-
-stPos :: SymbolTable -> Int -> Maybe ExprPos
-
-stPos SymbolTable{..} x = idPos (symtable ! x)
-
------------------------------------------------------------------------------
-
-stArgs :: SymbolTable -> Int -> [Int]
-
-stArgs SymbolTable{..} x = idArgs (symtable ! x)
-
------------------------------------------------------------------------------
-
-stBindings :: SymbolTable -> Int -> Maybe (BoundExpr Int)
-
-stBindings SymbolTable{..} x = idBindings (symtable ! x)
-
------------------------------------------------------------------------------
-
-stType :: SymbolTable -> Int -> ExprType
-
-stType SymbolTable{..} x = idType (symtable ! x)
-
------------------------------------------------------------------------------
-
-stDeps :: SymbolTable -> Int -> [Int]
-
-stDeps SymbolTable{..} x = idDeps (symtable ! x)
-
------------------------------------------------------------------------------
-
-stKind :: SymbolTable -> Int -> Kind
-
-stKind SymbolTable{..} x = idKind (symtable ! x)
 
 -----------------------------------------------------------------------------
 
 -- | Prints the symbol table in the CVS format.
 
-st2csv
+toCSV
   :: SymbolTable -> String
 
-st2csv SymbolTable{..} =
+toCSV SymbolTable{..} =
   let
     es = sortBy cmp $ assocs symtable
     ts = rmDouble $ concatMap polyType es

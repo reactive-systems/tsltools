@@ -18,7 +18,7 @@ module Main
 import TSL
   ( fromCFM
   , symbolTable
-  , st2csv
+  , toCSV
   )
 
 import System.Directory
@@ -85,7 +85,7 @@ main = do
         Left err -> invalid (head args) $ show err
         Right m  -> do
           let
-            table = st2csv $ symbolTable m
+            table = toCSV $ symbolTable m
             (h:es) = lines table
 
           header $ dropLast h
