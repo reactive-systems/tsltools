@@ -10,6 +10,7 @@
 {-# LANGUAGE
 
     RecordWildCards
+  , LambdaCase
 
   #-}
 
@@ -86,9 +87,8 @@ main = do
         cErrorLn White file
         resetColors
         exitFailure
-      else do
-        str <- readFile file
-        case fromTSL str of
+      else
+        readFile file >>= fromTSL >>= \case
           Left err -> do
             cPutStr Red "invalid: "
             cPutStrLn White file

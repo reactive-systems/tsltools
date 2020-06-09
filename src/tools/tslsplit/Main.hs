@@ -7,6 +7,14 @@
 --
 -----------------------------------------------------------------------------
 
+{-# LANGUAGE
+
+    LambdaCase
+
+  #-}
+
+-----------------------------------------------------------------------------
+
 module Main
   ( main
   ) where
@@ -87,9 +95,8 @@ main = do
         cErrorLn White $ filepath
         resetColors
         exitFailure
-      else do
-        str <- readFile $ filepath
-        case fromTSL str of
+      else
+        readFile filepath >>= fromTSL >>= \case
           Left err -> do
             cPutStr Red "invalid: "
             cPutStrLn White $ filepath

@@ -85,6 +85,12 @@ import Data.Set
   , fromList
   )
 
+import Data.Maybe
+  ( catMaybes
+  , mapMaybe
+  , fromMaybe
+  )
+
 -----------------------------------------------------------------------------
 
 type Id = Int
@@ -166,17 +172,21 @@ toCSV SymbolTable{..} =
     ts = rmDouble $ concatMap polyType es
     im = IM.fromList $ zip ts [0,1..length ts-1]
     ir = IM.fromList $ zip (map fst es) [0,1..length es-1]
+    sc = not $ null $ mapMaybe srcPath $ mapMaybe (idPos . snd) es
   in
     csvFormat
-    $ ([ "Id"
-       , "Name"
-       , "Type"
-       , "Kind"
-       , "Depends"
-       , "Position"
-       , "Arguments"
-       ] :)
-    $ map (printEntry
+    $ ( filter (/="")
+          [ "Id"
+          , "Name"
+          , "Type"
+          , "Kind"
+          , "Depends"
+          , "Position"
+          , if sc then "Source" else ""
+          , "Arguments"
+          ]
+      :)
+    $ map (printEntry sc
             (\i -> assert (IM.member i ir) (ir IM.! i))
             (\i -> assert (IM.member i im) (im IM.! i))) es
 
@@ -185,16 +195,17 @@ toCSV SymbolTable{..} =
       | k1 /= k2   = compare k1 k2
       | otherwise = compare (idName ir1) (idName ir2)
 
-
-    printEntry g f (i,IdRec{..}) =
-      [ show (g i)
-      , idName
-      , prType f idType
-      , map toLower $ show idKind
-      , commasepxs $ toList $ fromList $ map g idDeps
-      , prExprPos idPos
-      , commasepxs idArgs
-      ]
+    printEntry sc g f (i, IdRec{..}) =
+      catMaybes
+        [ Just $ show (g i)
+        , Just idName
+        , Just $ prType f idType
+        , Just $ map toLower $ show idKind
+        , Just $ commasepxs $ toList $ fromList $ map g idDeps
+        , Just $ prExprPos idPos
+        , if sc then Just $ prSource idPos else Nothing
+        , Just $ commasepxs idArgs
+        ]
 
     polyType (_,IdRec{..}) =
       pType [] idType
@@ -209,20 +220,20 @@ toCSV SymbolTable{..} =
       (x:xr) -> show x ++ concatMap ((',':) . (' ':) . show) xr
       []     -> ""
 
+    prSource = \case
+      Nothing          -> ""
+      Just ExprPos{..} ->
+        fromMaybe "" $ srcPath
+
     prExprPos = \case
-      Nothing  -> ""
-      Just pos ->
-        let
-          bl = srcLine $ srcBegin pos
-          bc = srcColumn $ srcBegin pos
-          el = srcLine $ srcEnd pos
-          ec = srcColumn $ srcEnd pos
-        in
-          "(" ++ show bl ++ "," ++ show bc ++
-          if bl == el then
-            "-" ++ show ec ++ ")"
-          else
-            show el ++ ":" ++ show ec ++ ")"
+      Nothing          -> ""
+      Just ExprPos{..} ->
+        show (srcLine srcBegin) ++ "," ++ show (srcColumn srcBegin) ++
+        ( if srcLine srcBegin == srcLine srcEnd
+          then "-"
+          else show (srcLine srcEnd) ++ ","
+        ) ++
+        show (srcColumn srcEnd)
 
 -----------------------------------------------------------------------------
 

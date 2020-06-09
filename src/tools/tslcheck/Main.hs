@@ -6,14 +6,29 @@
 -- Checks TSL specifications to be in a valid format.
 --
 -----------------------------------------------------------------------------
+
+{-# LANGUAGE
+
+    LambdaCase
+
+  #-}
+
+-----------------------------------------------------------------------------
+
 module Main
   ( main
   ) where
 
 -----------------------------------------------------------------------------
-import TSL (fromTSL)
 
-import System.Directory (doesDirectoryExist, doesFileExist)
+import TSL
+  ( fromTSL
+  )
+
+import System.Directory
+  ( doesDirectoryExist
+  , doesFileExist
+  )
 
 import System.Console.ANSI
   ( Color(..)
@@ -24,9 +39,16 @@ import System.Console.ANSI
   , setSGR
   )
 
-import System.Environment (getArgs)
+import System.Environment
+  ( getArgs
+  )
 
-import System.IO (hPrint, hPutStr, hPutStrLn, stderr)
+import System.IO
+  ( hPrint
+  , hPutStr
+  , hPutStrLn
+  , stderr
+  )
 
 import GHC.IO.Encoding
   ( setFileSystemEncoding
@@ -35,10 +57,16 @@ import GHC.IO.Encoding
   , utf8
   )
 
-import System.Exit (exitFailure, exitSuccess)
+import System.Exit
+  ( exitFailure
+  , exitSuccess
+  )
 
 -----------------------------------------------------------------------------
-main :: IO ()
+
+main
+  :: IO ()
+
 main = do
   setLocaleEncoding utf8
   setFileSystemEncoding utf8
@@ -73,9 +101,8 @@ main = do
               cErrorLn White file
           resetColors
           return False
-        else do
-          str <- readFile file
-          case fromTSL str of
+        else
+          readFile file >>= fromTSL >>= \case
             Left err -> do
               cPutStr Red "invalid: "
               cPutStrLn White file
@@ -89,20 +116,18 @@ main = do
               resetColors
               return True
 
-    checkStdIn = do
-        str <- getContents
-        case fromTSL str of
-          Left err -> do
-            cPutStr Red "invalid"
-            resetColors
-            hPrint stderr err
-            hPutStrLn stderr ""
-            return False
-
-          Right _  -> do
-            cPutStr Green "valid"
-            resetColors
-            return True
+    checkStdIn =
+      getContents >>= fromTSL >>= \case
+        Left err -> do
+          cPutStr Red "invalid"
+          resetColors
+          hPrint stderr err
+          hPutStrLn stderr ""
+          return False
+        Right _  -> do
+          cPutStr Green "valid"
+          resetColors
+          return True
 
     cPutStr c str = do
       setSGR [SetColor Foreground Vivid c]

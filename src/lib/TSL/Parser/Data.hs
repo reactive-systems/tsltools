@@ -16,6 +16,7 @@ module TSL.Parser.Data
 
 import TSL.Expression
   ( Expr
+  , ExprPos
   )
 
 import TSL.Types
@@ -49,7 +50,9 @@ import Text.Parsec.Language
 
 data Specification =
   Specification
-  { definitions :: [Binding String]
+  { imports :: [(FilePath, String, ExprPos, ExprPos)]
+    -- ^ list of imports
+  , definitions :: [Binding String]
     -- ^ The list of bindings of an identifier to any other
     -- expression.
   , sections :: [(SectionType, Expr String)]

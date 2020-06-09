@@ -7,6 +7,14 @@
 --
 -----------------------------------------------------------------------------
 
+{-# LANGUAGE
+
+    LambdaCase
+
+  #-}
+
+-----------------------------------------------------------------------------
+
 module Main
   ( main
   ) where
@@ -69,16 +77,15 @@ main = do
   args <- getArgs
 
   if null args
-  then do
-      str <- getContents
-      case fromTSL str of
-        Left err -> do
-          cPutStrLn Red "invalid"
-          resetColors
-          hPrint stderr err
-          exitFailure
-        Right s  ->
-          putStr $ toTLSF "stdin" s
+  then
+    getContents >>= fromTSL >>= \case
+      Left err -> do
+        cPutStrLn Red "invalid"
+        resetColors
+        hPrint stderr err
+        exitFailure
+      Right s  ->
+        putStr $ toTLSF "stdin" s
   else do
     exists <- doesFileExist $ head args
 
@@ -87,9 +94,8 @@ main = do
       cErrorLn White $ head args
       resetColors
       exitFailure
-    else do
-      str <- readFile $ head args
-      case fromTSL str of
+    else
+      readFile (head args) >>= fromTSL >>= \case
         Left err -> do
           cPutStr Red "invalid: "
           cPutStrLn White $ head args

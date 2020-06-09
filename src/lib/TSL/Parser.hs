@@ -10,6 +10,7 @@
 {-# LANGUAGE
 
     TupleSections
+  , LambdaCase
 
   #-}
 
@@ -31,11 +32,8 @@ import TSL.Parser.Data
   )
 
 import TSL.Parser.Global
-  ( elementsParser
-  )
-
-import Data.Either
-  ( partitionEithers
+  ( GlobalElement(..)
+  , elementsParser
   )
 
 import Text.Parsec
@@ -69,11 +67,20 @@ specificationParser
   :: Parser Specification
 
 specificationParser = do
-  (xs,ys) <- partitionEithers <$> many1 elementsParser
+  (is,as,ss) <- partitionTypes ([], [], []) <$> many1 elementsParser
 
   return Specification
-    { definitions = xs
-    , sections = concatMap (\(t,vs) -> map (t,) vs) ys
+    { imports = is
+    , definitions = as
+    , sections = concatMap (\(t,vs) -> map (t,) vs) ss
     }
+
+  where
+    partitionTypes (is, as, ss) = \case
+      []   -> (reverse is, reverse as, reverse ss)
+      x:xr -> case x of
+        Import y     -> partitionTypes (y:is, as, ss) xr
+        Assignment y -> partitionTypes (is, y:as, ss) xr
+        Section y    -> partitionTypes (is, as, y:ss) xr
 
 -----------------------------------------------------------------------------

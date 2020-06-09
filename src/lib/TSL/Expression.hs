@@ -7,6 +7,15 @@
 --
 -----------------------------------------------------------------------------
 
+{-# LANGUAGE
+
+    LambdaCase
+  , RecordWildCards
+
+  #-}
+
+-----------------------------------------------------------------------------
+
 module TSL.Expression
   ( Constant
   , ExprId
@@ -46,6 +55,12 @@ data Expr a =
   , exprId :: ExprId
   , srcPos :: ExprPos
   } deriving (Show,Eq)
+
+-----------------------------------------------------------------------------
+
+instance Functor Expr where
+  fmap f e@Expr{..} =
+    e { expr = fmap f expr }
 
 -----------------------------------------------------------------------------
 
@@ -134,6 +149,71 @@ data Expr' a =
 
 -----------------------------------------------------------------------------
 
+instance Functor Expr' where
+  fmap f = \case
+    BaseWild             -> BaseWild
+    BaseTrue             -> BaseTrue
+    BaseFalse            -> BaseFalse
+    BaseOtherwise        -> BaseOtherwise
+    BaseCon c            -> BaseCon c
+    BaseId i             -> BaseId $ f i
+    BaseConFn i          -> BaseConFn $ f i
+    BaseUpd x i          -> BaseUpd (fmap f x) $ f i
+    BaseFn  x y          -> BaseFn (fmap f x) $ fmap f y
+    NumSMin x            -> NumSMin $ fmap f x
+    NumSMax x            -> NumSMax $ fmap f x
+    NumSSize x           -> NumSSize $ fmap f x
+    NumPlus x y          -> NumPlus (fmap f x) $ fmap f y
+    NumRPlus xs x        -> NumRPlus (map (fmap f) xs) $ fmap f x
+    NumMinus x y         -> NumMinus (fmap f x) $ fmap f y
+    NumMul x y           -> NumMul (fmap f x) $ fmap f y
+    NumRMul xs x         -> NumRMul (map (fmap f) xs) $ fmap f x
+    NumDiv x y           -> NumDiv (fmap f x) $ fmap f y
+    NumMod x y           -> NumMod (fmap f x) $ fmap f y
+    SetExplicit xs       -> SetExplicit $ map (fmap f) xs
+    SetRange x y z       -> SetRange (fmap f x) (fmap f y) $ fmap f z
+    SetCup  x y          -> SetCup (fmap f x) $ fmap f y
+    SetRCup xs x         -> SetRCup (map (fmap f) xs) $ fmap f x
+    SetCap x y           -> SetCap (fmap f x) $ fmap f y
+    SetRCap xs x         -> SetRCap (map (fmap f) xs) $ fmap f x
+    SetMinus x y         -> SetMinus (fmap f x) $ fmap f y
+    BlnEQ x y            -> BlnEQ (fmap f x) $ fmap f y
+    BlnNEQ x y           -> BlnNEQ (fmap f x) $ fmap f y
+    BlnGE x y            -> BlnGE (fmap f x) $ fmap f y
+    BlnGEQ x y           -> BlnGEQ (fmap f x) $ fmap f y
+    BlnLE x y            -> BlnLE (fmap f x) $ fmap f y
+    BlnLEQ x y           -> BlnLEQ (fmap f x) $ fmap f y
+    BlnElem x y          -> BlnElem (fmap f x) $ fmap f y
+    BlnNot x             -> BlnNot $ fmap f x
+    BlnOr x y            -> BlnOr (fmap f x) $ fmap f y
+    BlnROr xs x          -> BlnROr (map (fmap f) xs) $ fmap f x
+    BlnAnd x y           -> BlnAnd (fmap f x) $ fmap f y
+    BlnRAnd xs x         -> BlnRAnd (map (fmap f) xs) $ fmap f x
+    BlnImpl x y          -> BlnImpl (fmap f x) $ fmap f y
+    BlnEquiv x y         -> BlnEquiv (fmap f x) $ fmap f y
+    TslNext x            -> TslNext $ fmap f x
+    TslRNext x y         -> TslRNext (fmap f x) $ fmap f y
+    TslPrevious x        -> TslPrevious $ fmap f x
+    TslRPrevious x y     -> TslRPrevious (fmap f x) $ fmap f y
+    TslGlobally x        -> TslGlobally $ fmap f x
+    TslRGlobally x y     -> TslRGlobally (fmap f x) $ fmap f y
+    TslFinally x         -> TslFinally $ fmap f x
+    TslRFinally x y      -> TslRFinally (fmap f x) $ fmap f y
+    TslHistorically x    -> TslHistorically $ fmap f x
+    TslRHistorically x y -> TslRHistorically (fmap f x) $ fmap f y
+    TslOnce x            -> TslOnce $ fmap f x
+    TslROnce x y         -> TslROnce (fmap f x) $ fmap f y
+    TslUntil x y         -> TslUntil (fmap f x) $ fmap f y
+    TslWeak x y          -> TslWeak (fmap f x) $ fmap f y
+    TslAsSoonAs x y      -> TslAsSoonAs (fmap f x) $ fmap f y
+    TslRelease x y       -> TslRelease (fmap f x) $ fmap f y
+    TslSince x y         -> TslSince (fmap f x) $ fmap f y
+    TslTriggered x y     -> TslTriggered (fmap f x) $ fmap f y
+    Colon x y            -> Colon (fmap f x) $ fmap f y
+    Pattern x y          -> Pattern (fmap f x) $ fmap f y
+
+-----------------------------------------------------------------------------
+
 -- | The position of an expression is denoted by its starting position
 -- and ending position in the source code.
 
@@ -141,6 +221,7 @@ data ExprPos =
   ExprPos
   { srcBegin :: SrcPos
   , srcEnd :: SrcPos
+  , srcPath :: Maybe FilePath
   } deriving (Eq, Ord, Show)
 
 -----------------------------------------------------------------------------

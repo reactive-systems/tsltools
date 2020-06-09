@@ -150,16 +150,22 @@ tests = return $
       in
         Test t
 
-    splitTest (i,t) =
+    splitTest (i,(spec, splits)) =
       let
         x =
           TestInstance
-            { run = case splitTest' t of
-                Right () -> return $ Finished Pass
-                Left err -> do
-                  putStrLn err
-                  return $ Finished $ Fail $
-                    "Split test " ++ show i ++ " failed."
+            { run =
+                fromTSL spec >>= \case
+                  Left _ -> do
+                    putStrLn $ "Incorrect Specification:\n\n" ++ spec
+                    return $ Finished $ Fail $
+                      "Split test " ++ show i ++ " failed."
+                  Right s -> case splitTest' (s, splits) of
+                    Right () -> return $ Finished Pass
+                    Left err -> do
+                      putStrLn err
+                      return $ Finished $ Fail $
+                        "Split test " ++ show i ++ " failed."
             , name = "split" ++ show i
             , tags = []
             , options = []
@@ -169,15 +175,13 @@ tests = return $
         Test x
 
 
-    splitTest' (spec, splits) = case fromTSL spec of
-      Left _  -> Left $ "Incorrect Specification:\n\n" ++ spec
-      Right s ->
-        let specs = split s
-        in if (length specs == length splits)
-        then mapM_ check $ zip splits $ map toTSL specs
-        else Left $ "Expected " ++ show (length splits) ++
-                    " many splits, " ++ "but got " ++
-                    show (length specs) ++ "."
+    splitTest' (spec, splits) =
+      let specs = split spec
+      in if (length specs == length splits)
+      then mapM_ check $ zip splits $ map toTSL specs
+      else Left $ "Expected " ++ show (length splits) ++
+                  " many splits, " ++ "but got " ++
+                  show (length specs) ++ "."
 
     check (exp, res)
       | trim exp == trim res = return ()

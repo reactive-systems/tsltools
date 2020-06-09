@@ -147,14 +147,16 @@ createSimulation aag spec =
 -- run the simulation
 
 simulate
-  :: String -> String -> Either Error (IO ())
+  :: String -> String -> IO (Either Error (IO ()))
 
-simulate tsl' aag' = do
-  aag <- parseAag aag'
-  tsl <- fromTSL tsl'
-  case createSimulation aag tsl of
-    Left err -> Left $ err
-    Right (Left sim) -> Right $ SysSymInt.runSimulation sim
-    Right (Right sim) -> Right $ EnvSymInt.runSimulation sim
+simulate tsl' aag' =
+  fromTSL tsl' >>= return . \case
+    Left err  -> Left err
+    Right tsl -> case  parseAag aag' of
+      Left err  -> Left err
+      Right aag -> case createSimulation aag tsl of
+        Left err          -> Left err
+        Right (Left sim)  -> Right $ SysSymInt.runSimulation sim
+        Right (Right sim) -> Right $ EnvSymInt.runSimulation sim
 
 ---------------------------------------------------------------------------

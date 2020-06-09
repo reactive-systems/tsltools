@@ -248,6 +248,7 @@ exprParser = (~~) >> buildExpressionParser table term
                 , srcEnd = s
                     { srcColumn = srcColumn s + length x
                     }
+                , srcPath = Nothing
                 }
           }
 
@@ -261,7 +262,7 @@ exprParser = (~~) >> buildExpressionParser table term
         Expr
           { expr = SetExplicit []
           , exprId = -1
-          , srcPos = ExprPos s e
+          , srcPos = ExprPos s e Nothing
           }
 
     nonEmptySet s = do
@@ -274,7 +275,7 @@ exprParser = (~~) >> buildExpressionParser table term
         Expr
           { expr = SetExplicit [x]
           , exprId = -1
-          , srcPos = ExprPos s e
+          , srcPos = ExprPos s e Nothing
           }
 
     nonSingeltonSet s x = do
@@ -288,7 +289,7 @@ exprParser = (~~) >> buildExpressionParser table term
         Expr
           { expr = SetExplicit [x,y]
           , exprId = -1
-          , srcPos = ExprPos s e
+          , srcPos = ExprPos s e Nothing
           }
 
     rangeSet s x y = do
@@ -299,7 +300,7 @@ exprParser = (~~) >> buildExpressionParser table term
         Expr
           { expr = SetRange x y z
           , exprId = -1
-          , srcPos = ExprPos s e
+          , srcPos = ExprPos s e Nothing
           }
 
     manyElmSet s x y = do
@@ -310,7 +311,7 @@ exprParser = (~~) >> buildExpressionParser table term
         Expr
           { expr = SetExplicit (x:y:xs)
           , exprId = -1
-          , srcPos = ExprPos s e
+          , srcPos = ExprPos s e Nothing
           }
 
     closeSet = do { ch '}'; e <- getPos; (~~); return e }
@@ -325,6 +326,7 @@ exprParser = (~~) >> buildExpressionParser table term
               ExprPos
                 { srcBegin = srcBegin $ srcPos a
                 , srcEnd = srcEnd $ srcPos b
+                , srcPath = Nothing
                 }
           }
 
@@ -346,6 +348,7 @@ exprParser = (~~) >> buildExpressionParser table term
               ExprPos
                 { srcBegin = s
                 , srcEnd = srcEnd $ srcPos e
+                , srcPath = Nothing
                 }
           }
       (x:xr) -> \e ->
@@ -356,6 +359,7 @@ exprParser = (~~) >> buildExpressionParser table term
               ExprPos
                 { srcBegin = s
                 , srcEnd = srcEnd $ srcPos e
+                , srcPath = Nothing
                 }
           }
 
@@ -392,7 +396,7 @@ exprParser = (~~) >> buildExpressionParser table term
         Expr
           { expr = x
           , exprId = -1
-          , srcPos = ExprPos s e
+          , srcPos = ExprPos s e Nothing
           }
 
     constant = do
@@ -419,7 +423,7 @@ exprParser = (~~) >> buildExpressionParser table term
         x <- identStart tokenDef
         xr <- many $ identLetter tokenDef
         b <- getPos
-        return (x:xr,ExprPos a b)
+        return (x:xr, ExprPos a b Nothing)
 
       constantFunctionParser pos i <|> ident' pos i
 
@@ -430,11 +434,11 @@ exprParser = (~~) >> buildExpressionParser table term
         , srcPos = p
         }
 
-    constantFunctionParser (ExprPos s (SrcPos l c)) i =
+    constantFunctionParser (ExprPos s (SrcPos l c) _) i =
       try $ ch '(' >> ch ')' >> (~~) >> return Expr
         { expr = BaseConFn i
         , exprId = -1
-        , srcPos = ExprPos s $ SrcPos l $ c + 2
+        , srcPos = ExprPos s (SrcPos l $ c + 2) Nothing
         }
 
     applyFn = do
@@ -448,6 +452,7 @@ exprParser = (~~) >> buildExpressionParser table term
               ExprPos
                 { srcBegin = srcBegin $ srcPos a
                 , srcEnd = srcEnd $ srcPos b
+                , srcPath = Nothing
                 }
           }
 

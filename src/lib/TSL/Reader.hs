@@ -27,11 +27,15 @@ module TSL.Reader
 import TSL.Expression
   ( Expr(..)
   , Expr'(..)
+  , ExprPos(..)
   , subExpressions
+  , applySub
   )
 
 import TSL.Error
   ( Error
+  , errCircularImp
+  , genericError
   )
 
 import TSL.SymbolTable
@@ -83,6 +87,10 @@ import TSL.Reader.Abstraction
   ( abstract
   )
 
+import qualified TSL.Parser.Data as PD
+  ( Specification(..)
+  )
+
 import qualified TSL.Reader.Data as RD
   ( Specification(..)
   )
@@ -125,10 +133,22 @@ import qualified Data.IntMap as IM
   , member
   )
 
+import Control.Arrow
+  ( (***)
+  )
+
+import Control.Monad
+  ( (>=>)
+  )
+
 import qualified Data.Array.IArray as A
   ( Array
   , array
   , (!)
+  )
+
+import System.Directory
+  ( doesFileExist
   )
 
 import Data.Set
@@ -144,23 +164,28 @@ import Data.Set
 -- | Parses a TSL specification.
 
 fromTSL
-  :: String -> Either Error Specification
+  :: String -> IO (Either Error Specification)
 
-fromTSL str =
-  -- parse the input
-  parse str >>=
+fromTSL =
+  resolveImports [] >=> return . (>>= process)
 
+-----------------------------------------------------------------------------
+
+process
+  :: PD.Specification -> Either Error Specification
+
+process =
   -- replace variable names by a unique identifier
-  abstract >>=
+  abstract >=>
 
   -- replace syntactic sugar constructs for later converison
-  replaceSugar >>=
+  replaceSugar >=>
 
   -- retrieve the bindings of expression variables
-  specBindings >>=
+  specBindings >=>
 
   -- infer types and typecheck
-  inferTypes >>=
+  inferTypes >=>
 
   -- lift reader specification to global specification
   \s@RD.Specification{..} -> do
@@ -186,6 +211,66 @@ fromTSL str =
       Assume {}       -> True
       AlwaysAssume {} -> True
       _               -> False
+
+--------------------------------------------------------------------------------
+
+resolveImports
+  :: [(FilePath, ExprPos)] -> String -> IO (Either Error PD.Specification)
+
+resolveImports ls str = case parse str of
+  Left err   -> return $ Left err
+  Right spec -> loadImports spec
+
+  where
+    loadImports spec = case PD.imports spec of
+      [] -> return $ Right spec
+      (path, name, p1, _):xr
+        | any ((== path) . fst) ls ->
+            let (x, p) : _ = filter ((== path) . fst) ls
+            in return $ errCircularImp [(path, p1), (x, p)] p
+        | otherwise               -> do
+            exists <- doesFileExist path
+
+            if not exists
+            then
+              return $ genericError $
+              "Imported file does not exist \"" ++ path ++ "\""
+            else
+              readFile path
+              >>= resolveImports ((path, p1 { srcPath = Just path }):ls)
+              >>= \case
+                Left err    -> return $ Left err
+                Right spec' ->
+                  loadImports PD.Specification
+                    { imports = xr
+                    , definitions =
+                        map
+                          (updB path . fmap ((name ++ ".") ++))
+                          (PD.definitions spec')
+                        ++ PD.definitions spec
+                    , sections =
+                        map
+                          (id *** (upd path . fmap ((name ++ ".") ++)))
+                          (PD.sections spec')
+                        ++ PD.sections spec
+                    }
+
+    updE path = \case
+      GuardedBinding xs    -> GuardedBinding $ map (upd path) xs
+      PatternBinding x y   -> PatternBinding (upd path x) (upd path y)
+      SetBinding x         -> SetBinding $ upd path x
+      RangeBinding x g y h -> RangeBinding (upd path x) g (upd path y) h
+
+    updB path Binding{..} =
+      Binding
+        { bIdent = bIdent
+        , bArgs = map (id *** (\x -> x { srcPath = Just path })) bArgs
+        , bPos = bPos { srcPath = Just path }
+        , bVal = updE path bVal
+        }
+
+    upd path e =
+      applySub (upd path) e { srcPos = (srcPos e) { srcPath = Just path } }
 
 --------------------------------------------------------------------------------
 

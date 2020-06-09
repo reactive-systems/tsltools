@@ -10,6 +10,7 @@
 {-# LANGUAGE
 
     RecordWildCards
+  , LambdaCase
 
   #-}
 
@@ -107,7 +108,7 @@ main = do
     Nothing   -> getContents
     Just file -> readFile file
 
-  case fromTSL cnt of
+  fromTSL cnt >>= \case
     Left err -> do
       case inputFile of
         Nothing   -> return ()

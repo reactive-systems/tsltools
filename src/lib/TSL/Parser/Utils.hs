@@ -118,7 +118,7 @@ positionParser wp p = do
   e <- p
   y <- getPos
   wp
-  return (e,ExprPos x y)
+  return (e, ExprPos x y Nothing)
 
 -----------------------------------------------------------------------------
 

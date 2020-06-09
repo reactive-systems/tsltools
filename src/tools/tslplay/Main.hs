@@ -7,6 +7,14 @@
 --
 -----------------------------------------------------------------------------
 
+{-# LANGUAGE
+
+    LambdaCase
+
+  #-}
+
+-----------------------------------------------------------------------------
+
 module Main
   ( main
   ) where
@@ -84,7 +92,7 @@ main = do
 
       strat <- readFile cfm
 
-      case simulate spec strat of
+      simulate spec strat >>= \case
         Right simulate -> do
           simulate
           exitSuccess

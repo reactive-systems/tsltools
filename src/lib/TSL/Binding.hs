@@ -7,6 +7,15 @@
 --
 -----------------------------------------------------------------------------
 
+{-# LANGUAGE
+
+    LambdaCase
+  , RecordWildCards
+
+  #-}
+
+-----------------------------------------------------------------------------
+
 module TSL.Binding
   ( Binding(..)
   , BoundExpr(..)
@@ -19,6 +28,10 @@ import TSL.Expression
   , ExprPos
   )
 
+import Control.Arrow
+  ( (***)
+  )
+
 -----------------------------------------------------------------------------
 
 data BoundExpr a =
@@ -26,6 +39,15 @@ data BoundExpr a =
   | PatternBinding (Expr a) (Expr a)
   | SetBinding (Expr a)
   | RangeBinding (Expr a) (Int -> Int) (Expr a) (Int -> Int)
+
+-----------------------------------------------------------------------------
+
+instance Functor BoundExpr where
+  fmap f = \case
+    GuardedBinding xs    -> GuardedBinding $ map (fmap f) xs
+    PatternBinding x y   -> PatternBinding (fmap f x) $ fmap f y
+    SetBinding x         -> SetBinding $ fmap f x
+    RangeBinding x g y h -> RangeBinding (fmap f x) g (fmap f y) h
 
 -----------------------------------------------------------------------------
 
@@ -43,5 +65,16 @@ data Binding a =
     , bPos :: ExprPos
     , bVal :: BoundExpr a
     }
+
+-----------------------------------------------------------------------------
+
+instance Functor Binding where
+  fmap f Binding{..} =
+    Binding
+      { bIdent = f bIdent
+      , bArgs = map (f *** id) bArgs
+      , bPos = bPos
+      , bVal = fmap f bVal
+      }
 
 -----------------------------------------------------------------------------

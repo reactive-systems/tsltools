@@ -8,7 +8,8 @@
 -----------------------------------------------------------------------------
 
 module TSL.Parser.Global
-  ( assignmentParser
+  ( GlobalElement(..)
+  , assignmentParser
   , sectionParser
   , elementsParser
   ) where
@@ -35,6 +36,7 @@ import TSL.Parser.Data
 
 import TSL.Parser.Utils
   ( identifier
+  , positionParser
   )
 
 import TSL.Parser.Expression
@@ -54,10 +56,17 @@ import Control.Monad
   )
 
 import Text.Parsec
-  ( (<|>)
+  ( ParsecT
+  , (<|>)
+  , upper
+  , char
+  , space
+  , alphaNum
+  , lookAhead
   , oneOf
   , sepBy
   , many1
+  , many
   )
 
 import Text.Parsec.String
@@ -68,6 +77,7 @@ import Text.Parsec.Token
   ( GenLanguageDef(..)
   , GenTokenParser
   , reservedNames
+  , stringLiteral
   , whiteSpace
   , natural
   , makeTokenParser
@@ -78,23 +88,42 @@ import Text.Parsec.Token
 
 -----------------------------------------------------------------------------
 
+data GlobalElement =
+    Import (FilePath, String, ExprPos, ExprPos)
+  | Assignment (Binding String)
+  | Section (SectionType, [Expr String])
+
+-----------------------------------------------------------------------------
+
 elementsParser
-  :: Parser (Either (Binding String) (SectionType, [Expr String]))
+  :: Parser GlobalElement
 
 elementsParser =
-  (~~) >> (sectionParser <|> assignmentParser)
+  (~~) >> (importParser <|> sectionParser <|> assignmentParser)
+
+-----------------------------------------------------------------------------
+
+importParser
+  :: Parser GlobalElement
+
+importParser = do
+  keyword "import"
+  (file, p1) <- filepath
+  keyword "as"
+  (name, p2) <- modulename
+  return $ Import (file, name, p1, p2)
 
 -----------------------------------------------------------------------------
 
 -- | Parses a list of formulas within a section labeled by 'name'.
 
 sectionParser
-  :: Parser (Either a (SectionType, [Expr String]))
+  :: Parser GlobalElement
 
 sectionParser = do
   t <- sectionTypeParser
   xs <- br $ sepBy (nonEmptyParser exprParser) $ rOp ";"
-  return $ Right (t, catMaybes xs)
+  return $ Section (t, catMaybes xs)
 
   where
     nonEmptyParser p =
@@ -130,7 +159,7 @@ sectionTypeParser =
 -- definition.
 
 assignmentParser
-  :: Parser (Either (Binding String) a)
+  :: Parser GlobalElement
 
 assignmentParser = do
   (x,pos) <- identifier (~~)
@@ -142,13 +171,13 @@ assignmentParser = do
       args <- many1 (identifier (~~))
       (~~)
       reminderParser x args $
-        ExprPos (srcBegin pos) (srcEnd $ snd $ last args)
+        ExprPos (srcBegin pos) (srcEnd $ snd $ last args) Nothing
 
     reminderParser x args pos = do
       rOp "="
       es <- many1 exprParser
       rOp ";"
-      return $ Left $
+      return $ Assignment $
         Binding
           { bIdent = x
           , bArgs = args
@@ -172,6 +201,8 @@ tokenparser =
       , "assume"
       , "guarantee"
       , "after"
+      , "import"
+      , "as"
       ]
     }
 
@@ -202,5 +233,25 @@ keyword
   :: String -> Parser ()
 
 keyword = void . reserved tokenparser
+
+-----------------------------------------------------------------------------
+
+filepath
+  :: ParsecT String () Identity (String, ExprPos)
+
+filepath =
+  positionParser (~~) $ stringLiteral tokenparser
+
+-----------------------------------------------------------------------------
+
+modulename
+  :: ParsecT String () Identity (String, ExprPos)
+
+modulename =
+  positionParser (~~) $ do
+    f <- upper
+    xr <- many (alphaNum <|> char '_')
+    void $ lookAhead space
+    return $ f : xr
 
 -----------------------------------------------------------------------------
