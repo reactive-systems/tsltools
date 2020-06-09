@@ -35,6 +35,7 @@ module TSL
     -- * TSL Utilities
   , Specification(..)
   , fromTSL
+  , tslFormula
   , toTSL
   , toTLSF
   , split
@@ -80,6 +81,7 @@ import TSL.Logic
   , decodeInputAP
   , decodeOutputAP
   , size
+  , tslFormula
   )
 
 import TSL.Error
