@@ -36,6 +36,7 @@ module TSL
   , Specification(..)
   , fromTSL
   , tslFormula
+  , toFormula
   , toTSL
   , toTLSF
   , split
@@ -96,6 +97,7 @@ import TSL.SymbolTable
 
 import TSL.Specification
   ( Specification(..)
+  , toFormula
   , toTSL
   )
 

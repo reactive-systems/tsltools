@@ -19,6 +19,7 @@
 
 module TSL.Specification
   ( Specification(..)
+  , toFormula
   , toTSL
   ) where
 
@@ -38,15 +39,30 @@ import TSL.SymbolTable
 
 data Specification =
   Specification
-    { -- | TSL formula
-      formula :: Formula Int
-    , -- | List of TSL formulas that are assumed
+    { -- | List of TSL formulas that are assumed
       assumptions :: [Formula Int]
     , -- | List of TSL formulas that should be guaranteed
       guarantees :: [Formula Int]
     , -- | symbol table containing information about identifiers
       symboltable :: SymbolTable
     }
+
+-----------------------------------------------------------------------------
+
+-- | Create one formula out of assumptions and guarantees.
+
+toFormula
+  :: [Formula Int] -> [Formula Int] -> Formula Int
+
+toFormula assumptions guarantees =
+  case (assumptions, guarantees) of
+    (_,[])    -> TTrue
+    ([],[g])  -> g
+    ([],gs)   -> And gs
+    ([a],[g]) -> Implies a g
+    ([a],gs)  -> Implies a $ And gs
+    (as,[g])  -> Implies (And as) $ g
+    (as,gs)   -> Implies (And as) $ And gs
 
 -----------------------------------------------------------------------------
 

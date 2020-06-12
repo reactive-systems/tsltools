@@ -26,6 +26,7 @@ import TSL
   ( Specification(..)
   , fromTSL
   , size
+  , toFormula
   )
 
 import System.Directory
@@ -99,7 +100,7 @@ main = do
             cPutStr Yellow $ takeFileName file
             cPutStrLn White ":"
             cPutStr White "  size:       "
-            cPutStrLn White $ show $ size formula
+            cPutStrLn White $ show $ size $ toFormula assumptions guarantees
             resetColors
     _ -> do
       cError Yellow "Usage: "

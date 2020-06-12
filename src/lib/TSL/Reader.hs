@@ -192,8 +192,7 @@ process =
     let st = symtable s
     es <- eval st $ map snd sections
     return Specification
-      { formula     = join $ zip (map fst sections) es
-      , assumptions =
+      { assumptions =
           [ initiate (st, f)
           | (st, f) <- zip (map fst sections) es
           , assumption st
@@ -271,27 +270,6 @@ resolveImports ls str = case parse str of
 
     upd path e =
       applySub (upd path) e { srcPos = (srcPos e) { srcPath = Just path } }
-
---------------------------------------------------------------------------------
-
-join
-  :: [(SectionType, Formula Int)] -> Formula Int
-
-join fs = case partition (assumption . fst) fs of
-  (_,[])    -> TTrue
-  ([],[g])  -> initiate g
-  ([],gs)   -> And $ map initiate gs
-  ([a],[g]) -> Implies (initiate a) $ initiate g
-  ([a],gs)  -> Implies (initiate a) $ And $ map initiate gs
-  (as,[g])  -> Implies (And $ map initiate as) $ initiate g
-  (as,gs)   -> Implies (And $ map initiate as) $ And $ map initiate gs
-
-  where
-    assumption = \case
-      InitiallyAssume -> True
-      Assume {}       -> True
-      AlwaysAssume {} -> True
-      _               -> False
 
 -----------------------------------------------------------------------------
 

@@ -27,6 +27,7 @@ import TSL.SymbolTable
 
 import TSL.Specification
   ( Specification(..)
+  , toFormula
   )
 
 import TSL.Logic
@@ -92,6 +93,8 @@ toTLSF name Specification{..} = unlines
   ]
 
   where
+    formula = toFormula assumptions guarantees
+
     toTLSF =
       tlsfFormula (stName symboltable)
 
