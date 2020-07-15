@@ -10,6 +10,7 @@
 {-# LANGUAGE
 
     LambdaCase
+  , ImplicitParams
 
   #-}
 
@@ -72,8 +73,8 @@ main = do
   setLocaleEncoding utf8
   setFileSystemEncoding utf8
   setForeignEncoding utf8
-  args <- getArgs
 
+  args <- getArgs
   case args of
     [tsl, cfm] -> do
       (>>=) (doesFileExist tsl) $ flip unless $ do
@@ -83,6 +84,7 @@ main = do
         exitFailure
 
       spec <- readFile tsl
+      let ?specFilePath = Just tsl
 
       (>>=) (doesFileExist cfm) $ flip unless $ do
         cError Red "Not found: "

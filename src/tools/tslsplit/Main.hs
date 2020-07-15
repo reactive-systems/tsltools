@@ -10,6 +10,7 @@
 {-# LANGUAGE
 
     LambdaCase
+  , ImplicitParams
 
   #-}
 
@@ -79,6 +80,7 @@ main = do
   setLocaleEncoding utf8
   setFileSystemEncoding utf8
   setForeignEncoding utf8
+
   (ignore, file) <- parseArgs
   case file of
     Nothing -> do
@@ -88,6 +90,7 @@ main = do
       resetColors
       exitFailure
     Just filepath -> do
+      let ?specFilePath = Just filepath
       exists <- doesFileExist filepath
 
       if not exists then do
