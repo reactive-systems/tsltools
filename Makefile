@@ -1,6 +1,7 @@
 TSLCHECK=tslcheck
 TSLSIZE=tslsize
 TSLSYM=tslsym
+TSLRESOLVE=tslresolve
 TSL2TLSF=tsl2tlsf
 TSLSPLIT=tslsplit
 TSLPLAY=tslplay
@@ -13,6 +14,7 @@ TOOLS=\
   ${TSLCHECK}\
   ${TSLSIZE}\
   ${TSLSYM}\
+  ${TSLRESOLVE}\
   ${TSL2TLSF}\
   ${TSLSPLIT}\
   ${TSLPLAY}\
@@ -37,6 +39,10 @@ ${TSLSIZE}:
 	@if [ -d "dist" ]; then cp ./dist/build/$@/$@ $@; else cp ${STACKPATH}/bin/$@ $@; fi
 
 ${TSLSYM}:
+	${BLDTOOL} build :$@
+	@if [ -d "dist" ]; then cp ./dist/build/$@/$@ $@; else cp ${STACKPATH}/bin/$@ $@; fi
+
+${TSLRESOLVE}:
 	${BLDTOOL} build :$@
 	@if [ -d "dist" ]; then cp ./dist/build/$@/$@ $@; else cp ${STACKPATH}/bin/$@ $@; fi
 
