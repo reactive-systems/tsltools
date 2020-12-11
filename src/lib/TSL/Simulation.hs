@@ -12,6 +12,7 @@
     ViewPatterns
   , LambdaCase
   , RecordWildCards
+  , ImplicitParams
 
   #-}
 
@@ -147,7 +148,7 @@ createSimulation aag spec =
 -- run the simulation
 
 simulate
-  :: String -> String -> IO (Either Error (IO ()))
+  :: (?specFilePath :: Maybe FilePath) => String -> String -> IO (Either Error (IO ()))
 
 simulate tsl' aag' =
   fromTSL tsl' >>= return . \case

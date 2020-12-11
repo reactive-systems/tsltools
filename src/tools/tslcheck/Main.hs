@@ -10,6 +10,7 @@
 {-# LANGUAGE
 
     LambdaCase
+  , ImplicitParams
 
   #-}
 
@@ -71,6 +72,7 @@ main = do
   setLocaleEncoding utf8
   setFileSystemEncoding utf8
   setForeignEncoding utf8
+
   args <- getArgs
   if null args
   then do
@@ -87,6 +89,7 @@ main = do
 
   where
     checkFile file = do
+      let ?specFilePath = Just file
       exists <- doesFileExist file
       if not exists
         then do
@@ -117,6 +120,7 @@ main = do
               return True
 
     checkStdIn =
+      let ?specFilePath = Nothing in
       getContents >>= fromTSL >>= \case
         Left err -> do
           cPutStr Red "invalid"

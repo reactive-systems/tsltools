@@ -11,6 +11,7 @@
 
     RecordWildCards
   , LambdaCase
+  , ImplicitParams
 
   #-}
 
@@ -77,8 +78,9 @@ main = do
   setLocaleEncoding utf8
   setFileSystemEncoding utf8
   setForeignEncoding utf8
-  args <- getArgs
 
+
+  args <- getArgs
   case args of
     [file] -> do
       exists <- doesFileExist file
@@ -88,7 +90,8 @@ main = do
         cErrorLn White file
         resetColors
         exitFailure
-      else
+      else do
+        let ?specFilePath = Just file
         readFile file >>= fromTSL >>= \case
           Left err -> do
             cPutStr Red "invalid: "

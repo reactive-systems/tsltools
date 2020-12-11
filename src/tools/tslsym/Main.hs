@@ -11,6 +11,7 @@
 
     RecordWildCards
   , LambdaCase
+  , ImplicitParams
 
   #-}
 
@@ -107,6 +108,8 @@ main = do
   cnt <- case inputFile of
     Nothing   -> getContents
     Just file -> readFile file
+
+  let ?specFilePath = inputFile
 
   fromTSL cnt >>= \case
     Left err -> do

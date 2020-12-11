@@ -10,6 +10,7 @@
 {-# LANGUAGE
 
     LambdaCase
+  , ImplicitParams
 
   #-}
 
@@ -74,10 +75,11 @@ main = do
   setLocaleEncoding utf8
   setFileSystemEncoding utf8
   setForeignEncoding utf8
-  args <- getArgs
 
+  args <- getArgs
   if null args
-  then
+  then do
+    let ?specFilePath = Nothing 
     getContents >>= fromTSL >>= \case
       Left err -> do
         cPutStrLn Red "invalid"
@@ -87,23 +89,26 @@ main = do
       Right s  ->
         putStr $ toTLSF "stdin" s
   else do
-    exists <- doesFileExist $ head args
+    let path = head args
+    let ?specFilePath = Just path
+
+    exists <- doesFileExist path
 
     if not exists then do
       cError Red "File not found: "
-      cErrorLn White $ head args
+      cErrorLn White path
       resetColors
       exitFailure
     else
-      readFile (head args) >>= fromTSL >>= \case
+      readFile path >>= fromTSL >>= \case
         Left err -> do
           cPutStr Red "invalid: "
-          cPutStrLn White $ head args
+          cPutStrLn White path
           resetColors
           hPrint stderr err
           exitFailure
         Right s  ->
-          putStr $ toTLSF (takeBaseName (head args)) s
+          putStr $ toTLSF (takeBaseName path) s
 
   where
     cPutStr c str = do

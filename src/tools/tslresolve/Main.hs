@@ -1,16 +1,15 @@
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Main
--- Maintainer  :  Gideon Geier
+-- Maintainer  :  Marvin Stenger (klein@react.uni-saarland.de)
 --
--- Splits TSL specifications into many TSL specifications (if possible).
+-- Transforms TSL specifications into TLSF specifications.
 --
 -----------------------------------------------------------------------------
 
 {-# LANGUAGE
 
-    LambdaCase
-  , ImplicitParams
+    ImplicitParams
 
   #-}
 
@@ -23,21 +22,12 @@ module Main
 -----------------------------------------------------------------------------
 
 import TSL
-  ( split
+  ( fromTSL
   , toTSL
-  , fromTSL
-  , splitIgnoreAssumptions
   )
 
 import System.Directory
   ( doesFileExist
-  , getCurrentDirectory
-  )
-
-import System.FilePath
-  ( takeBaseName
-  , (</>)
-  , (<.>)
   )
 
 import System.Environment
@@ -81,46 +71,42 @@ main = do
   setFileSystemEncoding utf8
   setForeignEncoding utf8
 
-  (ignore, file) <- parseArgs
-  case file of
+  input <- parseArgs
+
+  case input of
     Nothing -> do
-      cError Yellow "Usage: "
-      cErrorLn White "tslsplit <file> [--ignore]"
-      cErrorLn White "--ignore : ignore assumptions in splitting process"
-      resetColors
-      exitFailure
+      let ?specFilePath = Nothing
+      str <- getContents
+      res <- fromTSL str
+      case res of
+        Left err -> do
+          cPutStr Red "invalid"
+          resetColors
+          hPrint stderr err
+          exitFailure
+        Right s  ->
+          putStr $ toTSL s
     Just filepath -> do
       let ?specFilePath = Just filepath
       exists <- doesFileExist filepath
 
       if not exists then do
         cError Red "File not found: "
-        cErrorLn White $ filepath
+        cErrorLn White filepath
         resetColors
         exitFailure
-      else
-        readFile filepath >>= fromTSL >>= \case
+      else do
+        str <- readFile filepath
+        res <- fromTSL str
+        case res of
           Left err -> do
             cPutStr Red "invalid: "
-            cPutStrLn White $ filepath
+            cPutStrLn White filepath
             resetColors
             hPrint stderr err
             exitFailure
-          Right s  -> do
-            path <- getCurrentDirectory
-
-            let
-              specs
-                | ignore    = splitIgnoreAssumptions s
-                | otherwise = split s
-
-              filepathN n =
-                path </> (takeBaseName filepath) ++
-                "_" ++ (show n) <.> "tsl"
-
-            mapM_
-              (\(s,n) -> writeFile (filepathN n) (toTSL s))
-              (zip specs [1::Int,2..])
+          Right s  ->
+            putStr $ toTSL s
 
   where
     cPutStr c str = do
@@ -146,8 +132,7 @@ main = do
     parseArgs = do
       args <- getArgs
       case args of
-        [x, "--ignore"] -> return (True, Just x)
-        [x]             -> return (False, Just x)
-        _               -> return (False, Nothing)
-
+        []  -> return Nothing
+        x:_ -> return $ Just x
+    
 -----------------------------------------------------------------------------

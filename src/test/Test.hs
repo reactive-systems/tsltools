@@ -11,6 +11,7 @@
 
     LambdaCase
   , RecordWildCards
+  , ImplicitParams
 
   #-}
 
@@ -154,7 +155,8 @@ tests = return $
       let
         x =
           TestInstance
-            { run =
+            { run = do
+                let ?specFilePath = Nothing
                 fromTSL spec >>= \case
                   Left _ -> do
                     putStrLn $ "Incorrect Specification:\n\n" ++ spec
