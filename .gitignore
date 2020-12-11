@@ -21,6 +21,8 @@ tslsize
 tslsplit
 tslsym
 tslplay
+tsl2toml
+tslresolve
 cfm2code
 cfmcheck
 cfminfo
