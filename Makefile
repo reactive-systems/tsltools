@@ -10,6 +10,8 @@ CFMCHECK=cfmcheck
 CFMINFO=cfminfo
 CFMSYM=cfmsym
 CFM2CODE=cfm2code
+TSLCOREGEN=tslcoregen
+TSLMINREAL=tslminrealizable
 
 TOOLS=\
   ${TSLCHECK}\
@@ -23,7 +25,9 @@ TOOLS=\
   ${CFMCHECK}\
   ${CFMINFO}\
   ${CFMSYM}\
-  ${CFM2CODE}
+  ${CFM2CODE}\
+  ${TSLCOREGEN}\
+  ${TSLMINREAL}
 
 STACKPATH=$(shell if [ -d "dist" ]; then echo ""; else stack path | grep local-install-root | sed 's/local-install-root: //'; fi)
 BLDTOOL=$(shell if [ -d "dist" ]; then echo "cabal"; else echo "stack"; fi)
@@ -79,6 +83,16 @@ ${CFM2CODE}:
 ${TSLPLAY}:
 	${BLDTOOL} build :$@
 	@if [ -d "dist" ]; then cp ./dist/build/$@/$@ $@; else cp ${STACKPATH}/bin/$@ $@; fi
+
+${TSLCOREGEN}:
+	${BLDTOOL} build :$@
+	@if [ -d "dist" ]; then cp ./dist/build/$@/$@ $@; else cp ${STACKPATH}/bin/$@ $@; fi
+
+${TSLMINREAL}:
+	${BLDTOOL} build :$@
+	@if [ -d "dist" ]; then cp ./dist/build/$@/$@ $@; else cp ${STACKPATH}/bin/$@ $@; fi
+
+
 
 install:
 	${BLDTOOL} install

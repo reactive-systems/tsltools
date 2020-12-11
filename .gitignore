@@ -28,6 +28,8 @@ cfmcheck
 cfminfo
 cfmsym
 cstratsim
+tslcoregen
+tslminrealizable
 .commit
 .stack-work
 stack.yaml.lock
