@@ -22,6 +22,7 @@ library
     -Wall
     -Wno-name-shadowing
     -fno-ignore-asserts
+    -threaded
 
   build-depends:
       base >=4.7 && <4.13
@@ -37,6 +38,7 @@ library
 
   exposed-modules:
     TSL
+    TSLCoreGenerator
 
   other-modules:
     TSL.Binding
@@ -76,6 +78,11 @@ library
     TSL.Simulation.EnvironmentSimulationBackend
     TSL.Simulation.EnvironmentSimulationInterface
     TSL.Simulation.InterfacePrintingUtils
+    CoreGeneration.CoreUtilities
+    CoreGeneration.UnrealizabilityCores
+    CoreGeneration.MinimalAssumptionCores
+    CoreGeneration.FindFirstConcurrent
+    
 
   hs-source-dirs:
     src/lib
