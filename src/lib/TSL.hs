@@ -39,6 +39,7 @@ module TSL
   , toFormula
   , toTSL
   , toTLSF
+  , toTOML
   , split
   , splitIgnoreAssumptions
     -- * CFM Utilities
@@ -117,6 +118,8 @@ import TSL.Splitter
 import TSL.Simulation
   ( simulate
   )
+
+import TSL.TOML (toTOML)
 
 import TSL.CFM
   ( CFM
