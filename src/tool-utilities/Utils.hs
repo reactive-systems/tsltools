@@ -12,6 +12,17 @@
 -----------------------------------------------------------------------------
 module Utils where
 
+import PrintUtils
+  ( putOut
+  , putOutLn
+  , putErr
+  , putErrLn
+  , cPutOut
+  , cPutOutLn
+  , cPutErr
+  , cPutErrLn
+  )
+
 import TSLCoreGenerator (Context(..), Verbosity(..))
 
 import TSL (Specification, fromTSL, toTLSF)
@@ -26,11 +37,10 @@ import System.Console.ANSI
   , ConsoleLayer(..)
   , SGR(..)
   , hSetSGR
-  , setSGR
   )
+
 import System.IO
   ( BufferMode(..)
-  , hPrint
   , hPutStr
   , hPutStrLn
   , hSetBuffering
@@ -39,6 +49,7 @@ import System.IO
   )
 
 import Data.Foldable (traverse_)
+
 import GHC.IO.Encoding
   ( setFileSystemEncoding
   , setForeignEncoding
@@ -57,11 +68,10 @@ command cmd result tlsf = do
   case result out of
     Just b -> return b
     Nothing -> do
-      cErrorLn Red $ "Command execution \"" ++ cmd ++ "\"failed with: "
-      cErrorLn White $ "TLSF: " ++ tlsf
-      cErrorLn White $ "StdOut: " ++ show out
-      cErrorLn White $ "StdErr: " ++ show err
-      resetColors
+      cPutErrLn Vivid Red $ "Command execution \"" ++ cmd ++ "\"failed with: "
+      cPutErrLn Vivid White $ "TLSF: " ++ tlsf
+      cPutErrLn Vivid White $ "StdOut: " ++ show out
+      cPutErrLn Vivid White $ "StdErr: " ++ show err
       exitFailure
 
 -----------------------------------------------------------------------------
@@ -95,44 +105,6 @@ createContext poolSize verbosity realCmd =
         }
 
 -----------------------------------------------------------------------------
--- | 'cPutStr' writes a colored message on stdout
-cPutStr :: Color -> String -> IO ()
-cPutStr c str = do
-  setSGR [SetColor Foreground Vivid c]
-  putStr str
-
------------------------------------------------------------------------------
--- | 'cPutStrLn' writes a colored message on stdout and adds a newline at
--- the end
-cPutStrLn :: Color -> String -> IO ()
-cPutStrLn c str = do
-  setSGR [SetColor Foreground Vivid c]
-  putStrLn str
-
------------------------------------------------------------------------------
--- | 'cError' writes a colored error message on stderr
-cError :: Color -> String -> IO ()
-cError c str = do
-  hSetSGR stderr [SetColor Foreground Vivid c]
-  hPutStr stderr str
-
------------------------------------------------------------------------------
--- | 'cErrorLn' writes a colored error message on stderr and adds a new line
--- at the end
-cErrorLn :: Color -> String -> IO ()
-cErrorLn c str = do
-  hSetSGR stderr [SetColor Foreground Vivid c]
-  hPutStrLn stderr str
-
------------------------------------------------------------------------------
--- | 'resteColors' reset the colors on the terminal and should be called 
--- after using 'cPutStr', 'cPutStrLn', 'cError' or 'cErrorLn'.
-resetColors :: IO ()
-resetColors = do
-  hSetSGR stderr [Reset]
-  setSGR [Reset]
-
------------------------------------------------------------------------------
 -- | 'tryLoadTSL' is a helper function which load and parses a TSL file and
 -- if this is not possible outputs a respective error on the command line
 -- and exists
@@ -141,9 +113,8 @@ tryLoadTSL filepath = do
   exists <- doesFileExist filepath
   if not exists
     then do
-      cError Red "File not found: "
-      cErrorLn White filepath
-      resetColors
+      cPutErr Vivid Red "File not found: "
+      cPutErrLn Vivid White filepath
       exitFailure
     else do
       str <- readFile filepath
@@ -151,10 +122,9 @@ tryLoadTSL filepath = do
       tsl <- fromTSL str
       case tsl of
         Left err -> do
-          cPutStr Red "invalid: "
-          cPutStrLn White filepath
-          resetColors
-          hPrint stderr err
+          cPutOut Vivid Red "invalid: "
+          cPutOutLn Vivid White filepath
+          putErrLn err
           exitFailure
         Right spec -> return spec
 
@@ -163,9 +133,8 @@ tryLoadTSL filepath = do
 -- afterwards with a failure
 printHelpAndExit :: [String] -> IO a
 printHelpAndExit helpMessages = do
-  cError Yellow "Usage: "
-  traverse_ (cErrorLn White) helpMessages
-  resetColors
+  cPutErr Vivid Yellow "Usage: "
+  traverse_ (cPutErrLn Vivid White) helpMessages
   exitFailure
 
 -----------------------------------------------------------------------------
@@ -187,13 +156,11 @@ parsePoolSize poolSizeStr =
     Just n ->
       if n <= 0
         then do
-          cErrorLn Red "The thread pool size has to be at least one"
-          resetColors
+          cPutErrLn Vivid Red "The thread pool size has to be at least one"
           exitFailure
         else return n
     Nothing -> do
-      cErrorLn Red "The thread pool size has to be a (natural) number"
-      resetColors
+      cPutErrLn Vivid Red "The thread pool size has to be a (natural) number"
       exitFailure
 
 -----------------------------------------------------------------------------
@@ -207,9 +174,8 @@ parseVerbosity string =
     Just 2 -> return STEPWISE
     Just 3 -> return DETAILED
     _ -> do
-      cErrorLn
-        Red
+      cPutErrLn
+        Vivid Red
         "The verbosity has to be given by a number between zero and three"
-      resetColors
       exitFailure
 -----------------------------------------------------------------------------

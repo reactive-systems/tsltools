@@ -17,6 +17,7 @@ source-repository head
   type:     git
   location: https://gitlab.projectjarvis.de/tools/tsltools
 
+
 library
 
   ghc-options:
@@ -112,6 +113,9 @@ executable tslcoregen
     Main.hs
 
   other-modules:
+    PrintUtils
+
+  other-modules:
     Utils
 
   default-language:
@@ -120,6 +124,8 @@ executable tslcoregen
   hs-source-dirs:
     src/tools/tslcoregen
     src/tool-utilities
+    src/tool-utilities/print-utils
+
 
 executable tslminrealizable
 
@@ -140,6 +146,7 @@ executable tslminrealizable
     Main.hs
 
   other-modules:
+    PrintUtils
     Utils
 
   default-language:
@@ -148,11 +155,16 @@ executable tslminrealizable
   hs-source-dirs:
     src/tools/tslminrealizable
     src/tool-utilities
+    src/tool-utilities/print-utils
+
 
 executable tslresolve
 
   main-is:
     Main.hs
+
+  other-modules:
+    PrintUtils
 
   ghc-options:
     -Wall
@@ -169,14 +181,19 @@ executable tslresolve
 
   hs-source-dirs:
     src/tools/tslresolve
+    src/tool-utilities/print-utils
 
   default-language:
     Haskell2010
+
 
 executable tsl2tlsf
 
   main-is:
     Main.hs
+
+  other-modules:
+    PrintUtils
 
   ghc-options:
     -Wall
@@ -193,14 +210,19 @@ executable tsl2tlsf
 
   hs-source-dirs:
     src/tools/tsl2tlsf
+    src/tool-utilities/print-utils
 
   default-language:
     Haskell2010
+
 
 executable tsl2toml
 
   main-is:
     Main.hs
+
+  other-modules:
+    PrintUtils
 
   ghc-options:
     -Wall -Wno-name-shadowing
@@ -215,9 +237,11 @@ executable tsl2toml
 
   hs-source-dirs:
     src/tools/tsl2toml
+    src/tool-utilities/print-utils
 
   default-language:
     Haskell2010
+
 
 executable tslsplit
 
@@ -229,6 +253,9 @@ executable tslsplit
   main-is:
     Main.hs
 
+  other-modules:
+    PrintUtils
+
   build-depends:
       tsl
     , base >=4.7 && <4.13
@@ -239,9 +266,11 @@ executable tslsplit
 
   hs-source-dirs:
     src/tools/tslsplit
+    src/tool-utilities/print-utils
 
   default-language:
     Haskell2010
+
 
 executable tslsym
 
@@ -254,6 +283,7 @@ executable tslsym
     Main.hs
 
   other-modules:
+    PrintUtils
     Config
 
   build-depends:
@@ -264,9 +294,12 @@ executable tslsym
 
   hs-source-dirs:
     src/tools/tslsym
+    src/tool-utilities
+    src/tool-utilities/print-utils
 
   default-language:
     Haskell2010
+
 
 executable tslcheck
 
@@ -278,6 +311,9 @@ executable tslcheck
   main-is:
     Main.hs
 
+  other-modules:
+    PrintUtils
+
   build-depends:
       tsl
     , base >=4.7 && <4.13
@@ -286,9 +322,11 @@ executable tslcheck
 
   hs-source-dirs:
     src/tools/tslcheck
+    src/tool-utilities/print-utils
 
   default-language:
     Haskell2010
+
 
 executable tslsize
 
@@ -300,6 +338,9 @@ executable tslsize
   main-is:
     Main.hs
 
+  other-modules:
+    PrintUtils
+
   build-depends:
       tsl
     , base >=4.7 && <4.13
@@ -309,9 +350,11 @@ executable tslsize
 
   hs-source-dirs:
     src/tools/tslsize
+    src/tool-utilities/print-utils
 
   default-language:
     Haskell2010
+
 
 executable cfmcheck
 
@@ -323,6 +366,9 @@ executable cfmcheck
   main-is:
     Main.hs
 
+  other-modules:
+    PrintUtils
+
   build-depends:
       tsl
     , base >=4.7 && <4.13
@@ -331,9 +377,11 @@ executable cfmcheck
 
   hs-source-dirs:
     src/tools/cfmcheck
+    src/tool-utilities/print-utils
 
   default-language:
     Haskell2010
+
 
 executable cfminfo
 
@@ -345,6 +393,9 @@ executable cfminfo
   main-is:
     Main.hs
 
+  other-modules:
+    PrintUtils
+
   build-depends:
       tsl
     , base >=4.7 && <4.13
@@ -354,9 +405,11 @@ executable cfminfo
 
   hs-source-dirs:
     src/tools/cfminfo
+    src/tool-utilities/print-utils
 
   default-language:
     Haskell2010
+
 
 executable cfmsym
 
@@ -368,6 +421,9 @@ executable cfmsym
   main-is:
     Main.hs
 
+  other-modules:
+    PrintUtils
+
   build-depends:
       tsl
     , base >=4.7 && <4.13
@@ -376,9 +432,11 @@ executable cfmsym
 
   hs-source-dirs:
     src/tools/cfmsym
+    src/tool-utilities/print-utils
 
   default-language:
     Haskell2010
+
 
 executable cfm2code
 
@@ -391,6 +449,7 @@ executable cfm2code
     Main.hs
 
   other-modules:
+    PrintUtils
     Config
 
   build-depends:
@@ -402,9 +461,11 @@ executable cfm2code
 
   hs-source-dirs:
     src/tools/cfm2code
+    src/tool-utilities/print-utils
 
   default-language:
     Haskell2010
+
 
 executable tslplay
 
@@ -416,6 +477,9 @@ executable tslplay
   main-is:
     Main.hs
 
+  other-modules:
+    PrintUtils
+
   build-depends:
       tsl
     , base >=4.7 && <4.13
@@ -425,6 +489,7 @@ executable tslplay
 
   hs-source-dirs:
     src/tools/tslplay
+    src/tool-utilities/print-utils
 
   default-language:
     Haskell2010
