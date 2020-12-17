@@ -24,7 +24,6 @@ library
     -Wall
     -Wno-name-shadowing
     -fno-ignore-asserts
-    -threaded
 
   build-depends:
       base >=4.7 && <4.13
