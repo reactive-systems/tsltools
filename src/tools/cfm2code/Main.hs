@@ -39,6 +39,11 @@ import PrintUtils
   , printErrLn
   )
 
+import FileUtils
+  ( readContent
+  , writeContent
+  )
+
 import TSL
   ( fromCFM
   , implement
@@ -118,9 +123,8 @@ main = do
 
     exitSuccess
 
-  cnt <- case inputFile of
-    Nothing   -> getContents
-    Just file -> readFile file
+
+  cnt <- readContent inputFile
 
   case fromCFM cnt of
     Left err -> do
@@ -130,9 +134,7 @@ main = do
       Nothing -> assert False undefined -- TODO: check this earlier
       Just t  ->
         let code = implement t moduleName functionName cfm
-        in case outputFile of
-          Nothing   -> putStrLn code
-          Just file -> writeFile file code
+        in writeContent outputFile code
 
   exitSuccess
 

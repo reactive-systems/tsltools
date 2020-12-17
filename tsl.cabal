@@ -456,6 +456,7 @@ executable cfm2code
 
   other-modules:
     PrintUtils
+    FileUtils
     EncodingUtils
     Config
 
