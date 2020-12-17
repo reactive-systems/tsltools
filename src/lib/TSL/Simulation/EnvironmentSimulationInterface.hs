@@ -140,7 +140,7 @@ runSimulation sim = do
           resetInterface
           printTrace sim'
           putStrLn ""
-          cPutStrLn Red "You steped on step back.\n"
+          cPutStrLn Red "You stepped one step back.\n"
           execSimulation sim'
         ShowWhyOthersNot -> do
           resetInterface
@@ -179,7 +179,7 @@ runSimulation sim = do
 
     printImpossibleOptions (opt, fs, updEvals) = do
       cPutStrLn White (mappedPredicateEvaluationToString opt)
-      cPutStrLn Magenta "is impossible as the environemnt would choose"
+      cPutStrLn Magenta "is impossible as the environment would choose"
       cPutStrLn White (updateListToString updEvals)
       cPutStrLn Magenta
         "and then each of these guarantees would be violated"

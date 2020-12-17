@@ -107,7 +107,7 @@ type Witness = [Formula String]
 
 -----------------------------------------------------------------------------
 
--- | An environemnt simulation consists of the system strategy, the
+-- | An environment simulation consists of the system strategy, the
 -- respective specification, the stack of the startegies state, the
 -- trace and a logging trace
 
