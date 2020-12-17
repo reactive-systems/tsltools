@@ -26,6 +26,10 @@ import Config
   , parseArguments
   )
 
+import EncodingUtils
+  ( initEncoding
+  )
+
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
@@ -59,22 +63,14 @@ import System.Exit
   , exitFailure
   )
 
-import GHC.IO.Encoding
-  ( utf8
-  , setLocaleEncoding
-  , setFileSystemEncoding
-  , setForeignEncoding
-  )
-
 -----------------------------------------------------------------------------
 
 main
   :: IO ()
 
 main = do
-  setLocaleEncoding utf8
-  setFileSystemEncoding utf8
-  setForeignEncoding utf8
+  initEncoding
+
   Configuration{..} <- getArgs >>= parseArguments
 
   when pHelp $ do

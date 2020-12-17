@@ -22,6 +22,10 @@ module Main
 
 -----------------------------------------------------------------------------
 
+import EncodingUtils
+  ( initEncoding
+  )
+
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
@@ -47,13 +51,6 @@ import System.Environment
   ( getArgs
   )
 
-import GHC.IO.Encoding
-  ( utf8
-  , setLocaleEncoding
-  , setFileSystemEncoding
-  , setForeignEncoding
-  )
-
 import System.Exit
   ( exitFailure
   , exitSuccess
@@ -65,9 +62,7 @@ main
   :: IO ()
 
 main = do
-  setLocaleEncoding utf8
-  setFileSystemEncoding utf8
-  setForeignEncoding utf8
+  initEncoding
 
   args <- getArgs
   case args of

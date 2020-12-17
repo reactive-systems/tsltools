@@ -113,10 +113,9 @@ executable tslcoregen
     Main.hs
 
   other-modules:
-    PrintUtils
-
-  other-modules:
     Utils
+    PrintUtils
+    EncodingUtils
 
   default-language:
     Haskell2010
@@ -145,8 +144,9 @@ executable tslminrealizable
     Main.hs
 
   other-modules:
-    PrintUtils
     Utils
+    PrintUtils
+    EncodingUtils
 
   default-language:
     Haskell2010
@@ -163,6 +163,7 @@ executable tslresolve
 
   other-modules:
     PrintUtils
+    EncodingUtils
 
   ghc-options:
     -Wall
@@ -192,6 +193,7 @@ executable tsl2tlsf
 
   other-modules:
     PrintUtils
+    EncodingUtils
 
   ghc-options:
     -Wall
@@ -221,6 +223,7 @@ executable tsl2toml
 
   other-modules:
     PrintUtils
+    EncodingUtils
 
   ghc-options:
     -Wall -Wno-name-shadowing
@@ -253,6 +256,7 @@ executable tslsplit
 
   other-modules:
     PrintUtils
+    EncodingUtils
 
   build-depends:
       tsl
@@ -282,6 +286,7 @@ executable tslsym
 
   other-modules:
     PrintUtils
+    EncodingUtils
     Config
 
   build-depends:
@@ -310,6 +315,7 @@ executable tslcheck
 
   other-modules:
     PrintUtils
+    EncodingUtils
 
   build-depends:
       tsl
@@ -337,6 +343,7 @@ executable tslsize
 
   other-modules:
     PrintUtils
+    EncodingUtils
 
   build-depends:
       tsl
@@ -365,6 +372,7 @@ executable cfmcheck
 
   other-modules:
     PrintUtils
+    EncodingUtils
 
   build-depends:
       tsl
@@ -392,6 +400,7 @@ executable cfminfo
 
   other-modules:
     PrintUtils
+    EncodingUtils
 
   build-depends:
       tsl
@@ -420,6 +429,7 @@ executable cfmsym
 
   other-modules:
     PrintUtils
+    EncodingUtils
 
   build-depends:
       tsl
@@ -447,6 +457,7 @@ executable cfm2code
 
   other-modules:
     PrintUtils
+    EncodingUtils
     Config
 
   build-depends:
@@ -476,6 +487,7 @@ executable tslplay
 
   other-modules:
     PrintUtils
+    EncodingUtils
 
   build-depends:
       tsl

@@ -14,6 +14,10 @@ module Main
 
 -----------------------------------------------------------------------------
 
+import EncodingUtils
+  ( initEncoding
+  )
+
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
@@ -33,21 +37,13 @@ import System.FilePath (takeBaseName)
 
 import System.Environment (getArgs)
 
-import GHC.IO.Encoding
-  ( setFileSystemEncoding
-  , setForeignEncoding
-  , setLocaleEncoding
-  , utf8
-  )
-
 import System.Exit (exitFailure)
 
 -----------------------------------------------------------------------------
 main :: IO ()
 main = do
-  setLocaleEncoding utf8
-  setFileSystemEncoding utf8
-  setForeignEncoding utf8
+  initEncoding
+
   input <- parseArgs
   case input of
     Nothing -> do

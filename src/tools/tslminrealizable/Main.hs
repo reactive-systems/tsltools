@@ -13,6 +13,12 @@ module Main
 
 -----------------------------------------------------------------------------
 
+import Utils
+
+import EncodingUtils
+  ( initEncoding
+  )
+
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
@@ -30,8 +36,6 @@ import TSLCoreGenerator
   )
 
 import System.Environment (getArgs)
-
-import Utils
 
 -----------------------------------------------------------------------------
 helpMessage :: [String]

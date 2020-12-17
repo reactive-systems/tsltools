@@ -12,6 +12,10 @@ module Main
 
 -----------------------------------------------------------------------------
 
+import EncodingUtils
+  ( initEncoding
+  )
+
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
