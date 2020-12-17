@@ -50,13 +50,6 @@ import System.IO
 
 import Data.Foldable (traverse_)
 
-import GHC.IO.Encoding
-  ( setFileSystemEncoding
-  , setForeignEncoding
-  , setLocaleEncoding
-  , utf8
-  )
-
 import Text.Read (readMaybe)
 
 -----------------------------------------------------------------------------
@@ -136,16 +129,6 @@ printHelpAndExit helpMessages = do
   cPutErr Vivid Yellow "Usage: "
   traverse_ (cPutErrLn Vivid White) helpMessages
   exitFailure
-
------------------------------------------------------------------------------
--- | 'initEncoding' initializes the standard encoding
-initEncoding :: IO ()
-initEncoding = do
-  hSetBuffering stdout LineBuffering
-  hSetBuffering stderr LineBuffering
-  setLocaleEncoding utf8
-  setFileSystemEncoding utf8
-  setForeignEncoding utf8
 
 -----------------------------------------------------------------------------
 -- | 'parsePoolSize' tries to parse the pool size and if this is not
