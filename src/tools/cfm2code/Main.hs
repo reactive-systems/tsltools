@@ -129,7 +129,7 @@ main = do
       putErrLn err
       exitFailure
     Right cfm -> case codeTarget of
-      Nothing -> assert False undefined
+      Nothing -> assert False undefined -- TODO: check this earlier
       Just t  ->
         let code = implement t moduleName functionName cfm
         in case outputFile of
