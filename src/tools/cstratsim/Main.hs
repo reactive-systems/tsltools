@@ -32,6 +32,7 @@ import System.Exit (exitFailure)
 -----------------------------------------------------------------------------
 main :: IO ()
 main = do
+  -- TODO no encoding initialization needed?
   args <- getArgs
   case args of
     [tsl, aag] -> do

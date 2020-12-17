@@ -66,7 +66,7 @@ main
 main = do
   initEncoding
 
-  args <- getArgs
+  args <- getArgs -- TODO: no Config.hs needed?
   if null args
   then do
     let ?specFilePath = Nothing 
