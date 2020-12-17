@@ -18,14 +18,18 @@
 module Config
   ( Configuration(..)
   , parseArguments
-  , cPutStr
-  , cPutStrLn
-  , cErrStr
-  , cErrStrLn
-  , resetColors
   ) where
 
 -----------------------------------------------------------------------------
+
+import PrintUtils
+  ( Color(..)
+  , ColorIntensity(..)
+  , cPutOut
+  , cPutOutLn
+  , cPutErr
+  , cPutErrLn
+  )
 
 import System.Exit
   ( exitFailure
@@ -35,23 +39,8 @@ import Control.Monad
   ( unless
   )
 
-import System.IO
-  ( hPutStr
-  , hPutStrLn
-  , stderr
-  )
-
 import System.Directory
   ( doesFileExist
-  )
-
-import System.Console.ANSI
-  ( SGR(..)
-  , ConsoleLayer(..)
-  , ColorIntensity(..)
-  , Color(..)
-  , hSetSGR
-  , setSGR
   )
 
 -----------------------------------------------------------------------------
@@ -132,57 +121,11 @@ parseArguments = traverse defaultCfg
 
     argsError h str = do
       unless (null h) $
-        cErrStr Vivid Red $ h ++ ": "
-      cErrStrLn Dull White str
-      resetColors
+        cPutErr Vivid Red $ h ++ ": "
+      cPutErrLn Dull White str
       exitFailure
 
     simple =
       return . None
-
------------------------------------------------------------------------------
-
-cPutStr
-  :: ColorIntensity -> Color -> String -> IO ()
-
-cPutStr v c str = do
-  setSGR [ SetColor Foreground v c ]
-  putStr str
-
------------------------------------------------------------------------------
-
-cPutStrLn
-  :: ColorIntensity -> Color -> String -> IO ()
-
-cPutStrLn v c str = do
-  setSGR [ SetColor Foreground v c ]
-  putStrLn str
-
------------------------------------------------------------------------------
-
-cErrStr
-  :: ColorIntensity -> Color -> String -> IO ()
-
-cErrStr v c str = do
-  hSetSGR stderr [ SetColor Foreground v c ]
-  hPutStr stderr str
-
------------------------------------------------------------------------------
-
-cErrStrLn
-  :: ColorIntensity -> Color -> String -> IO ()
-
-cErrStrLn v c str = do
-  hSetSGR stderr [ SetColor Foreground v c ]
-  hPutStrLn stderr str
-
------------------------------------------------------------------------------
-
-resetColors
-  :: IO ()
-
-resetColors = do
-  hSetSGR stderr [ Reset ]
-  setSGR [ Reset ]
 
 -----------------------------------------------------------------------------

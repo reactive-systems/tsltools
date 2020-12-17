@@ -11,6 +11,16 @@ module Main
   ) where
 
 -----------------------------------------------------------------------------
+
+import PrintUtils
+  ( Color(..)
+  , ColorIntensity(..)
+  , cPutOut
+  , cPutOutLn
+  , cPutErr
+  , cPutErrLn
+  )
+
 import Simulator.CLI (simulate)
 
 import System.Directory (doesFileExist)

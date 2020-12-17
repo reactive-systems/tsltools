@@ -13,6 +13,18 @@ module Main
   ) where
 
 -----------------------------------------------------------------------------
+
+import PrintUtils
+  ( Color(..)
+  , ColorIntensity(..)
+  , putErr
+  , putErrLn
+  , cPutOut
+  , cPutOutLn
+  , cPutErr
+  , cPutErrLn
+  )
+
 import TSL (fromTSL, toTOML)
 
 import System.Directory (doesFileExist)
@@ -20,17 +32,6 @@ import System.Directory (doesFileExist)
 import System.FilePath (takeBaseName)
 
 import System.Environment (getArgs)
-
-import System.Console.ANSI
-  ( Color(..)
-  , ColorIntensity(..)
-  , ConsoleLayer(..)
-  , SGR(..)
-  , hSetSGR
-  , setSGR
-  )
-
-import System.IO (hPrint, hPutStr, hPutStrLn, stderr)
 
 import GHC.IO.Encoding
   ( setFileSystemEncoding
@@ -55,18 +56,16 @@ main = do
       res <- fromTSL str
       case res of
         Left err -> do
-          cPutStr Red "invalid"
-          resetColors
-          hPrint stderr err
+          cPutOut Vivid Red "invalid"
+          putErrLn err
           exitFailure
         Right s -> putStr $ toTOML "stdin" s
     Just filepath -> do
       exists <- doesFileExist filepath
       if not exists
         then do
-          cError Red "File not found: "
-          cErrorLn White filepath
-          resetColors
+          cPutErr Vivid Red "File not found: "
+          cPutErrLn Vivid White filepath
           exitFailure
         else do
           str <- readFile filepath
@@ -74,28 +73,12 @@ main = do
           res <- fromTSL str
           case res of
             Left err -> do
-              cPutStr Red "invalid: "
-              cPutStrLn White filepath
-              resetColors
-              hPrint stderr err
+              cPutOut Vivid Red "invalid: "
+              cPutOutLn Vivid White filepath
+              putErrLn err
               exitFailure
             Right s -> putStr $ toTOML (takeBaseName filepath) s
   where
-    cPutStr c str = do
-      setSGR [SetColor Foreground Vivid c]
-      putStr str
-    cPutStrLn c str = do
-      setSGR [SetColor Foreground Vivid c]
-      putStrLn str
-    cError c str = do
-      hSetSGR stderr [SetColor Foreground Vivid c]
-      hPutStr stderr str
-    cErrorLn c str = do
-      hSetSGR stderr [SetColor Foreground Vivid c]
-      hPutStrLn stderr str
-    resetColors = do
-      hSetSGR stderr [Reset]
-      setSGR [Reset]
     parseArgs = do
       args <- getArgs
       case args of

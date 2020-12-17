@@ -23,6 +23,17 @@ module Main
 
 -----------------------------------------------------------------------------
 
+import PrintUtils
+  ( Color(..)
+  , ColorIntensity(..)
+  , putErr
+  , putErrLn
+  , cPutOut
+  , cPutOutLn
+  , cPutErr
+  , cPutErrLn
+  )
+
 import TSL
   ( Specification(..)
   , fromTSL
@@ -34,24 +45,8 @@ import System.Directory
   ( doesFileExist
   )
 
-import System.Console.ANSI
-  ( SGR(..)
-  , ConsoleLayer(..)
-  , ColorIntensity(..)
-  , Color(..)
-  , setSGR
-  , hSetSGR
-  )
-
 import System.Environment
   ( getArgs
-  )
-
-import System.IO
-  ( stderr
-  , hPrint
-  , hPutStr
-  , hPutStrLn
   )
 
 import GHC.IO.Encoding
@@ -86,49 +81,25 @@ main = do
       exists <- doesFileExist file
 
       if not exists then do
-        cError Yellow "File not found: "
-        cErrorLn White file
-        resetColors
+        cPutErr Vivid Yellow "File not found: "
+        cPutErrLn Vivid White file
         exitFailure
       else do
         let ?specFilePath = Just file
         readFile file >>= fromTSL >>= \case
           Left err -> do
-            cPutStr Red "invalid: "
-            cPutStrLn White file
-            resetColors
-            hPrint stderr err
-            hPutStrLn stderr ""
+            cPutOut Vivid Red "invalid: "
+            cPutOutLn Vivid White file
+            putErrLn err
+            putErr ""
           Right Specification{..}  -> do
-            cPutStr Yellow $ takeFileName file
-            cPutStrLn White ":"
-            cPutStr White "  size:       "
-            cPutStrLn White $ show $ size $ toFormula assumptions guarantees
-            resetColors
+            cPutOut Vivid Yellow $ takeFileName file
+            cPutOutLn Vivid White ":"
+            cPutOut Vivid White "  size:       "
+            cPutOutLn Vivid White $ show $ size $ toFormula assumptions guarantees
     _ -> do
-      cError Yellow "Usage: "
-      cErrorLn White "tslsize <file>"
-      resetColors
+      cPutErr Vivid Yellow "Usage: "
+      cPutErrLn Vivid White "tslsize <file>"
       exitFailure
-
-  where
-    cPutStr c str = do
-      setSGR [ SetColor Foreground Vivid c ]
-      putStr str
-
-    cPutStrLn c str = do
-      setSGR [ SetColor Foreground Vivid c ]
-      putStrLn str
-
-    cError c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
-      hPutStr stderr str
-
-    cErrorLn c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
-      hPutStrLn stderr str
-
-    resetColors =
-      hSetSGR stderr [ Reset ]
 
 -----------------------------------------------------------------------------

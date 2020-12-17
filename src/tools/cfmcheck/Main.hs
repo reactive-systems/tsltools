@@ -15,6 +15,17 @@ module Main
 
 -----------------------------------------------------------------------------
 
+import PrintUtils
+  ( Color(..)
+  , ColorIntensity(..)
+  , putErr
+  , putErrLn
+  , cPutOut
+  , cPutOutLn
+  , cPutErr
+  , cPutErrLn
+  )
+
 import TSL
   ( fromCFM
   )
@@ -24,24 +35,8 @@ import System.Directory
   , doesDirectoryExist
   )
 
-import System.Console.ANSI
-  ( SGR(..)
-  , ConsoleLayer(..)
-  , ColorIntensity(..)
-  , Color(..)
-  , setSGR
-  , hSetSGR
-  )
-
 import System.Environment
   ( getArgs
-  )
-
-import System.IO
-  ( stderr
-  , hPrint
-  , hPutStr
-  , hPutStrLn
   )
 
 import GHC.IO.Encoding
@@ -68,9 +63,8 @@ main = do
 
   if null args
   then do
-    cError Yellow "Usage: "
-    cErrorLn White "cfmcheck <files>"
-    resetColors
+    cPutErr Vivid Yellow "Usage: "
+    cPutErrLn Vivid White "cfmcheck <files>"
     exitFailure
   else
     mapM_ checkFile args
@@ -84,48 +78,24 @@ main = do
 
         if dir
         then do
-          cPutStr Yellow "directory: "
-          cPutStr White file
-          cPutStrLn Yellow " (skipping)"
+          cPutOut Vivid Yellow "directory: "
+          cPutOut Vivid White file
+          cPutOutLn Vivid Yellow " (skipping)"
         else do
-          cError Red "File not found: "
-          cErrorLn White file
+          cPutErr Vivid Red "File not found: "
+          cPutErrLn Vivid White file
 
-        resetColors
       else do
         str <- readFile file
 
         case fromCFM str of
           Left err -> invalid file $ show err
           Right _  -> do
-            cPutStr Green "valid: "
-            cPutStrLn White file
-            resetColors
+            cPutOut Vivid Green "valid: "
+            cPutOutLn Vivid White file
 
     invalid file err = do
-      cPutStr Red "invalid: "
-      cPutStrLn White file
-      resetColors
-      hPrint stderr err
-      hPutStrLn stderr ""
-
-    cPutStr c str = do
-      setSGR [ SetColor Foreground Vivid c ]
-      putStr str
-
-    cPutStrLn c str = do
-      setSGR [ SetColor Foreground Vivid c ]
-      putStrLn str
-
-    cError c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
-      hPutStr stderr str
-
-    cErrorLn c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
-      hPutStrLn stderr str
-
-    resetColors =
-      hSetSGR stderr [ Reset ]
-
------------------------------------------------------------------------------
+      cPutOut Vivid Red "invalid: "
+      cPutOutLn Vivid White file
+      putErrLn err
+      putErr ""

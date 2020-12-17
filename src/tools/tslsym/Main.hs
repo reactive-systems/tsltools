@@ -23,6 +23,15 @@ module Main
 
 -----------------------------------------------------------------------------
 
+import PrintUtils
+  ( Color(..)
+  , ColorIntensity(..)
+  , cPutOut
+  , cPutOutLn
+  , cPutErr
+  , cPutErrLn
+  )
+
 import TSL
   ( Specification(..)
   , fromTSL
@@ -32,10 +41,6 @@ import TSL
 import Config
   ( Configuration(..)
   , parseArguments
-  , cPutStrLn
-  , cPutStr
-  , cErrStrLn
-  , resetColors
   )
 
 import Data.List
@@ -49,11 +54,6 @@ import Control.Monad
 
 import System.Environment
   ( getArgs
-  )
-
-import System.Console.ANSI
-  ( ColorIntensity(..)
-  , Color(..)
   )
 
 import GHC.IO.Encoding
@@ -80,29 +80,28 @@ main = do
   Configuration{..} <- getArgs >>= parseArguments
 
   when pHelp $ do
-    cPutStrLn Dull White   ""
-    cPutStr Vivid Yellow   "Usage:"
-    cPutStr Vivid White    " tslsym [OPTIONS]"
-    cPutStrLn Dull White   " <file>"
-    cPutStrLn Dull White   ""
-    cPutStrLn Dull White   "  Prints the symboltable of a TSL specification."
-    cPutStrLn Dull White   ""
-    cPutStrLn Vivid Yellow "Options:"
-    cPutStrLn Dull White   ""
-    cPutStr Vivid White    "  -f, --full           "
-    cPutStrLn Dull White   "prints the full table, including locally bound definitions"
-    cPutStrLn Dull White   ""
-    cPutStr Vivid White    "  -n, --no-positions   "
-    cPutStrLn Dull White   "removes the 'Position'-column from the table such that"
-    cPutStr Dull White     "                       "
-    cPutStrLn Dull White   "the resulting table is identical to the one of 'cfmsym'"
-    cPutStrLn Dull White   ""
-    cPutStr Vivid White    "  -h, --help           "
-    cPutStrLn Dull White   "displays this help"
-    cPutStrLn Dull White   ""
-    cPutStrLn Dull White   "If no input file is given, the input is read from STDIN."
-    cPutStrLn Dull White   ""
-    resetColors
+    cPutOutLn Dull White   ""
+    cPutOut Vivid Yellow   "Usage:"
+    cPutOut Vivid White    " tslsym [OPTIONS]"
+    cPutOutLn Dull White   " <file>"
+    cPutOutLn Dull White   ""
+    cPutOutLn Dull White   "  Prints the symboltable of a TSL specification."
+    cPutOutLn Dull White   ""
+    cPutOutLn Vivid Yellow "Options:"
+    cPutOutLn Dull White   ""
+    cPutOut Vivid White    "  -f, --full           "
+    cPutOutLn Dull White   "prints the full table, including locally bound definitions"
+    cPutOutLn Dull White   ""
+    cPutOut Vivid White    "  -n, --no-positions   "
+    cPutOutLn Dull White   "removes the 'Position'-column from the table such that"
+    cPutOut Dull White     "                       "
+    cPutOutLn Dull White   "the resulting table is identical to the one of 'cfmsym'"
+    cPutOutLn Dull White   ""
+    cPutOut Vivid White    "  -h, --help           "
+    cPutOutLn Dull White   "displays this help"
+    cPutOutLn Dull White   ""
+    cPutOutLn Dull White   "If no input file is given, the input is read from STDIN."
+    cPutOutLn Dull White   ""
     exitSuccess
 
   cnt <- case inputFile of
@@ -116,11 +115,10 @@ main = do
       case inputFile of
         Nothing   -> return ()
         Just file -> do
-          cPutStr Vivid Red "invalid: "
-          cPutStrLn Vivid White file
+          cPutOut Vivid Red "invalid: "
+          cPutOutLn Vivid White file
 
-      cErrStrLn Dull White $ show err
-      resetColors
+      cPutErrLn Dull White $ show err
       exitFailure
     Right s -> do
       let
@@ -142,8 +140,6 @@ main = do
       when fullTable $ do
         sep $ upd h
         mapM_ (entries . upd) is
-
-      resetColors
 
   where
     rmSpaces a xs =
@@ -182,16 +178,16 @@ main = do
 
     header h = case span (/= ';') h of
       ([], [])     -> return ()
-      (rs, [])     -> cPutStrLn Vivid Yellow rs
-      (xs, ';':rs) -> cPutStr Vivid Yellow xs >> cPutStr Vivid White ";" >> header rs
+      (rs, [])     -> cPutOutLn Vivid Yellow rs
+      (xs, ';':rs) -> cPutOut Vivid Yellow xs >> cPutOut Vivid White ";" >> header rs
       _            -> undefined
 
-    sep h = cPutStrLn Vivid White $ map (\x -> if x == ';' then ';' else '-') h
+    sep h = cPutOutLn Vivid White $ map (\x -> if x == ';' then ';' else '-') h
 
     entries es = case span (/= ';') es of
       ([], [])     -> return ()
-      (rs, [])     -> cPutStrLn Dull White rs
-      (xs, ';':rs) -> cPutStr Dull White xs >> cPutStr Vivid White ";" >>
+      (rs, [])     -> cPutOutLn Dull White rs
+      (xs, ';':rs) -> cPutOut Dull White xs >> cPutOut Vivid White ";" >>
                      entries rs
       _            -> undefined
 

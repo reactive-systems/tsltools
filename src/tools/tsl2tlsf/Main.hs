@@ -22,6 +22,17 @@ module Main
 
 -----------------------------------------------------------------------------
 
+import PrintUtils
+  ( Color(..)
+  , ColorIntensity(..)
+  , putErr
+  , putErrLn
+  , cPutOut
+  , cPutOutLn
+  , cPutErr
+  , cPutErrLn
+  )
+
 import TSL
   ( fromTSL
   , toTLSF
@@ -37,22 +48,6 @@ import System.FilePath
 
 import System.Environment
   ( getArgs
-  )
-
-import System.Console.ANSI
-  ( SGR(..)
-  , ConsoleLayer(..)
-  , ColorIntensity(..)
-  , Color(..)
-  , setSGR
-  , hSetSGR
-  )
-
-import System.IO
-  ( stderr
-  , hPrint
-  , hPutStr
-  , hPutStrLn
   )
 
 import GHC.IO.Encoding
@@ -82,9 +77,8 @@ main = do
     let ?specFilePath = Nothing 
     getContents >>= fromTSL >>= \case
       Left err -> do
-        cPutStrLn Red "invalid"
-        resetColors
-        hPrint stderr err
+        cPutOutLn Vivid Red "invalid"
+        putErrLn err
         exitFailure
       Right s  ->
         putStr $ toTLSF "stdin" s
@@ -95,40 +89,17 @@ main = do
     exists <- doesFileExist path
 
     if not exists then do
-      cError Red "File not found: "
-      cErrorLn White path
-      resetColors
+      cPutErr Vivid Red "File not found: "
+      cPutErrLn Vivid White path
       exitFailure
     else
       readFile path >>= fromTSL >>= \case
         Left err -> do
-          cPutStr Red "invalid: "
-          cPutStrLn White path
-          resetColors
-          hPrint stderr err
+          cPutOut Vivid Red "invalid: "
+          cPutOutLn Vivid White path
+          putErrLn err
           exitFailure
         Right s  ->
           putStr $ toTLSF (takeBaseName path) s
-
-  where
-    cPutStr c str = do
-      setSGR [ SetColor Foreground Vivid c ]
-      putStr str
-
-    cPutStrLn c str = do
-      setSGR [ SetColor Foreground Vivid c ]
-      putStrLn str
-
-    cError c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
-      hPutStr stderr str
-
-    cErrorLn c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
-      hPutStrLn stderr str
-
-    resetColors = do
-      hSetSGR stderr [ Reset ]
-      setSGR [ Reset ]
 
 -----------------------------------------------------------------------------

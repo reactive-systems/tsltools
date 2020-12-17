@@ -22,6 +22,15 @@ module Main
 
 -----------------------------------------------------------------------------
 
+import PrintUtils
+  ( Color(..)
+  , ColorIntensity(..)
+  , cPutOut
+  , cPutOutLn
+  , cPutErr
+  , cPutErrLn
+  )
+
 import TSL
   ( simulate
   )
@@ -34,22 +43,8 @@ import System.Directory
   ( doesFileExist
   )
 
-import System.Console.ANSI
-  ( SGR(..)
-  , ConsoleLayer(..)
-  , ColorIntensity(..)
-  , Color(..)
-  , hSetSGR
-  )
-
 import System.Environment
   ( getArgs
-  )
-
-import System.IO
-  ( stderr
-  , hPutStr
-  , hPutStrLn
   )
 
 import GHC.IO.Encoding
@@ -78,18 +73,16 @@ main = do
   case args of
     [tsl, cfm] -> do
       (>>=) (doesFileExist tsl) $ flip unless $ do
-        cError Red "Not found: "
-        cErrorLn White tsl
-        resetColors
+        cPutErr Vivid Red "Not found: "
+        cPutErrLn Vivid White tsl
         exitFailure
 
       spec <- readFile tsl
       let ?specFilePath = Just tsl
 
       (>>=) (doesFileExist cfm) $ flip unless $ do
-        cError Red "Not found: "
-        cErrorLn White cfm
-        resetColors
+        cPutErr Vivid Red "Not found: "
+        cPutErrLn Vivid White cfm
         exitFailure
 
       strat <- readFile cfm
@@ -99,26 +92,12 @@ main = do
           simulate
           exitSuccess
         Left err       -> do
-          cError Red $ show err
-          resetColors
+          cPutErr Vivid Red $ show err
           exitFailure
 
     _ -> do
-      cError Yellow "Usage: "
-      cErrorLn White "tslplay <tsl-file> <cfm-file>"
-      resetColors
+      cPutErr Vivid Yellow "Usage: "
+      cPutErrLn Vivid White "tslplay <tsl-file> <cfm-file>"
       exitFailure
-
-  where
-    cError c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
-      hPutStr stderr str
-
-    cErrorLn c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
-      hPutStrLn stderr str
-
-    resetColors =
-      hSetSGR stderr [ Reset ]
 
 -----------------------------------------------------------------------------

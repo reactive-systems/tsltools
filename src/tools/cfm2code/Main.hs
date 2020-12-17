@@ -24,8 +24,17 @@ module Main
 import Config
   ( Configuration(..)
   , parseArguments
-  , cPutStr
-  , cPutStrLn
+  )
+
+import PrintUtils
+  ( Color(..)
+  , ColorIntensity(..)
+  , cPutOut
+  , cPutOutLn
+  , cPutErr
+  , cPutErrLn
+  , putErr
+  , putErrLn
   )
 
 import TSL
@@ -45,11 +54,6 @@ import System.Environment
   ( getArgs
   )
 
-import System.IO
-  ( stderr
-  , hPrint
-  )
-
 import System.Exit
   ( exitSuccess
   , exitFailure
@@ -60,11 +64,6 @@ import GHC.IO.Encoding
   , setLocaleEncoding
   , setFileSystemEncoding
   , setForeignEncoding
-  )
-
-import System.Console.ANSI
-  ( ColorIntensity(..)
-  , Color(..)
   )
 
 -----------------------------------------------------------------------------
@@ -79,49 +78,49 @@ main = do
   Configuration{..} <- getArgs >>= parseArguments
 
   when pHelp $ do
-    cPutStrLn Dull White   ""
-    cPutStr Vivid Yellow   "Usage:"
-    cPutStr Vivid White    " cfm2code [OPTIONS]"
-    cPutStr Vivid Blue     " <target>"
-    cPutStrLn Dull White   " <file>"
-    cPutStrLn Dull White   ""
-    cPutStrLn Dull White   "  Generates code from a TSL control flow model."
-    cPutStrLn Dull White   ""
-    cPutStrLn Vivid Yellow "Options:"
-    cPutStrLn Dull White   ""
-    cPutStr Vivid White    "  -o, --output"
-    cPutStrLn Dull White   " <file>            path of the output file (results are"
-    cPutStrLn Dull White   "                                 printed to STDOUT if not set)"
-    cPutStrLn Dull White   ""
-    cPutStr Vivid White    "  -m, --module-name"
-    cPutStrLn Dull White   " <string>     overwrites the name of the generated"
-    cPutStrLn Dull White   "                                 module; if not set, the filename of the"
-    cPutStrLn Dull White   "                                 passed input file is used; if reading"
-    cPutStrLn Dull White   "                                 from STDIN, the default 'Synth' is used"
-    cPutStrLn Dull White   ""
-    cPutStr Vivid White    "  -f, --function-name"
-    cPutStrLn Dull White   " <string>   overwrites the name of the exported"
-    cPutStrLn Dull White   "                                 function; if not set, the filename of the"
-    cPutStrLn Dull White   "                                 passed input file is used; if reading"
-    cPutStrLn Dull White   "                                 from STDIN, the default 'cfm' is used"
-    cPutStrLn Dull White   ""
-    cPutStr Vivid White    "  -h, --help"
-    cPutStrLn Dull White   "                     display this help"
-    cPutStrLn Dull White   ""
-    cPutStrLn Vivid Yellow "Targets:"
-    cPutStrLn Dull White   ""
-    cPutStr Vivid Blue     "  applicative"
-    cPutStrLn Dull White   "                    generates code for 'Applicative'-FRP libraries"
-    cPutStr Vivid Blue     "  monadic"
-    cPutStrLn Dull White   "                        generates code for 'Monadic'-FRP libraries"
-    cPutStr Vivid Blue     "  arrow"
-    cPutStrLn Dull White   "                          generates code for 'Arrowized'-FRP libraries"
-    cPutStr Vivid Blue     "  clash"
-    cPutStrLn Dull White   "                          generates code for the hardware desciption"
-    cPutStrLn Dull White   "                                 language 'ClaSH'"
-    cPutStrLn Dull White   ""
-    cPutStrLn Dull White   "If no input file is given, the input is read from STDIN."
-    cPutStrLn Dull White   ""
+    cPutOutLn Dull White   ""
+    cPutOut Vivid Yellow   "Usage:"
+    cPutOut Vivid White    " cfm2code [OPTIONS]"
+    cPutOut Vivid Blue     " <target>"
+    cPutOutLn Dull White   " <file>"
+    cPutOutLn Dull White   ""
+    cPutOutLn Dull White   "  Generates code from a TSL control flow model."
+    cPutOutLn Dull White   ""
+    cPutOutLn Vivid Yellow "Options:"
+    cPutOutLn Dull White   ""
+    cPutOut Vivid White    "  -o, --output"
+    cPutOutLn Dull White   " <file>            path of the output file (results are"
+    cPutOutLn Dull White   "                                 printed to STDOUT if not set)"
+    cPutOutLn Dull White   ""
+    cPutOut Vivid White    "  -m, --module-name"
+    cPutOutLn Dull White   " <string>     overwrites the name of the generated"
+    cPutOutLn Dull White   "                                 module; if not set, the filename of the"
+    cPutOutLn Dull White   "                                 passed input file is used; if reading"
+    cPutOutLn Dull White   "                                 from STDIN, the default 'Synth' is used"
+    cPutOutLn Dull White   ""
+    cPutOut Vivid White    "  -f, --function-name"
+    cPutOutLn Dull White   " <string>   overwrites the name of the exported"
+    cPutOutLn Dull White   "                                 function; if not set, the filename of the"
+    cPutOutLn Dull White   "                                 passed input file is used; if reading"
+    cPutOutLn Dull White   "                                 from STDIN, the default 'cfm' is used"
+    cPutOutLn Dull White   ""
+    cPutOut Vivid White    "  -h, --help"
+    cPutOutLn Dull White   "                     display this help"
+    cPutOutLn Dull White   ""
+    cPutOutLn Vivid Yellow "Targets:"
+    cPutOutLn Dull White   ""
+    cPutOut Vivid Blue     "  applicative"
+    cPutOutLn Dull White   "                    generates code for 'Applicative'-FRP libraries"
+    cPutOut Vivid Blue     "  monadic"
+    cPutOutLn Dull White   "                        generates code for 'Monadic'-FRP libraries"
+    cPutOut Vivid Blue     "  arrow"
+    cPutOutLn Dull White   "                          generates code for 'Arrowized'-FRP libraries"
+    cPutOut Vivid Blue     "  clash"
+    cPutOutLn Dull White   "                          generates code for the hardware desciption"
+    cPutOutLn Dull White   "                                 language 'ClaSH'"
+    cPutOutLn Dull White   ""
+    cPutOutLn Dull White   "If no input file is given, the input is read from STDIN."
+    cPutOutLn Dull White   ""
 
     exitSuccess
 
@@ -131,7 +130,7 @@ main = do
 
   case fromCFM cnt of
     Left err -> do
-      hPrint stderr err
+      putErrLn err
       exitFailure
     Right cfm -> case codeTarget of
       Nothing -> assert False undefined

@@ -11,11 +11,22 @@ module Main
   ) where
 
 -----------------------------------------------------------------------------
+
+import PrintUtils
+  ( Color(..)
+  , ColorIntensity(..)
+  , putErr
+  , putErrLn
+  , cPutOut
+  , cPutOutLn
+  , cPutErr
+  , cPutErrLn
+  )
+
 import TSL (toTSL)
 
 import TSLCoreGenerator (generateCore)
 
-import System.Console.ANSI (Color(..))
 import System.Environment (getArgs)
 
 import Utils
@@ -48,9 +59,8 @@ main = do
   potCore <-
     generateCore (createContext poolSize verbosity realizableCommand) spec
   case potCore of
-    Nothing -> cPutStrLn Red "Specification is realizable"
+    Nothing -> cPutOutLn Vivid Red "Specification is realizable"
     Just core -> do
       putStrLn "UNREALIZBALE CORE"
       putStr $ toTSL core
-  resetColors
 -----------------------------------------------------------------------------

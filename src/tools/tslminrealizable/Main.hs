@@ -12,6 +12,16 @@ module Main
   ) where
 
 -----------------------------------------------------------------------------
+
+import PrintUtils
+  ( Color(..)
+  , ColorIntensity(..)
+  , cPutOut
+  , cPutOutLn
+  , cPutErr
+  , cPutErrLn
+  )
+
 import TSL (toTSL)
 
 import TSLCoreGenerator
@@ -19,7 +29,6 @@ import TSLCoreGenerator
   , treeBasedMinimalAssumptions
   )
 
-import System.Console.ANSI (Color(..))
 import System.Environment (getArgs)
 
 import Utils
@@ -59,7 +68,6 @@ main = do
       (createContext poolSize verbosity realizableCommand)
       spec
   case potMinimalRealizableSpec of
-    Nothing -> cPutStrLn Red "UNREALIZABLE"
+    Nothing -> cPutOutLn Vivid Red "UNREALIZABLE"
     Just core -> putStr $ toTSL core
-  resetColors
 -----------------------------------------------------------------------------

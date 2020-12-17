@@ -22,6 +22,17 @@ module Main
 
 -----------------------------------------------------------------------------
 
+import PrintUtils
+  ( Color(..)
+  , ColorIntensity(..)
+  , putErr
+  , putErrLn
+  , cPutOut
+  , cPutOutLn
+  , cPutErr
+  , cPutErrLn
+  )
+
 import TSL
   ( fromTSL
   )
@@ -31,24 +42,8 @@ import System.Directory
   , doesFileExist
   )
 
-import System.Console.ANSI
-  ( Color(..)
-  , ColorIntensity(..)
-  , ConsoleLayer(..)
-  , SGR(..)
-  , hSetSGR
-  , setSGR
-  )
-
 import System.Environment
   ( getArgs
-  )
-
-import System.IO
-  ( hPrint
-  , hPutStr
-  , hPutStrLn
-  , stderr
   )
 
 import GHC.IO.Encoding
@@ -96,55 +91,36 @@ main = do
           dir <- doesDirectoryExist file
           if dir
             then do
-              cPutStr Yellow "directory: "
-              cPutStr White file
-              cPutStrLn Yellow " (skipping)"
+              cPutOut Vivid Yellow "directory: "
+              cPutOut Vivid White file
+              cPutOutLn Vivid Yellow " (skipping)"
             else do
-              cError Red "Not found: "
-              cErrorLn White file
-          resetColors
+              cPutErr Vivid Red "Not found: "
+              cPutErrLn Vivid White file
           return False
         else
           readFile file >>= fromTSL >>= \case
             Left err -> do
-              cPutStr Red "invalid: "
-              cPutStrLn White file
-              resetColors
-              hPrint stderr err
-              hPutStrLn stderr ""
+              cPutOut Vivid Red "invalid: "
+              cPutOutLn Vivid White file
+              putErrLn err
+              putErr ""
               return False
             Right _ -> do
-              cPutStr Green "valid: "
-              cPutStrLn White file
-              resetColors
+              cPutOut Vivid Green "valid: "
+              cPutOutLn Vivid White file
               return True
 
     checkStdIn =
       let ?specFilePath = Nothing in
       getContents >>= fromTSL >>= \case
         Left err -> do
-          cPutStr Red "invalid"
-          resetColors
-          hPrint stderr err
-          hPutStrLn stderr ""
+          cPutOut Vivid Red "invalid"
+          putErrLn err
+          putErr ""
           return False
         Right _  -> do
-          cPutStr Green "valid"
-          resetColors
+          cPutOut Vivid Green "valid"
           return True
-
-    cPutStr c str = do
-      setSGR [SetColor Foreground Vivid c]
-      putStr str
-    cPutStrLn c str = do
-      setSGR [SetColor Foreground Vivid c]
-      putStrLn str
-    cError c str = do
-      hSetSGR stderr [SetColor Foreground Vivid c]
-      hPutStr stderr str
-    cErrorLn c str = do
-      hSetSGR stderr [SetColor Foreground Vivid c]
-      hPutStrLn stderr str
-    resetColors = hSetSGR stderr [Reset]
 
 -----------------------------------------------------------------------------

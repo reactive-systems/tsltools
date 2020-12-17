@@ -18,13 +18,18 @@
 module Config
   ( Configuration(..)
   , parseArguments
-  , cPutStr
-  , cPutStrLn
-  , cErrStr
-  , cErrStrLn
   ) where
 
 -----------------------------------------------------------------------------
+
+import PrintUtils
+  ( Color(..)
+  , ColorIntensity(..)
+  , cPutOut
+  , cPutOutLn
+  , cPutErr
+  , cPutErrLn
+  )
 
 import TSL
   ( CodeTarget(..)
@@ -43,27 +48,12 @@ import Control.Monad
   ( unless
   )
 
-import System.IO
-  ( hPutStr
-  , hPutStrLn
-  , stderr
-  )
-
 import System.Directory
   ( doesFileExist
   )
 
 import System.FilePath
   ( takeBaseName
-  )
-
-import System.Console.ANSI
-  ( SGR(..)
-  , ConsoleLayer(..)
-  , ColorIntensity(..)
-  , Color(..)
-  , hSetSGR
-  , setSGR
   )
 
 -----------------------------------------------------------------------------
@@ -125,10 +115,10 @@ parseArguments args = do
     Nothing
       | pHelp c   -> return c
       | otherwise -> do
-          cErrStr Vivid Red    "Missing target:"
-          cErrStr Dull White   " Use"
-          cErrStr Dull Yellow  " --help"
-          cErrStrLn Dull White " to see supported targets."
+          cPutErr Vivid Red    "Missing target:"
+          cPutErr Dull White   " Use"
+          cPutErr Dull Yellow  " --help"
+          cPutErrLn Dull White " to see supported targets."
           exitFailure
 
     Just _  ->
@@ -236,48 +226,11 @@ parseArguments args = do
 
     argsError h str = do
       unless (null h) $
-        cErrStr Vivid Red $ h ++ ": "
-      cErrStrLn Dull White str
+        cPutErr Vivid Red $ h ++ ": "
+      cPutErrLn Dull White str
       exitFailure
 
     simple =
       return . None
-
------------------------------------------------------------------------------
-
-cPutStr
-  :: ColorIntensity -> Color -> String -> IO ()
-
-cPutStr v c str = do
-  setSGR [ SetColor Foreground v c ]
-  putStr str
-
-
------------------------------------------------------------------------------
-
-cPutStrLn
-  :: ColorIntensity -> Color -> String -> IO ()
-
-cPutStrLn v c str = do
-  setSGR [ SetColor Foreground v c ]
-  putStrLn str
-
------------------------------------------------------------------------------
-
-cErrStr
-  :: ColorIntensity -> Color -> String -> IO ()
-
-cErrStr v c str = do
-  hSetSGR stderr [ SetColor Foreground v c ]
-  hPutStr stderr str
-
------------------------------------------------------------------------------
-
-cErrStrLn
-  :: ColorIntensity -> Color -> String -> IO ()
-
-cErrStrLn v c str = do
-  hSetSGR stderr [ SetColor Foreground v c ]
-  hPutStrLn stderr str
 
 -----------------------------------------------------------------------------

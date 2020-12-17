@@ -13,6 +13,17 @@ module Main
 
 -----------------------------------------------------------------------------
 
+import PrintUtils
+  ( Color(..)
+  , ColorIntensity(..)
+  , putErr
+  , putErrLn
+  , cPutOut
+  , cPutOutLn
+  , cPutErr
+  , cPutErrLn
+  )
+
 import TSL
   ( fromCFM
   , statistics
@@ -22,24 +33,8 @@ import System.Directory
   ( doesFileExist
   )
 
-import System.Console.ANSI
-  ( SGR(..)
-  , ConsoleLayer(..)
-  , ColorIntensity(..)
-  , Color(..)
-  , setSGR
-  , hSetSGR
-  )
-
 import System.Environment
   ( getArgs
-  )
-
-import System.IO
-  ( stderr
-  , hPrint
-  , hPutStr
-  , hPutStrLn
   )
 
 import GHC.IO.Encoding
@@ -73,9 +68,8 @@ main = do
       exists <- doesFileExist file
 
       if not exists then do
-        cError Yellow "File not found: "
-        cErrorLn White file
-        resetColors
+        cPutErr Vivid Yellow "File not found: "
+        cPutErrLn Vivid White file
         exitFailure
       else do
         str <- readFile file
@@ -84,53 +78,31 @@ main = do
           Left err -> invalid file $ show err
           Right cfm  -> do
             let (nI, nO, nP, nF, nC, nV) = statistics cfm
-            cPutStr Yellow $ takeFileName file
-            cPutStrLn White ":"
-            cPutStr White "  inputs:     "
-            cPutStrLn White $ show nI
-            cPutStr White "  outputs:    "
-            cPutStrLn White $ show nO
-            cPutStr White "  predicates: "
-            cPutStrLn White $ show nP
-            cPutStr White "  functions:  "
-            cPutStrLn White $ show nF
-            cPutStr White "  cells:      "
-            cPutStrLn White $ show nC
-            cPutStr White "  vertices:   "
-            cPutStrLn White $ show nV
-            resetColors
+            cPutOut Vivid Yellow $ takeFileName file
+            cPutOutLn Vivid White ":"
+            cPutOut Vivid White "  inputs:     "
+            cPutOutLn Vivid White $ show nI
+            cPutOut Vivid White "  outputs:    "
+            cPutOutLn Vivid White $ show nO
+            cPutOut Vivid White "  predicates: "
+            cPutOutLn Vivid White $ show nP
+            cPutOut Vivid White "  functions:  "
+            cPutOutLn Vivid White $ show nF
+            cPutOut Vivid White "  cells:      "
+            cPutOutLn Vivid White $ show nC
+            cPutOut Vivid White "  vertices:   "
+            cPutOutLn Vivid White $ show nV
 
     _ -> do
-      cError Yellow "Usage: "
-      cErrorLn White "cfminfo <file>"
-      resetColors
+      cPutErr Vivid Yellow "Usage: "
+      cPutErrLn Vivid White "cfminfo <file>"
       exitFailure
 
   where
     invalid file err = do
-      cPutStr Red "invalid: "
-      cPutStrLn White file
-      resetColors
-      hPrint stderr err
-      hPutStr stderr ""
-
-    cPutStr c str = do
-      setSGR [ SetColor Foreground Vivid c ]
-      putStr str
-
-    cPutStrLn c str = do
-      setSGR [ SetColor Foreground Vivid c ]
-      putStrLn str
-
-    cError c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
-      hPutStr stderr str
-
-    cErrorLn c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
-      hPutStrLn stderr str
-
-    resetColors =
-      hSetSGR stderr [ Reset ]
+      cPutOut Vivid Red "invalid: "
+      cPutOutLn Vivid White file
+      putErrLn err
+      putErr ""
 
 -----------------------------------------------------------------------------
