@@ -136,4 +136,6 @@ main = do
           Nothing   -> putStrLn code
           Just file -> writeFile file code
 
+  exitSuccess
+
 -----------------------------------------------------------------------------
