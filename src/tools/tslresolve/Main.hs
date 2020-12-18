@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Main
--- Maintainer  :  Marvin Stenger (klein@react.uni-saarland.de)
+-- Maintainer  :  Marvin Stenger (Stenger@ProjectJARVIS.de)
 --
 -- Transforms TSL specifications into TLSF specifications.
 --
