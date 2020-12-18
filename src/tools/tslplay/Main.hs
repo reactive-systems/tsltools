@@ -10,7 +10,6 @@
 {-# LANGUAGE
 
     LambdaCase
-  , ImplicitParams
 
   #-}
 
@@ -60,14 +59,13 @@ main = do
   initEncoding
 
   args <- getArgs
+
   case args of
     [tsl, cfm] -> do
       spec <- tryReadFile tsl
-      let ?specFilePath = Just tsl
-
       strat <- tryReadFile cfm
 
-      simulate spec strat >>= \case
+      simulate (Just tsl) spec strat >>= \case
         Right simulate -> do
           simulate
           exitSuccess

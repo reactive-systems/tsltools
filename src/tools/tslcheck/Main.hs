@@ -11,7 +11,6 @@
 
     LambdaCase
   , NamedFieldPuns
-  , ImplicitParams
 
   #-}
 
@@ -93,7 +92,6 @@ main = do
 
   where
     checkFile file = do
-      let ?specFilePath = Just file
       exists <- doesFileExist file
       if not exists
         then do
@@ -108,7 +106,7 @@ main = do
               cPutErrLn Vivid White file
           return False
         else
-          readFile file >>= fromTSL >>= \case
+          readFile file >>= fromTSL (Just file) >>= \case
             Left err -> do
               cPutOut Vivid Red "invalid: "
               cPutOutLn Vivid White file
@@ -121,8 +119,7 @@ main = do
               return True
 
     checkStdIn =
-      let ?specFilePath = Nothing in
-      getContents >>= fromTSL >>= \case
+      getContents >>= fromTSL Nothing >>= \case
         Left err -> do
           cPutOut Vivid Red "invalid"
           printErrLn err

@@ -13,7 +13,6 @@
   , TupleSections
   , MultiWayIf
   , LambdaCase
-  , ImplicitParams
 
   #-}
 
@@ -170,10 +169,10 @@ import Data.Set
 -- | Parses a TSL specification.
 
 fromTSL
-  :: (?specFilePath :: Maybe FilePath) => String -> IO (Either Error Specification)
+  :: Maybe FilePath -> String -> IO (Either Error Specification)
 
-fromTSL =
-  resolveImports [] >=> return . (>>= process)
+fromTSL specPath =
+  resolveImports specPath [] >=> return . (>>= process)
 
 -----------------------------------------------------------------------------
 
@@ -220,9 +219,9 @@ process =
 --------------------------------------------------------------------------------
 
 resolveImports
-  :: (?specFilePath :: Maybe FilePath) => [(FilePath, ExprPos)] -> String -> IO (Either Error PD.Specification)
+  :: Maybe FilePath -> [(FilePath, ExprPos)] -> String -> IO (Either Error PD.Specification)
 
-resolveImports ls str = case parse str of
+resolveImports specPath ls str = case parse str of
   Left err   -> return $ Left err
   Right spec -> loadImports spec
 
@@ -234,7 +233,7 @@ resolveImports ls str = case parse str of
             let (x, p) : _ = filter ((== path) . fst) ls
             in return $ errCircularImp [(path, p1), (x, p)] p
         | otherwise               -> do
-            path' <- resolvePath path
+            path' <- resolvePath specPath path
             exists <- doesFileExist path'
 
             if not exists
@@ -242,9 +241,8 @@ resolveImports ls str = case parse str of
               return $ genericError $
               "Imported file does not exist \"" ++ path' ++ "\" (import path was: \"" ++ path ++ "\")"
             else do
-              let ?specFilePath = path'
               readFile path'
-              >>= resolveImports ((path, p1 { srcPath = Just path }):ls)
+              >>= resolveImports (Just path') ((path, p1 { srcPath = Just path }):ls)
               >>= \case
                 Left err    -> return $ Left err
                 Right spec' ->
@@ -262,11 +260,11 @@ resolveImports ls str = case parse str of
                         ++ PD.sections spec
                     }
 
-    resolvePath path =
+    resolvePath specPath path =
       makeAbsolute $
-        case ?specFilePath of
+        case specPath of
           Nothing -> path
-          Just specFilePath -> combine (takeDirectory specFilePath) path
+          Just specPath -> combine (takeDirectory specPath) path
 
     updE path = \case
       GuardedBinding xs    -> GuardedBinding $ map (upd path) xs

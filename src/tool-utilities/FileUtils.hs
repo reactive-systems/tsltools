@@ -7,7 +7,11 @@
 -- the executables of tsltools.
 --
 -----------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase, ImplicitParams #-}
+{-# LANGUAGE
+
+    LambdaCase
+
+#-}
 
 -----------------------------------------------------------------------------
 module FileUtils
@@ -109,10 +113,8 @@ printErrMessage input err = do
 -- and exits
 tryLoadTSL :: Maybe FilePath -> IO Specification
 tryLoadTSL input = do
-  let ?specFilePath = input
-
   content <- tryReadContent input
-  fromTSL content
+  fromTSL input content
   >>= \case 
     Left err -> do
       printErrMessage input err
