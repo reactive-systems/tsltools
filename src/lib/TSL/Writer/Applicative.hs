@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Writer.Applicative
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein 
 --
 -- Code generation for Applicative FRP.
 --
@@ -350,10 +350,10 @@ prCircuitImpl Circuit{..} =
           hasLatches   = not $ null latches
           hasGates     = not $ null gates
           hasInverters =
-              any isNeg (map outputWire outputs)
-            || any isNeg (map latchInput latches)
-            || any isNeg (map gateInputA gates)
-            || any isNeg (map gateInputB gates)
+              any (isNeg . outputWire) outputs
+            || any (isNeg . latchInput) latches 
+            || any (isNeg . gateInputA) gates 
+            || any (isNeg . gateInputB) gates
         in
           if hasLatches || hasGates || hasInverters
           then

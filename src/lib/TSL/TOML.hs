@@ -1,9 +1,9 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  TLSF
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Module      :  TOML
+-- Maintainer  :  Marvin Stenger
 --
--- TLSF writer, which transforms a TSL formula into TLSF.
+-- TOML writer, which transforms a TSL formula into TOML.
 --
 -----------------------------------------------------------------------------
 
@@ -54,7 +54,7 @@ toTOML name Specification{..} = unlines $
   else
     [ "[assumptions]"
     , "  initially = [" ]
-    ++ (map (\f -> "    '" ++ tslFormula (stName symboltable) f ++ "',") assumptions) ++
+    ++ map (\f -> "    '" ++ tslFormula (stName symboltable) f ++ "',") assumptions ++
     [ "  ]" ]
   ) ++ (
   if null guarantees
@@ -63,7 +63,7 @@ toTOML name Specification{..} = unlines $
   else
     [ "[guarantees]"
     , "  initially = [" ]
-    ++ (map (\f -> "    '" ++ tslFormula (stName symboltable) f ++ "',") guarantees) ++
+    ++ map (\f -> "    '" ++ tslFormula (stName symboltable) f ++ "',") guarantees ++
     [ "  ]" ]
   )
 

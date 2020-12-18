@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Expression
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein 
 --
 -- Data types to store expressions and some helper functions.
 --
@@ -32,7 +32,7 @@ module TSL.Expression
 
 -----------------------------------------------------------------------------
 
--- | A constant is represted by an integer
+-- | A constant is represented by an integer
 
 type Constant = Int
 

@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Aiger
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein 
 --
 -- Aiger Circuit Representation.
 --
@@ -395,7 +395,7 @@ aagParser = do
     pWire x
       | x == 0         = Negative $ Wire 0
       | x == 1         = Positive $ Wire 0
-      | x `mod` 2 == 0 = Positive $ Wire (x `div` 2)
+      | even x        = Positive $ Wire (x `div` 2)
       | otherwise     = Negative $ Wire (x `div` 2)
 
 -----------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  TLSF
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Module      :  TSL.TLSF
+-- Maintainer  :  Felix Klein 
 --
 -- TLSF writer, which transforms a TSL formula into TLSF.
 --

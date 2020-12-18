@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Logic
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Module      :  TSL.Logic
+-- Maintainer  :  Felix Klein
 --
 -- TSL logic data type and utility functions.
 --

@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Writer.Arrow
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein 
 --
 -- Code generation for Arrowized FRP.
 --
@@ -362,12 +362,12 @@ prCircuitImpl Circuit{..} =
                       " = " ++ x) (zip [1 :: Int,2..] $ tail os) ++
           "\n      }"      
       , let
-          hasLatches   = not $ null $ latches
+          hasLatches   = not $ null latches
           hasInverters =
-              any isNeg (map outputWire outputs)
-            || any isNeg (map latchInput latches)
-            || any isNeg (map gateInputA gates)
-            || any isNeg (map gateInputB gates)
+              any (isNeg . outputWire) outputs 
+            || any (isNeg . latchInput) latches 
+            || any (isNeg . gateInputA) gates
+            || any (isNeg . gateInputB) gates
         in
           if hasLatches || hasInverters
           then

@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Specification
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein 
 --
 -- Internal data structure of a specification.
 --
@@ -61,7 +61,7 @@ toFormula assumptions guarantees =
     ([],gs)   -> And gs
     ([a],[g]) -> Implies a g
     ([a],gs)  -> Implies a $ And gs
-    (as,[g])  -> Implies (And as) $ g
+    (as,[g])  -> Implies (And as) g
     (as,gs)   -> Implies (And as) $ And gs
 
 -----------------------------------------------------------------------------
@@ -73,7 +73,7 @@ toTSL
 
 toTSL Specification{..} =
   "assume {" ++ prFormulas assumptions ++ "\n}\n\n" ++
-  "guarantee {" ++ prFormulas guarantees ++ "\n}"
+  "guarantee {" ++ prFormulas guarantees ++ "\n}\n"
 
   where
     prFormulas =

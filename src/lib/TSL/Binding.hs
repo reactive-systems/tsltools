@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Binding
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein 
 --
 -- A data type to store an identifier bound to an expression.
 --
@@ -29,7 +29,7 @@ import TSL.Expression
   )
 
 import Control.Arrow
-  ( (***)
+  ( first
   )
 
 -----------------------------------------------------------------------------
@@ -72,7 +72,7 @@ instance Functor Binding where
   fmap f Binding{..} =
     Binding
       { bIdent = f bIdent
-      , bArgs = map (f *** id) bArgs
+      , bArgs = map (first f) bArgs
       , bPos = bPos
       , bVal = fmap f bVal
       }

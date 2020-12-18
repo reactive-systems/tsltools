@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.CFM
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein 
 --
 -- Control flow model representation.
 --
@@ -427,7 +427,7 @@ symbolTable cfm@CFM{..} =
       | t <- functions cfm
       ]
   in
-    ST.symbolTable $ array (0,length xs - 1) $ sortIds $ xs
+    ST.symbolTable $ array (0,length xs - 1) $ sortIds xs
 
   where
     t2et = \case

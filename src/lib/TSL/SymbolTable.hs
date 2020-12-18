@@ -223,7 +223,7 @@ toCSV SymbolTable{..} =
     prSource = \case
       Nothing          -> ""
       Just ExprPos{..} ->
-        fromMaybe "" $ srcPath
+        fromMaybe "" srcPath
 
     prExprPos = \case
       Nothing          -> ""

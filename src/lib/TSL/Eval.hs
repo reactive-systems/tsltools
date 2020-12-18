@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Eval
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Module      :  TSL.Eval
+-- Maintainer  :  Felix Klein 
 --
 -- Evaluation function for internal variables.
 --
@@ -945,8 +945,8 @@ vAsSoonAs (VPTerm x)          (VBoolean True)     = VTSL $ Check x
 vAsSoonAs (VSTerm (Signal x)) (VBoolean True)     = VTSL $ cb x
 vAsSoonAs (VTSL x)            (VBoolean True)     = VTSL x
 vAsSoonAs (VTSL x)            (VTSL y)            = VTSL $ Weak (Not y) $ And [x, y]
-vAsSoonAs (VPTerm x)          (VTSL y)            = VTSL $ Weak (Not $ y) $ And [Check x, y]
-vAsSoonAs (VSTerm (Signal x)) (VTSL y)            = VTSL $ Weak (Not $ y) $ And [cb x, y]
+vAsSoonAs (VPTerm x)          (VTSL y)            = VTSL $ Weak (Not y) $ And [Check x, y]
+vAsSoonAs (VSTerm (Signal x)) (VTSL y)            = VTSL $ Weak (Not y) $ And [cb x, y]
 vAsSoonAs (VTSL x)            (VPTerm y)          = VTSL $ Weak (Not $ Check y) $ And [x, Check y]
 vAsSoonAs (VPTerm x)          (VPTerm y)          = VTSL $ Weak (Not $ Check y) $ And [Check x, Check y]
 vAsSoonAs (VSTerm (Signal x)) (VPTerm y)          = VTSL $ Weak (Not $ Check y) $ And [cb x, Check y]
