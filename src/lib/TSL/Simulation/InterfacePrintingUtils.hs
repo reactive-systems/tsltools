@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Simulation.InterfacePrintingUtils.hs
--- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
+-- Maintainer  :  Philippe Heim
 --
 -- Utilities to print different things for the simulation interfaces
 --

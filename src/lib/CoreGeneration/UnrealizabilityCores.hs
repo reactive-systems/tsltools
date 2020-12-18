@@ -2,7 +2,7 @@
 -- |
 -- Module      : UnrealizabilityCores
 -- Description : TSL unrealizable-cores 
--- Maintainer  : Philippe Heim (Heim@ProjectJARVIS.de)
+-- Maintainer  : Philippe Heim
 --
 -- Provides methods to generate unrealizability cores
 --

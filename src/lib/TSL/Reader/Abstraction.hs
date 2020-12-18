@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Reader.Abstraction
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein 
 --
 -- Abstracts from identifier names to integer IDs.
 --

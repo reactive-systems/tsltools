@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Simulator
--- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
+-- Maintainer  :  Philippe Heim
 --
 -- A simple counterstrategy simulator
 --

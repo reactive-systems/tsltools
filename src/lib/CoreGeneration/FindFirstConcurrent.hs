@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  FindFirstConcurrent
--- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
+-- Maintainer  :  Philippe Heim
 --
 -- An toolbox to execute multiple things in parallel and find
 -- the first matching one

@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Reader.InferType
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein 
 --
 -- Infers and checks types of all bound expressions.
 --

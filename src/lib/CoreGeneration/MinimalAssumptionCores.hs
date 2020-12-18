@@ -2,7 +2,7 @@
 -- |
 -- Module      : MinimalAssumptionCores
 -- Description : TSL minimal-assumptions finder 
--- Maintainer  : Philippe Heim (Heim@ProjectJARVIS.de)
+-- Maintainer  : Philippe Heim
 --
 -- Provides method to search for a minimal amount of assumptions 
 -- needed to realize a specification.

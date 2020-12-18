@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.SymbolTable
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- Data type to store all identifier specific content.
 --

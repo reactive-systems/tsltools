@@ -2,7 +2,7 @@
 -- |
 -- Module      : TSLCoreGenerator
 -- Description : TSL unrealizable-core and minimal-assumptions finder 
--- Maintainer  : Philippe Heim (Heim@ProjectJARVIS.de)
+-- Maintainer  : Philippe Heim
 --
 -- Provides methods to generate unrealizability cores and to search
 -- for a minimal amount of assumptions needed to realize a 

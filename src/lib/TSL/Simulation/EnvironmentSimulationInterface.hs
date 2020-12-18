@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Simulation.EnvironmentSimulationInterface
--- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
+-- Maintainer  :  Philippe Heim
 --
 -- The (command line) interface of the environment simulation when
 -- playing againts a strategy

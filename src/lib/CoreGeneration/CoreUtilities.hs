@@ -2,7 +2,7 @@
 -- |
 -- Module      : CoreUtilities
 -- Description : Basic utilities use in different core generation techniques
--- Maintainer  : Philippe Heim (Heim@ProjectJARVIS.de)
+-- Maintainer  : Philippe Heim
 --
 -- 'CoreUtilities' provides different functionalities that are used to
 -- generate different kind of cores. This includes the wrapping of

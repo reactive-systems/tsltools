@@ -1,6 +1,6 @@
 -- |
 -- Module      :  TSL.Simulation.FinitTraceChecker
--- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
+-- Maintainer  :  Philippe Heim
 --
 -- A simple finite trace checker
 --

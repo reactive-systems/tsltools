@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Reader.Bindings
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- Extracts the static expression bindings from the specification.
 --
@@ -432,7 +432,7 @@ fixExprIds s@Specification{..} = do
         BaseOtherwise        -> return BaseOtherwise
         BaseId i             -> return $ BaseId i
         BaseConFn i          -> return $ BaseConFn i
-        BaseUpd x i          -> updExpr1 (flip BaseUpd i) x
+        BaseUpd x i          -> updExpr1 (`BaseUpd` i) x
         NumSMin x            -> updExpr1 NumSMin x
         NumSMax x            -> updExpr1 NumSMax x
         NumSSize x           -> updExpr1 NumSSize x
