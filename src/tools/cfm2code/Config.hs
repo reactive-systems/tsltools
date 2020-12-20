@@ -215,6 +215,14 @@ parseArguments args = do
             ("clash vs. " ++ prTarget t)
             "The specified target must be unique."
 
+
+      "RxKotlin" -> case codeTarget c of
+        Nothing -> simple $ c { codeTarget = Just RxKotlin }
+        Just t  ->
+          argsError
+            ("RxKotlin vs. " ++ prTarget t)
+            "The specified target must be unique."
+
       file           -> do
         exists <- doesFileExist file
         unless exists $ argsError "File not found" file
@@ -225,6 +233,7 @@ parseArguments args = do
       Arrow       -> "arrow"
       Clash       -> "clash"
       Monadic     -> "monadic"
+      RxKotlin    -> "RxKotlin"
 
     fstLower = \case
       []   -> []

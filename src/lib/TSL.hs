@@ -88,6 +88,10 @@ import qualified TSL.Writer.Monadic as Monadic
   ( implement
   )
 
+import qualified TSL.Writer.RxKotlin as RxKotlin
+  ( implement
+  )
+
 -----------------------------------------------------------------------------
 
 data CodeTarget =
@@ -95,6 +99,7 @@ data CodeTarget =
   | Monadic
   | Arrow
   | Clash
+  | RxKotlin
   deriving (Show, Ord, Eq)
 
 -----------------------------------------------------------------------------
@@ -116,5 +121,6 @@ implement = \case
   Arrow       -> Arrow.implement
   Clash       -> Clash.implement
   Monadic     -> Monadic.implement
+  RxKotlin    -> RxKotlin.implement
 
 -----------------------------------------------------------------------------
