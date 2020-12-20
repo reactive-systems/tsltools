@@ -58,6 +58,7 @@ library
     TSL.Writer.Arrow
     TSL.Writer.Monadic
     TSL.Writer.RxKotlin
+    TSL.Writer.JavaScript
     TSL.Aiger
     TSL.Logic
     TSL.Eval

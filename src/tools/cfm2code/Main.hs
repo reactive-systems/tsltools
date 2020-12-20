@@ -121,6 +121,8 @@ main = do
     cPutStrLn Dull White   "                                 language 'ClaSH'"
     cPutStr Vivid Blue     "  RxKotlin"
     cPutStrLn Dull White   "                       generates code for RxKotlin Android apps"
+    cPutStr Vivid Blue     "  JavaScript"
+    cPutStrLn Dull White   "                       generates code for JavaScript"
     cPutStrLn Dull White   ""
     cPutStrLn Dull White   "If no input file is given, the input is read from STDIN."
     cPutStrLn Dull White   ""

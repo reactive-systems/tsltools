@@ -92,6 +92,10 @@ import qualified TSL.Writer.RxKotlin as RxKotlin
   ( implement
   )
 
+import qualified TSL.Writer.JavaScript as JavaScript
+  ( implement
+  )
+
 -----------------------------------------------------------------------------
 
 data CodeTarget =
@@ -100,6 +104,7 @@ data CodeTarget =
   | Arrow
   | Clash
   | RxKotlin
+  | JavaScript
   deriving (Show, Ord, Eq)
 
 -----------------------------------------------------------------------------
@@ -122,5 +127,6 @@ implement = \case
   Clash       -> Clash.implement
   Monadic     -> Monadic.implement
   RxKotlin    -> RxKotlin.implement
+  JavaScript    -> JavaScript.implement
 
 -----------------------------------------------------------------------------
