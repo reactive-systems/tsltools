@@ -45,6 +45,8 @@ import qualified TSL.Aiger as Circuit
   , outputs
   )
 
+import qualified Data.List as List
+
 -----------------------------------------------------------------------------
 
 type ModuleName = String
@@ -63,94 +65,36 @@ implement mName fName cfm@CFM{..} =
   unlines
     [ "// Module : " ++ mName
     , "//"
-    , "// Rxlotlin Interface for " ++ fName ++ "."
+    , "// JavaScript Interface for " ++ fName ++ "."
     , "//"
     , ""
     , replicate 77 '/'
     , ""
-    , "module " ++ mName
-    , "  ( " ++ fName
-    , "  ) where"
+    , "function "++fName ++ 
+      prMultiLineTuple 1 (map inputName
+      $ filter(not.loopedInput) inputs)++ "{"
+    , ""
+    , concatMap (prTerm' cfm) terms
+    , "     let innerCircuit = controlCircuit" ++ prTuple (map (prWire cfm . controlInputWire) is) ++ ";"
+    , ""
+    , concatMap prOutputCell outputs
+    , concatMap prSwitch outputs
+      -- COMMENTED: return statement for main fxn
+      -- ++ "    return ntuple" ++
+      -- prtuple (map (("o_" ++) . outputname) outputs)
+    , "}"
     , ""
     , replicate 77 '/'
     , ""
-    , "import Control.Arrow"
-    , "  ( Arrow"
-    , "  , ArrowLoop"
-    , "  , returnA"
-    , "  , arr"
-    , "  , (<<<)"
-    , "  )"
-    , ""
-    , replicate 77 '-'
-    , ""
-    , fName
-    , "  :: (Arrow signal, ArrowLoop signal)"
-    , "     // cell implementation"
-    , "  => (forall poly. poly -> signal poly poly)"
-    , concatMap prTermType (filter isPredicate (constants cfm)) ++
-      concatMap prTermType (predicates cfm) ++
-      concatMap prTermType (filter (not . isPredicate) (constants cfm)) ++
-      concatMap prTermType (functions cfm) ++
-      concatMap prInitType outputs ++
-      "     // arrow"
-    , "  -> signal"
-    , prInputType (filter (not . loopedInput) inputs)
-    , prOutputType outputs
-    , ""
-    , fName
-    , "  cell"
-    , concatMap
-        ((++ "\n") . ("  p_" ++) . termName)
-        (filter isPredicate (constants cfm))
-      ++
-      concatMap
-        ((++ "\n") . ("  p_" ++) . termName)
-        (predicates cfm)
-      ++
-      concatMap
-        ((++ "\n") . ("  f_" ++) . termName)
-        (filter (not . isPredicate) (constants cfm))
-      ++
-      concatMap
-        ((++ "\n") . ("  f_" ++) . termName)
-        (functions cfm)
-      ++
-      concatMap
-        ((++ "\n") . ("  i_" ++) . outputName)
-        outputs
-    , "  ="
-    , ""
-    , "  proc"
-    , prMultiLineTuple 4
-        ( map (("s_" ++) . inputName)
-        $ filter (not . loopedInput) inputs
-        ) ++ " ->"
-    , "  do"
-    , "    rec"
-    , concatMap prOutputCell outputs
-    , concatMap (prTerm' cfm) terms
-    , "      " ++ prTuple (map (("cout" ++) . show) os) ++ " <-"
-    , "        controlCircuit cell -<"
-    , prMultiLineTuple 10 (map (prWire cfm . controlInputWire) is)
-    , ""
-    , concatMap prSwitch outputs ++
-      "    returnA -< " ++
-      prTuple (map (("o_" ++) . outputName) outputs)
-    , ""
-    , replicate 77 '-'
     , concatMap (prSwitchImpl cfm) outputs
     ]
     ++
     prCircuitImpl control
-    ++
-    replicate 77 '-'
 
   where
     prOutputCell o =
-      "      c_" ++ outputName o ++
-      " <- cell i_" ++ outputName o ++
-      " -< o_" ++ outputName o ++ "\n"
+      "      c_" ++ outputName o++
+      " = o_" ++ outputName o ++ ";\n"
 
     prOutputType = \case
       []   ->
@@ -174,17 +118,17 @@ implement mName fName cfm@CFM{..} =
         "       // no input\n" ++
         "       ()"
       [x]  ->
-        "       // " ++ inputName x ++ " (input)\n" ++
+        "       // " ++ inputName x ++ " (input) " ++
         "        " ++ prT (wireType $ inputWire x)
       x:xr ->
-        "       ( // " ++ inputName x ++ " (input)\n" ++
-        "         " ++ prT (wireType $ inputWire x) ++ "\n" ++
+        "       ( // " ++ inputName x ++ " (input) " ++
+        "         " ++ prT (wireType $ inputWire x) ++ " " ++
         concatMap prI xr ++
         "       )"
 
     prI i =
-      "       , // " ++ inputName i ++ " (input)\n" ++
-      "         " ++ prT (wireType $ inputWire i) ++ "\n"
+      prT (wireType $ inputWire i)
+
 
     prInitType o =
       "     // initial value: " ++ outputName o ++ "\n" ++
@@ -200,6 +144,9 @@ implement mName fName cfm@CFM{..} =
 
     prT = \case
       Boolean -> "Bool"
+            --idk why but these dont work
+      -- Int     -> "Int"
+      -- String  -> "String"
       t       -> prType t
 
     prTermType t =
@@ -210,82 +157,76 @@ implement mName fName cfm@CFM{..} =
     os = Circuit.outputs control
 
     prSwitch o =
-      indent 6 ("o_" ++ outputName o) ++ " <-\n" ++
-      indent 8 (outputName o) ++ "Switch -<\n" ++
-      prMultiLineTuple 10
-        (map (\(w,x) -> "(" ++ prWire cfm w ++ ", cout" ++ show x ++ ")")
-           $ outputSwitch o) ++ "\n\n"
+      indent 6 ("o_" ++ outputName o ++ " = ") ++
+      (outputName o) ++ "Switch" ++
+      prTuple (map (\(w,x) -> "[" ++ prWire cfm w ++ ", innerCircuit[" ++ show x ++ "]]")
+           $ outputSwitch o) ++ ";\n\n"
+
+    prTupleClass o = 
+      prTuple (map(\i -> "val "++outputName i++":"++prResultType i) o)
+
+    prTupleClassPara o = 
+        let
+           n = length o
+           first = map(\i -> "operator fun component" ++show i++"():")[0,1..n-1]
+           second =  map(\j -> prResultType j++" = "++ outputName j)o 
+         in
+      prMultiLineTupleCurly 7 (zipWith (++) first second)
+
+    prUniqueTypes o =
+        let
+          l = map(\i -> prResultType i) outputs
+        in
+      prTupleCarrot( List.nub l)
+
+
 
 -----------------------------------------------------------------------------
 
 prSwitchImpl
   :: CFM -> Output -> String
-
+--it can only have Pairs as inputs, cant handle anything else, 
 prSwitchImpl CFM{..} o =
   let
     xs = outputSwitch o
     n = length xs
   in
     unlines
-      [ ""
-      , outputName o ++ "Switch"
-      , "  :: Arrow signal"
-      , "  => signal"
-      , prMultiLineTuple 7 (replicate n "(a, Bool)") ++ " a"
-      , ""
-      , outputName o ++ "Switch ="
-      , "  proc"
-      , prMultiLineTuple 4
-          ( map
-              (\i -> "(s" ++ show i ++ ", b" ++ show i ++ ")")
-              [0,1..n-2]
-            ++
-            ["(s" ++ show (n-1) ++ ", _)"]
-          ) ++ " ->"
-      , "  do"
-      , concatMap
-          (\i ->
-            indent 4 "r" ++ show i ++
-            " <- arr ite -< (b" ++ show i ++
-            ", s" ++ show i ++ ", " ++
-            (if n == i + 2 then "s" else "r") ++
-            show (i+1) ++ ")\n"
-          )
-          [n-2,n-3..0] ++ indent 4 "returnA -< r0"
-      , ""
-      , "  where"
-      , "    ite (b, t, e) = if b then t else e"
-      , ""
-      , replicate 77 '-'
-      ]
+      [ "function "++ outputName o ++ "Switch"
+      , prMultiLineTuple 7 (map (\i -> "p" ++ show i)[0,1..n-1])++ "{"
+      , concatMap(\j -> 
+            indent 4 "const r"++show j++
+            " = p"++show j++"[1] ?"++
+            " p"++show j++"[0]"++
+            " : " ++
+            (if n == j + 2 then "p" else "r")++
+            show (j+1)++ ";" ++ 
+            (if n == j + 2 then "[0]; \n" else "\n ")
+            )
+            [n-2,n-3..0] ++ indent 4 "return r0;"
+      ,"}"
+      ,""]
 
------------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
 
 prCircuitImpl
   :: Circuit -> String
 
 prCircuitImpl Circuit{..} =
   unlines
-    [ "controlCircuit"
-    , "  :: (Arrow signal, ArrowLoop signal)"
-    , "     -- cell implementation"
-    , "  => (Bool -> signal Bool Bool)"
-    , "     -- circuit"
-    , "  -> signal"
-    , prMultiLineTuple 7
-        $ replicate (length inputs) "Bool"
-    , prMultiLineTuple 7
-        $ replicate (length outputs) "Bool"
-    , ""
-    , "controlCircuit cell ="
-    , "  proc"
+    [ "function controlCircuit"
     , prMultiLineTuple 4
-        (map (("cin" ++) . show) inputs) ++ " ->"
-    , "  do"
-    , "    rec"
+        -- (map (("cin" ++) . show) inputs)
+        -- i might need to make the ":Boolean" into TermType stuff
+        (map (\i -> "cin" ++ show i)
+           $ inputs)++
+    "{"
+        --I've ignored the Latches
     , concatMap prLatch latches
-    , indent 6 "let"
     , concatMap prGate gates ++ prOutputs
+    ,"\n }"
+    --I think no need to care about Latchers and Inverters for the moment
+    --
     , let
         hasLatches   = not $ null $ latches
         hasInverters =
@@ -316,7 +257,8 @@ prCircuitImpl Circuit{..} =
     prWire' x
       | Circuit.wire x <= length inputs = "cin" ++ show (Circuit.wire x - 1)
       | otherwise                      = 'w' : show x
-
+    
+    --im havent touched prLatch
     prLatch l =
       let
         iw = latchInput l :: Invertible Circuit.Wire
@@ -339,22 +281,22 @@ prCircuitImpl Circuit{..} =
         poled iwA ++ " && " ++ poled iwB ++ "\n"
 
     poled = \case
-      Positive (Circuit.wire -> 0) -> "True"
-      Negative (Circuit.wire -> 0) -> "False"
+      Positive (Circuit.wire -> 0) -> "true"
+      Negative (Circuit.wire -> 0) -> "false"
       Positive w -> prWire' w
-      Negative w -> "not " ++ prWire' w
+      Negative w -> "!" ++ prWire' w
 
     polarized i c = \case
       Positive (Circuit.wire -> 0) ->
-        ( "True", "")
+        ( "true", "")
       Negative (Circuit.wire -> 0) ->
-        ( "False", "")
+        ( "false", "")
       Positive w ->
         ( prWire' w, "")
       Negative w ->
         ( c : show i
         , indent 8 (c : show i) ++
-          " = not " ++ prWire' w ++ "\n"
+          " = !" ++ prWire' w ++ "\n"
         )
 
     prOutputs =
@@ -362,8 +304,8 @@ prCircuitImpl Circuit{..} =
         (os, xs) =
           unzip $ map (\o -> polarized o 'o' $ outputWire o) outputs
       in
-        concat xs ++ "\n    returnA -<\n" ++
-        prMultiLineTuple 6 os
+        concat xs ++ "\n    return " ++
+        prList os ++ ";"
 
 -----------------------------------------------------------------------------
 
@@ -374,6 +316,25 @@ prTuple = \case
   []   -> "()"
   [x]  -> x
   x:xr -> "(" ++ x ++ concatMap ((',':) . (' ':)) xr ++ ")"
+
+-----------------------------------------------------------------------------
+
+prList
+  :: [String] -> String
+
+prList = \case
+  []   -> "[]"
+  [x]  -> "[x]"
+  x:xr -> "[" ++ x ++ concatMap ((',':) . (' ':)) xr ++ "]"
+
+-----------------------------------------------------------------------------
+prTupleCarrot
+  :: [String] -> String
+
+prTupleCarrot = \case
+  []   -> "()"
+  [x]  -> x
+  x:xr -> "<" ++ x ++ concatMap ((',':) . (' ':)) xr ++ ">"
 
 -----------------------------------------------------------------------------
 
@@ -390,6 +351,18 @@ prMultiLineTuple n = \case
 
 -----------------------------------------------------------------------------
 
+prMultiLineTupleCurly
+  :: Int -> [String] -> String
+
+prMultiLineTupleCurly n = \case
+  []   -> indent n "()"
+  [x]  -> indent n x
+  x:xr ->
+    indent n ("{ " ++ x ++ "\n") ++
+    concatMap (indent n . (", " ++) . (++ "\n")) xr ++
+    indent n "}"
+-----------------------------------------------------------------------------
+
 indent
   :: Int -> String -> String
 
@@ -398,30 +371,34 @@ indent n x =
 
 -----------------------------------------------------------------------------
 
+addSemicolon :: String -> String
+addSemicolon = flip (++) ";"
+
+
 prTerm'
   :: CFM -> Term -> String
 
 prTerm' cfm@CFM{..} t =
-  "      " ++ prWire cfm (termOutputWire t) ++ " <- " ++
+  "      let " ++ prWire cfm (termOutputWire t) ++ " = " ++
   (case reverse $ termInputWires t of
      []     ->
-       ("arr (const " ++) $ (++ ") -< ()\n") $
+     --need to fix for w10 = -1, w11 = 0
+      (++ "();\n") $
        if
-         | termName t == "true"  -> "True"
-         | termName t == "false" -> "False"
+         | termName t == "true"  -> "true"
+         | termName t == "false" -> "false"
          | isPredicate t        -> "p_" ++ termName t
          | otherwise            -> "f_" ++ termName t
      (x:xr) ->
-       "arr " ++
-       (iterate (("(uncurry " ++) . (++ ")"))
+       (iterate (("" ++) . (++""))
          ((if isPredicate t then "p_" else "f_") ++ termName t)
-           !! length xr) ++ " -< " ++
-       prT (prWire cfm x) xr ++ "\n")
+           !! length xr) ++ "(" ++
+       prT (prWire cfm x) xr ++ ");\n")
 
   where
     prT s = \case
       []   -> s
-      x:xr -> prT ("(" ++ s ++ ", " ++ prWire cfm x ++ ")") xr
+      x:xr -> prT (s ++ ", " ++ prWire cfm x) xr
 
 -----------------------------------------------------------------------------
 

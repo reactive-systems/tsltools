@@ -241,7 +241,7 @@ parseArguments args = do
       Clash       -> "clash"
       Monadic     -> "monadic"
       RxKotlin    -> "RxKotlin"
-      JavaScript    -> "JavaScript"
+      JavaScript  -> "JavaScript"
 
     fstLower = \case
       []   -> []
