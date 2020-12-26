@@ -267,13 +267,15 @@ prCircuitImpl Circuit{..} =
       Negative (Circuit.wire -> 0) -> False
       Negative _                  -> True
 
+    -- No idea if this is correct
     prWire' x
       | Circuit.wire x <= length inputs = 
         let minusedOne = Circuit.wire x - 1
         in
           case minusedOne >= 0 of
             True  -> "cin" ++ show minusedOne
-            False -> "cinNeg" ++ (show $ abs $ minusedOne)
+            False -> "cin0"
+            -- False -> "cinNeg" ++ (show $ abs $ minusedOne)
       | otherwise                      = 'w' : show x
     
     latchVarInit :: Latch -> String
@@ -299,7 +301,7 @@ prCircuitImpl Circuit{..} =
           Positive w -> w
         
         initVar :: Circuit.Wire -> String
-        initVar wire = "let " ++ prWire' wire ++ ";\n"
+        initVar wire = "var " ++ prWire' wire ++ ";\n"
       in initVar unwrapped ++ initVar ow
 
     globalGateVar :: Gate -> String
@@ -307,7 +309,7 @@ prCircuitImpl Circuit{..} =
       let
         ow = gateOutput g :: Circuit.Wire
       in
-        indent 8 $ "let " ++ (prWire' ow) ++ ";\n"
+        indent 8 $ "var " ++ (prWire' ow) ++ ";\n"
 
     prLatchJS :: Latch -> String
     prLatchJS l =
