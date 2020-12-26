@@ -332,7 +332,7 @@ prCircuitImpl Circuit{..} =
         ow = gateOutput g :: Circuit.Wire
       in
         indent 8 (prWire' ow) ++ " = " ++
-        poled iwA ++ " && " ++ poled iwB ++ "\n"
+        poled iwA ++ " && " ++ poled iwB ++ ";\n"
 
     poled = \case
       Positive (Circuit.wire -> 0) -> "true"
@@ -361,7 +361,8 @@ prCircuitImpl Circuit{..} =
         addLet :: String -> String
         addLet base = case base of
           ""    -> ""
-          base' -> "let " ++ base'
+          base' -> "const " ++ base'' ++ ";\n"
+            where base'' = takeWhile (/='\n') base'
           
       in
         concat (map addLet xs)
@@ -431,10 +432,6 @@ indent n x =
   iterate (' ':) x !! n
 
 -----------------------------------------------------------------------------
-
-addSemicolon :: String -> String
-addSemicolon = flip (++) ";"
-
 
 prTerm'
   :: CFM -> Term -> String
