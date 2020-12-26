@@ -37,6 +37,8 @@ import TSL.CFM
 import TSL.Aiger
   ( Circuit(..)
   , Invertible(..)
+  , Latch
+  , Gate
   )
 
 import qualified TSL.Aiger as Circuit
@@ -214,19 +216,22 @@ prCircuitImpl
 
 prCircuitImpl Circuit{..} =
   unlines
-    [ "function controlCircuit"
+    [ concatMap globalLatchVar latches
+    , concatMap globalGateVar gates
+    , concatMap latchVarInit latches
+    , "function controlCircuit"
     , prMultiLineTuple 4
-        -- (map (("cin" ++) . show) inputs)
-        -- i might need to make the ":Boolean" into TermType stuff
-        (map (\i -> "cin" ++ show i)
-           $ inputs)++
+        (map (("cin" ++) . show) inputs) ++ 
     "{"
-        --I've ignored the Latches
-    , concatMap prLatch latches
-    , concatMap prGate gates ++ prOutputs
+    , "/*"
+    , concatMap prLatch latches ++ "*/"
+    , concatMap prLatchJS latches
+    , "// Gates"
+    , concatMap prGate gates
+    , "// Outputs"
+    , prOutputs
     ,"\n }"
-    --I think no need to care about Latchers and Inverters for the moment
-    --
+    ,"/*"
     , let
         hasLatches   = not $ null $ latches
         hasInverters =
@@ -246,6 +251,8 @@ prCircuitImpl Circuit{..} =
            else "") ++
           "\n"
         else ""
+    , 
+    "*/"
     ]
 
   where
@@ -258,7 +265,53 @@ prCircuitImpl Circuit{..} =
       | Circuit.wire x <= length inputs = "cin" ++ show (Circuit.wire x - 1)
       | otherwise                      = 'w' : show x
     
-    --im havent touched prLatch
+    latchVarInit :: Latch -> String
+    latchVarInit l =
+      let
+        iw = latchInput l  :: Invertible Circuit.Wire
+        -- HACK
+        -- Also need to check this is true.
+        unwrapped = case iw of
+          Negative w -> w
+          Positive w -> w
+      in
+        prWire' unwrapped ++ " = false;\n"
+    
+    globalLatchVar :: Latch -> String
+    globalLatchVar l = 
+      let
+        iw = latchInput l :: Invertible Circuit.Wire
+        ow = latchOutput l :: Circuit.Wire
+        -- HACK
+        unwrapped = case iw of
+          Negative w -> w
+          Positive w -> w
+        
+        initVar :: Circuit.Wire -> String
+        initVar wire = "let " ++ prWire' wire ++ ";\n"
+      in initVar unwrapped ++ initVar ow
+
+    globalGateVar :: Gate -> String
+    globalGateVar g =
+      let
+        ow = gateOutput g :: Circuit.Wire
+      in
+        indent 8 $ "let " ++ (prWire' ow) ++ ";\n"
+
+    prLatchJS :: Latch -> String
+    prLatchJS l =
+      let
+        iw = latchInput l :: Invertible Circuit.Wire
+        ow = latchOutput l :: Circuit.Wire
+
+        polarization = case iw of
+          Negative w -> "!" ++ prWire' w
+          Positive w -> prWire' w
+      in
+        indent 6 (prWire' ow) ++
+        " = " ++ polarization ++ ";\n"
+
+    prLatch :: Latch -> String
     prLatch l =
       let
         iw = latchInput l :: Invertible Circuit.Wire
@@ -303,8 +356,15 @@ prCircuitImpl Circuit{..} =
       let
         (os, xs) =
           unzip $ map (\o -> polarized o 'o' $ outputWire o) outputs
+        
+        addLet :: String -> String
+        addLet base = case base of
+          ""    -> ""
+          base' -> "let " ++ base'
+          
       in
-        concat xs ++ "\n    return " ++
+        concat (map addLet xs)
+        ++ "\n    return " ++
         prList os ++ ";"
 
 -----------------------------------------------------------------------------
@@ -343,7 +403,7 @@ prMultiLineTuple
 
 prMultiLineTuple n = \case
   []   -> indent n "()"
-  [x]  -> indent n x
+  [x]  -> indent n "(" ++ x ++ ")"
   x:xr ->
     indent n ("( " ++ x ++ "\n") ++
     concatMap (indent n . (", " ++) . (++ "\n")) xr ++
