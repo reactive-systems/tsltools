@@ -77,9 +77,10 @@ implement mName fName cfm@CFM{..} =
       $ filter(not.loopedInput) inputs)++ "{"
     , ""
     , concatMap (prTerm' cfm) terms
-    , "     let innerCircuit = controlCircuit" ++ prTuple (map (prWire cfm . controlInputWire) is) ++ ";"
-    , ""
+    , indent 4 ("let innerCircuit = controlCircuit" ++ prTuple (map (prWire cfm . controlInputWire) is) ++ ";")
+    , indent 4 "// Output Cells"
     , concatMap prOutputCell outputs
+    , indent 4 "// Switches"
     , concatMap prSwitch outputs
       -- COMMENTED: return statement for main fxn
       -- ++ "    return ntuple" ++
@@ -202,8 +203,8 @@ prSwitchImpl CFM{..} o =
             " p"++show j++"[0]"++
             " : " ++
             (if n == j + 2 then "p" else "r")++
-            show (j+1)++ ";" ++ 
-            (if n == j + 2 then "[0]; \n" else "\n ")
+            show (j+1)++ 
+            (if n == j + 2 then "[0]; \n" else ";\n ")
             )
             [n-2,n-3..0] ++ indent 4 "return r0;"
       ,"}"
