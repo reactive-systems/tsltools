@@ -263,7 +263,12 @@ prCircuitImpl Circuit{..} =
       Negative _                  -> True
 
     prWire' x
-      | Circuit.wire x <= length inputs = "cin" ++ show (Circuit.wire x - 1)
+      | Circuit.wire x <= length inputs = 
+        let minusedOne = Circuit.wire x - 1
+        in
+          case minusedOne >= 0 of
+            True  -> "cin" ++ show minusedOne
+            False -> "cinNeg" ++ (show $ abs $ minusedOne)
       | otherwise                      = 'w' : show x
     
     latchVarInit :: Latch -> String
