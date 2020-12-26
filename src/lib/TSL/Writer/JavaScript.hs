@@ -39,6 +39,7 @@ import TSL.Aiger
   , Invertible(..)
   , Latch
   , Gate
+  , Input
   )
 
 import qualified TSL.Aiger as Circuit
@@ -72,19 +73,23 @@ implement mName fName cfm@CFM{..} =
     , ""
     , replicate 77 '/'
     , ""
-    , "function "++fName ++ 
-      prMultiLineTuple 1 (map inputName
-      $ filter(not.loopedInput) inputs)++ "{"
+    , let
+        createArgList = map ("s_" ++)
+      in
+        "function "++ fName ++ 
+        prMultiLineTuple 0 (createArgList (map (inputName) inputs)) ++ 
+        "{"
     , ""
+    , indent 4 "// Terms"
     , concatMap (prTerm' cfm) terms
     , indent 4 ("let innerCircuit = controlCircuit" ++ prTuple (map (prWire cfm . controlInputWire) is) ++ ";")
     , indent 4 "// Output Cells"
     , concatMap prOutputCell outputs
     , indent 4 "// Switches"
     , concatMap prSwitch outputs
-      -- COMMENTED: return statement for main fxn
-      -- ++ "    return ntuple" ++
-      -- prtuple (map (("o_" ++) . outputname) outputs)
+    -- RETURN STATEMENT
+    , indent 4 $ "return" ++
+      prTuple (map (("o_" ++) . outputName) outputs)
     , "}"
     , ""
     , replicate 77 '/'
@@ -96,8 +101,8 @@ implement mName fName cfm@CFM{..} =
 
   where
     prOutputCell o =
-      "      c_" ++ outputName o++
-      " = o_" ++ outputName o ++ ";\n"
+      indent 4 $ "let c_" ++ outputName o ++
+      " = s_" ++ outputName o ++ ";\n"
 
     prOutputType = \case
       []   ->
@@ -160,7 +165,7 @@ implement mName fName cfm@CFM{..} =
     os = Circuit.outputs control
 
     prSwitch o =
-      indent 6 ("o_" ++ outputName o ++ " = ") ++
+      indent 4 ("let o_" ++ outputName o ++ " = ") ++
       (outputName o) ++ "Switch" ++
       prTuple (map (\(w,x) -> "[" ++ prWire cfm w ++ ", innerCircuit[" ++ show x ++ "]]")
            $ outputSwitch o) ++ ";\n\n"
