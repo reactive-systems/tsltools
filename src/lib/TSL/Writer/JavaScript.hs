@@ -76,7 +76,7 @@ implement mName fName cfm@CFM{..} =
     , let
         createArgList = map ("s_" ++)
       in
-        "function "++ fName ++ 
+        "function control" ++ 
         prMultiLineTuple 0 (createArgList (map (inputName) inputs)) ++ 
         "{"
     , ""
