@@ -229,36 +229,12 @@ prCircuitImpl Circuit{..} =
     , prMultiLineTuple 4
         (map (("cin" ++) . show) inputs) ++ 
     "{"
-    , "/*"
-    , concatMap prLatch latches ++ "*/"
     , concatMap prLatchJS latches
     , "// Gates"
     , concatMap prGate gates
     , "// Outputs"
     , prOutputs
     ,"\n }"
-    ,"/*"
-    , let
-        hasLatches   = not $ null $ latches
-        hasInverters =
-            any isNeg (map outputWire outputs)
-          || any isNeg (map latchInput latches)
-          || any isNeg (map gateInputA gates)
-          || any isNeg (map gateInputB gates)
-      in
-        if hasLatches || hasInverters
-        then
-          "\n  where" ++
-          (if hasLatches
-           then "\n    _lat_ = cell False"
-           else "") ++
-          (if hasInverters
-           then "\n    _not_ = arr not"
-           else "") ++
-          "\n"
-        else ""
-    , 
-    "*/"
     ]
 
   where
