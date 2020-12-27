@@ -96,6 +96,10 @@ import qualified TSL.Writer.JavaScript as JavaScript
   ( implement
   )
 
+import qualified TSL.Writer.WebAudio as WebAudio
+  ( implement
+  )
+
 -----------------------------------------------------------------------------
 
 data CodeTarget =
@@ -105,6 +109,7 @@ data CodeTarget =
   | Clash
   | RxKotlin
   | JavaScript
+  | WebAudio
   deriving (Show, Ord, Eq)
 
 -----------------------------------------------------------------------------
@@ -127,6 +132,7 @@ implement = \case
   Clash       -> Clash.implement
   Monadic     -> Monadic.implement
   RxKotlin    -> RxKotlin.implement
-  JavaScript    -> JavaScript.implement
+  JavaScript  -> JavaScript.implement
+  WebAudio    -> WebAudio.implement
 
 -----------------------------------------------------------------------------

@@ -230,6 +230,13 @@ parseArguments args = do
             ("JavaScript vs. " ++ prTarget t)
             "The specified target must be unique."
 
+      "WebAudio" -> case codeTarget c of
+        Nothing -> simple $ c { codeTarget = Just WebAudio }
+        Just t  ->
+          argsError
+            ("WebAudio vs. " ++ prTarget t)
+            "The specified target must be unique."
+
       file           -> do
         exists <- doesFileExist file
         unless exists $ argsError "File not found" file
@@ -242,6 +249,7 @@ parseArguments args = do
       Monadic     -> "monadic"
       RxKotlin    -> "RxKotlin"
       JavaScript  -> "JavaScript"
+      WebAudio    -> "WebAudio"
 
     fstLower = \case
       []   -> []

@@ -59,6 +59,7 @@ library
     TSL.Writer.Monadic
     TSL.Writer.RxKotlin
     TSL.Writer.JavaScript
+    TSL.Writer.WebAudio
     TSL.Aiger
     TSL.Logic
     TSL.Eval
