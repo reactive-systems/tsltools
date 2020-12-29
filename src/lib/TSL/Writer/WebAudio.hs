@@ -67,14 +67,7 @@ implement
 implement mName fName cfm@CFM{..} =
   let ?bounds = cfm in
   unlines
-    [ "// Module : " ++ mName
-    , "//"
-    , "// JavaScript Interface for " ++ fName ++ "."
-    , "//"
-    , ""
-    , replicate 77 '/'
-    , ""
-    , let
+    [ let
         createArgList = map ("s_" ++)
       in
         "function control" ++ 
@@ -90,17 +83,20 @@ implement mName fName cfm@CFM{..} =
     , concatMap prSwitch outputs
     -- RETURN STATEMENT
     , indent 4 $ "return" ++
-      prTuple (map (("o_" ++) . outputName) outputs)
+      prReturn (map (("o_" ++) . outputName) outputs)
     , "}"
     , ""
     , replicate 77 '/'
     , ""
     , concatMap (prSwitchImpl cfm) outputs
+    , prCircuitImpl control
+    , implementWebAudio inputVars outputVars
     ]
-    ++
-    prCircuitImpl control
 
   where
+    inputVars = map inputName inputs
+    outputVars = map outputName outputs
+
     prOutputCell o =
       indent 4 $ "let c_" ++ outputName o ++
       " = s_" ++ outputName o ++ ";\n"
@@ -187,6 +183,41 @@ implement mName fName cfm@CFM{..} =
           l = map(\i -> prResultType i) outputs
         in
       prTupleCarrot( List.nub l)
+
+
+
+-----------------------------------------------------------------------------
+
+data JSElem = Null
+            | Boolean Bool
+            | Waveform String
+            | Change String
+            | Press String
+            | Cell String
+
+strToJSElem :: String -> JSElem
+strToJSElem = \case
+-- TODO: Change waveform
+  "False"       -> Boolean False
+  "True"        -> Boolean True
+  "Sawtooth"    -> Waveform "Sawtooth"
+  "Square"      -> Waveform "Square"
+  "Sine"        -> Waveform "Sine"
+  "Triangle"    -> Waveform "Triangle"
+  "amFreq"      -> Change "amFreq"
+  "gain"        -> Change "gain"
+  "amSynthesis" -> Cell "amSynthesis"
+  "fmSynthesis" -> Cell "fmSynthesis"
+  "lfo"         -> Cell "lfo"
+
+-- Current implementation uses a list.
+-- To speed up, one should at least use a set.
+implementWebAudio :: [String] -> [String] -> String 
+implementWebAudio inputs outputs =
+  where 
+    saveOutput :: JSElem -> String
+    saveOutput "[" ++ outputVars ++ "] = {\n" ++
+
 
 
 
@@ -369,6 +400,13 @@ prTuple = \case
   x:xr -> "(" ++ x ++ concatMap ((',':) . (' ':)) xr ++ ")"
 
 -----------------------------------------------------------------------------
+prReturn
+  :: [String] -> String
+
+prReturn = \case
+  []   -> "[]"
+  [x]  -> "[x]"
+  x:xr -> "[" ++ x ++ concatMap ((',':) . (' ':)) xr ++ "];"
 
 prList
   :: [String] -> String
