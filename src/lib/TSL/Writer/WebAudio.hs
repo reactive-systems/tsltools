@@ -1,3 +1,4 @@
+
 {-# LANGUAGE
 
     RecordWildCards
@@ -77,7 +78,7 @@ implement mName fName cfm@CFM{..} =
         createArgList = map ("s_" ++)
       in
         "function control" ++ 
-        prMultiLineTuple 0 (createArgList (map (inputName) inputs)) ++ 
+        entryParamDestructor 0 (createArgList (map (inputName) inputs)) ++ 
         "{"
     , ""
     , indent 4 "// Terms"
@@ -229,36 +230,12 @@ prCircuitImpl Circuit{..} =
     , prMultiLineTuple 4
         (map (("cin" ++) . show) inputs) ++ 
     "{"
-    , "/*"
-    , concatMap prLatch latches ++ "*/"
     , concatMap prLatchJS latches
     , "// Gates"
     , concatMap prGate gates
     , "// Outputs"
     , prOutputs
     ,"\n }"
-    ,"/*"
-    , let
-        hasLatches   = not $ null $ latches
-        hasInverters =
-            any isNeg (map outputWire outputs)
-          || any isNeg (map latchInput latches)
-          || any isNeg (map gateInputA gates)
-          || any isNeg (map gateInputB gates)
-      in
-        if hasLatches || hasInverters
-        then
-          "\n  where" ++
-          (if hasLatches
-           then "\n    _lat_ = cell False"
-           else "") ++
-          (if hasInverters
-           then "\n    _not_ = arr not"
-           else "") ++
-          "\n"
-        else ""
-    , 
-    "*/"
     ]
 
   where
@@ -423,6 +400,18 @@ prMultiLineTuple n = \case
     concatMap (indent n . (", " ++) . (++ "\n")) xr ++
     indent n ")"
 
+-----------------------------------------------------------------------------
+
+entryParamDestructor
+  :: Int -> [String] -> String
+
+entryParamDestructor n = \case
+  []   -> indent n "()"
+  [x]  -> indent n "({" ++ x ++ "})"
+  x:xr ->
+    indent n ("({ " ++ x ++ "\n") ++
+    concatMap (indent n . (", " ++) . (++ "\n")) xr ++
+    indent n "})"
 -----------------------------------------------------------------------------
 
 prMultiLineTupleCurly
