@@ -89,7 +89,7 @@ implement mName fName cfm@CFM{..} =
     , concatMap prSwitch outputs
     -- RETURN STATEMENT
     , indent 4 $ "return" ++
-      prTuple (map (("o_" ++) . outputName) outputs)
+      prReturn (map (("o_" ++) . outputName) outputs)
     , "}"
     , ""
     , replicate 77 '/'
@@ -366,6 +366,15 @@ prTuple = \case
   []   -> "()"
   [x]  -> "(" ++ x ++ ")"
   x:xr -> "(" ++ x ++ concatMap ((',':) . (' ':)) xr ++ ")"
+
+-----------------------------------------------------------------------------
+prReturn
+  :: [String] -> String
+
+prReturn = \case
+  []   -> "[]"
+  [x]  -> "[x]"
+  x:xr -> "[" ++ x ++ concatMap ((',':) . (' ':)) xr ++ "];"
 
 -----------------------------------------------------------------------------
 
