@@ -22,6 +22,14 @@ import Control.Exception
   ( assert
   )
 
+import Data.List
+  ( intersperse
+  )
+
+import Data.Char
+  ( toLower
+  )
+
 import TSL.CFM
   ( Output
   , Wire
@@ -90,6 +98,8 @@ implement mName fName cfm@CFM{..} =
     , ""
     , concatMap (prSwitchImpl cfm) outputs
     , prCircuitImpl control
+    , replicate 77 '/'
+    , "//IMPLEMENTED FUNCTIONS"
     , implementWebAudio inputVars outputVars
     ]
 
@@ -188,38 +198,123 @@ implement mName fName cfm@CFM{..} =
 
 -----------------------------------------------------------------------------
 
-data JSElem = Null
-            | Boolean Bool
-            | Waveform String
-            | Change String
-            | Press String
-            | Cell String
+data JSElem = NullElem
+            | JSBool {varName :: String}
+            | Waveform {varName :: String}
+            | Change {varName :: String}
+            | TurnOn {varName :: String}
+            | TurnOff {varName :: String}
+            | Cell {varName :: String}
+            | Note {varName :: String}
+            deriving (Eq)
+
+-- TODO
+actionName :: JSElem -> String
+actionName (NullElem) = ""
+actionName (JSBool _) = "" -- Should be error
+actionName (Cell _) = "" -- Should be error
+actionName (Waveform _) = "change"
+actionName (Change _) = "change"
+actionName (Note _) = "click"
+actionName _ = undefined
 
 strToJSElem :: String -> JSElem
 strToJSElem = \case
--- TODO: Change waveform
-  "False"       -> Boolean False
-  "True"        -> Boolean True
+-- TODO: Allow eventlistener on waveform change.
+-- Implement rest of datatype.
+  "False"       -> JSBool "false"
+  "True"        -> JSBool "true"
   "Sawtooth"    -> Waveform "Sawtooth"
   "Square"      -> Waveform "Square"
   "Sine"        -> Waveform "Sine"
   "Triangle"    -> Waveform "Triangle"
-  "amFreq"      -> Change "amFreq"
-  "gain"        -> Change "gain"
-  "amSynthesis" -> Cell "amSynthesis"
-  "fmSynthesis" -> Cell "fmSynthesis"
-  "lfo"         -> Cell "lfo"
+  "AMFreq"      -> Change "amFreq"
+  "Gain"        -> Change "Gain"
+  "AMSynthesis" -> Cell "amSynthesis"
+  "FMSynthesis" -> Cell "fmSynthesis"
+  "LFO"         -> Cell "LFO"
+  "Waveform"    -> Cell "waveform"
+  note          -> Note note
 
--- Current implementation uses a list.
--- To speed up, one should at least use a set.
 implementWebAudio :: [String] -> [String] -> String 
-implementWebAudio inputs outputs =
-  where 
-    saveOutput :: JSElem -> String
-    saveOutput "[" ++ outputVars ++ "] = {\n" ++
+implementWebAudio inputs outputs = 
+  unlines $ functionImpl:(intersperse "\n" $ 
+    map defineNotes (filter isNote eventableInputs) ++ 
+    (map signalUpdateCode $ NullElem:eventableInputs))
+    where 
+      functionImpl :: String
+      functionImpl = unlines
+        ["function p_Change(input){return input;}"
+        ,"function p_Press(input){return input;}"]
 
+      inputSignals :: [JSElem]
+      inputSignals = map strToJSElem inputs
 
+      eventableInputs :: [JSElem]
+      eventableInputs = filter eventable inputSignals
 
+      outputStr :: String
+      outputStr = show outputs
+
+      -- TODO: implement rest
+      eventable :: JSElem -> Bool
+      eventable (Change _)  = True
+      eventable (Note _)    = True
+      eventable (TurnOn _)  = True
+      eventable (TurnOff _) = True
+      eventable _           = False
+
+      isNote :: JSElem -> Bool
+      isNote (Note _) = True
+      isNote _        = False
+
+      defineNotes :: JSElem -> String
+      defineNotes (Note note) = 
+        "const " ++ note ++ 
+        " = document.getElementByID(" ++
+        show note ++
+        ");\n"
+      defineNotes _ = ""
+
+      signalUpdateCode :: JSElem -> String
+      signalUpdateCode NullElem = saveOutput 0 NullElem
+      signalUpdateCode var = 
+        varName var ++
+        ".addEventListener(\"" ++
+        actionName var ++ "\", " ++
+        "_ => {\n" ++
+        saveOutput 4 var ++
+        "\n});"
+
+      saveOutput :: Int -> JSElem -> String
+      saveOutput numIndents var = 
+                      indent numIndents (outputStr ++   
+                      " = control({\n") ++ 
+                      dropLastTwo 
+                        (concatMap 
+                        (indent (numIndents + 4) . pipeSignal) 
+                        inputSignals) ++
+                      "});"
+        where
+          pipeSignal :: JSElem -> String
+          pipeSignal (NullElem) = ""
+          pipeSignal x = case eventable x of
+            False -> showSignal ++ varShown ++ nl
+            True -> case x == var of
+              False -> showSignal ++ "false" ++ nl
+              True  -> showSignal ++ "true" ++ nl
+            where showSignal = "s_" ++ varName x ++ " : "
+                  nl = ",\n"
+                  
+                  varShown :: String
+                  varShown = case x of 
+                    Waveform y -> "\"" ++ 
+                      map toLower (varName x) ++ "\""
+                    otherwise  -> varName x
+          
+          dropLastTwo :: String -> String
+          dropLastTwo str = take (length str - 2) str
+            
 
 -----------------------------------------------------------------------------
 
