@@ -83,13 +83,13 @@ implement mName fName cfm@CFM{..} =
     , indent 4 "// Terms"
     , concatMap (prTerm' cfm) terms
     , indent 4 ("let innerCircuit = controlCircuit" ++ prTuple (map (prWire cfm . controlInputWire) is) ++ ";")
+    , ""
     , indent 4 "// Output Cells"
     , concatMap prOutputCell outputs
     , indent 4 "// Switches"
     , concatMap prSwitch outputs
     -- RETURN STATEMENT
-    , indent 4 $ "return" ++
-      prReturn (map (("o_" ++) . outputName) outputs)
+    , prReturn (map (("o_" ++) . outputName) outputs)
     , "}"
     , ""
     , replicate 77 '/'
@@ -201,7 +201,7 @@ prSwitchImpl CFM{..} o =
   in
     unlines
       [ "function "++ outputName o ++ "Switch"
-      , prMultiLineTuple 7 (map (\i -> "p" ++ show i)[0,1..n-1])++ "{"
+      , prMultiLineTuple 4 (map (\i -> "p" ++ show i)[0,1..n-1])++ "{"
       , concatMap(\j -> 
             indent 4 "const r"++show j++
             " = p"++show j++"[1] ?"++
@@ -209,7 +209,7 @@ prSwitchImpl CFM{..} o =
             " : " ++
             (if n == j + 2 then "p" else "r")++
             show (j+1)++ 
-            (if n == j + 2 then "[0]; \n" else ";\n ")
+            (if n == j + 2 then "[0]; \n" else ";\n")
             )
             [n-2,n-3..0] ++ indent 4 "return r0;"
       ,"}"
@@ -229,10 +229,11 @@ prCircuitImpl Circuit{..} =
     , prMultiLineTuple 4
         (map (("cin" ++) . show) inputs) ++ 
     "{"
+    ,""
     , concatMap prLatchJS latches
-    , "// Gates"
+    , indent 4 "// Gates"
     , concatMap prGate gates
-    , "// Outputs"
+    , indent 4 "// Outputs"
     , prOutputs
     ,"\n }"
     ]
@@ -285,7 +286,7 @@ prCircuitImpl Circuit{..} =
       let
         ow = gateOutput g :: Circuit.Wire
       in
-        indent 8 $ "var " ++ (prWire' ow) ++ ";\n"
+        "var " ++ (prWire' ow) ++ ";\n"
 
     prLatchJS :: Latch -> String
     prLatchJS l =
@@ -297,7 +298,7 @@ prCircuitImpl Circuit{..} =
           Negative w -> "!" ++ prWire' w
           Positive w -> prWire' w
       in
-        indent 6 (prWire' ow) ++
+        indent 4 (prWire' ow) ++
         " = " ++ polarization ++ ";\n"
 
     prLatch :: Latch -> String
@@ -319,7 +320,7 @@ prCircuitImpl Circuit{..} =
         iwB = gateInputB g :: Invertible Circuit.Wire
         ow = gateOutput g :: Circuit.Wire
       in
-        indent 8 (prWire' ow) ++ " = " ++
+        indent 4 (prWire' ow) ++ " = " ++
         poled iwA ++ " && " ++ poled iwB ++ ";\n"
 
     poled = \case
@@ -349,13 +350,14 @@ prCircuitImpl Circuit{..} =
         addLet :: String -> String
         addLet base = case base of
           ""    -> ""
-          base' -> "const " ++ base'' ++ ";\n"
-            where base'' = takeWhile (/='\n') base'
+          base' -> indent 4 $ "const " ++ base'' ++ ";\n"
+            where base'' = dropWhile (==' ') $
+                           takeWhile (/='\n') base'
           
       in
-        concat (map addLet xs)
-        ++ "\n    return " ++
-        prList os ++ ";"
+        (concatMap addLet xs) ++ 
+        "\n" ++
+        prReturn os
 
 -----------------------------------------------------------------------------
 
@@ -372,9 +374,13 @@ prReturn
   :: [String] -> String
 
 prReturn = \case
-  []   -> "[]"
-  [x]  -> "[x]"
-  x:xr -> "[" ++ x ++ concatMap ((',':) . (' ':)) xr ++ "];"
+  []   -> indent 4 "return [];"
+  [x]  -> indent 4 "return [" ++ x ++ "];"
+  x:xs -> indent 4 "return [ " ++ 
+          x ++ 
+         concatMap addLine xs ++ 
+         "];"
+    where addLine = (('\n':indent 11 ", ") ++ )
 
 -----------------------------------------------------------------------------
 
@@ -383,7 +389,7 @@ prList
 
 prList = \case
   []   -> "[]"
-  [x]  -> "[x]"
+  [x]  -> "[" ++ x ++ "]"
   x:xr -> "[" ++ x ++ concatMap ((',':) . (' ':)) xr ++ "]"
 
 -----------------------------------------------------------------------------
@@ -434,7 +440,7 @@ prTerm'
   :: CFM -> Term -> String
 
 prTerm' cfm@CFM{..} t =
-  "      let " ++ prWire cfm (termOutputWire t) ++ " = " ++
+  (indent 4 "let ") ++ prWire cfm (termOutputWire t) ++ " = " ++
   (case reverse $ termInputWires t of
      []     ->
      --need to fix for w10 = -1, w11 = 0
