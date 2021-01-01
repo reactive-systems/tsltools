@@ -17,11 +17,6 @@ module TSL.Writer.WebAudio
   ) where
 
 -----------------------------------------------------------------------------
-
-import Control.Exception
-  ( assert
-  )
-
 import Data.List
   ( intersperse
   )
@@ -34,13 +29,7 @@ import TSL.CFM
   ( Output
   , Wire
   , Term
-  , Type(..)
   , CFM(..)
-  , constants
-  , predicates
-  , functions
-  , termType
-  , prType
   )
 
 import TSL.Aiger
@@ -48,7 +37,6 @@ import TSL.Aiger
   , Invertible(..)
   , Latch
   , Gate
-  , Input
   )
 
 import qualified TSL.Aiger as Circuit
@@ -56,8 +44,6 @@ import qualified TSL.Aiger as Circuit
   , inputs
   , outputs
   )
-
-import qualified Data.List as List
 
 -----------------------------------------------------------------------------
 
@@ -72,7 +58,7 @@ implement
   -> CFM
   -> String
 
-implement mName fName cfm@CFM{..} =
+implement _ _ cfm@CFM{..} =
   let ?bounds = cfm in
   unlines
     [ let
@@ -111,90 +97,13 @@ implement mName fName cfm@CFM{..} =
       indent 4 $ "let c_" ++ outputName o ++
       " = s_" ++ outputName o ++ ";\n"
 
-    prOutputType = \case
-      []   ->
-        "       // no output\n" ++
-        "       ()"
-      [x]  ->
-        "       // " ++ outputName x ++ " (output)\n" ++
-        "       " ++ prResultType x
-      x:xr ->
-        "       ( // " ++ outputName x ++ " (output)\n" ++
-        "         " ++ prResultType x ++ "\n" ++
-        concatMap prO xr ++
-        "       )"
-
-    prO o =
-      "       , // " ++ outputName o ++ " (output)\n" ++
-      "         " ++ prResultType o ++ "\n"
-
-    prInputType = \case
-      []   ->
-        "       // no input\n" ++
-        "       ()"
-      [x]  ->
-        "       // " ++ inputName x ++ " (input) " ++
-        "        " ++ prT (wireType $ inputWire x)
-      x:xr ->
-        "       ( // " ++ inputName x ++ " (input) " ++
-        "         " ++ prT (wireType $ inputWire x) ++ " " ++
-        concatMap prI xr ++
-        "       )"
-
-    prI i =
-      prT (wireType $ inputWire i)
-
-
-    prInitType o =
-      "     // initial value: " ++ outputName o ++ "\n" ++
-      "  -> " ++ prResultType o ++ "\n"
-
-    prResultType =
-      prT . wireType . fst . head . outputSwitch
-
-    prChain = \case
-      []   -> assert False undefined
-      [t]  -> prT t
-      t:tr -> "(" ++ prT t ++ concatMap ((" -> " ++) . prT) tr ++ ")"
-
-    prT = \case
-      Boolean -> "Bool"
-            --idk why but these dont work
-      -- Int     -> "Int"
-      -- String  -> "String"
-      t       -> prType t
-
-    prTermType t =
-      "     // " ++ termName t ++ "\n" ++
-      "  -> " ++ prChain (termType cfm t) ++ "\n"
-
     is = Circuit.inputs control
-    os = Circuit.outputs control
 
     prSwitch o =
       indent 4 ("let o_" ++ outputName o ++ " = ") ++
       (outputName o) ++ "Switch" ++
       prTuple (map (\(w,x) -> "[" ++ prWire cfm w ++ ", innerCircuit[" ++ show x ++ "]]")
            $ outputSwitch o) ++ ";\n\n"
-
-    prTupleClass o = 
-      prTuple (map(\i -> "val "++outputName i++":"++prResultType i) o)
-
-    prTupleClassPara o = 
-        let
-           n = length o
-           first = map(\i -> "operator fun component" ++show i++"():")[0,1..n-1]
-           second =  map(\j -> prResultType j++" = "++ outputName j)o 
-         in
-      prMultiLineTupleCurly 7 (zipWith (++) first second)
-
-    prUniqueTypes o =
-        let
-          l = map(\i -> prResultType i) outputs
-        in
-      prTupleCarrot( List.nub l)
-
-
 
 -----------------------------------------------------------------------------
 
@@ -308,9 +217,9 @@ implementWebAudio inputs outputs =
                   
                   varShown :: String
                   varShown = case x of 
-                    Waveform y -> "\"" ++ 
+                    Waveform _ -> "\"" ++ 
                       map toLower (varName x) ++ "\""
-                    otherwise  -> varName x
+                    _          -> varName x
           
           dropLastTwo :: String -> String
           dropLastTwo str = take (length str - 2) str
@@ -366,12 +275,7 @@ prCircuitImpl Circuit{..} =
     ]
 
   where
-    isNeg = \case
-      Positive _                  -> False
-      Negative (Circuit.wire -> 0) -> False
-      Negative _                  -> True
-
-    -- No idea if this is correct
+    -- TODO: verify minusOne implementation.
     prWire' x
       | Circuit.wire x <= length inputs = 
         let minusedOne = Circuit.wire x - 1
@@ -386,8 +290,7 @@ prCircuitImpl Circuit{..} =
     latchVarInit l =
       let
         iw = latchInput l  :: Invertible Circuit.Wire
-        -- HACK
-        -- Also need to check this is true.
+        -- TODO: verify that variables start out as false/true.
         unwrapped = case iw of
           Negative w -> w
           Positive w -> w
@@ -427,19 +330,6 @@ prCircuitImpl Circuit{..} =
       in
         indent 4 (prWire' ow) ++
         " = " ++ polarization ++ ";\n"
-
-    prLatch :: Latch -> String
-    prLatch l =
-      let
-        iw = latchInput l :: Invertible Circuit.Wire
-        ow = latchOutput l :: Circuit.Wire
-
-        polarization = case iw of
-          Negative w -> "<<< _not_ -< " ++ prWire' w
-          Positive w -> "-< " ++ prWire' w
-      in
-        indent 6 (prWire' ow) ++
-        " <- _lat_ " ++ polarization ++ "\n"
 
     prGate g =
       let
@@ -509,23 +399,6 @@ prReturn = \case
          "];"
     where addLine = (('\n':indent 11 ", ") ++ )
 
-prList
-  :: [String] -> String
-
-prList = \case
-  []   -> "[]"
-  [x]  -> "[" ++ x ++ "]"
-  x:xr -> "[" ++ x ++ concatMap ((',':) . (' ':)) xr ++ "]"
-
------------------------------------------------------------------------------
-prTupleCarrot
-  :: [String] -> String
-
-prTupleCarrot = \case
-  []   -> "()"
-  [x]  -> x
-  x:xr -> "<" ++ x ++ concatMap ((',':) . (' ':)) xr ++ ">"
-
 -----------------------------------------------------------------------------
 
 prMultiLineTuple
@@ -552,19 +425,6 @@ entryParamDestructor n = \case
     concatMap (indent n . (", " ++) . (++ "\n")) xr ++
     indent n "})"
 -----------------------------------------------------------------------------
-
-prMultiLineTupleCurly
-  :: Int -> [String] -> String
-
-prMultiLineTupleCurly n = \case
-  []   -> indent n "()"
-  [x]  -> indent n x
-  x:xr ->
-    indent n ("{ " ++ x ++ "\n") ++
-    concatMap (indent n . (", " ++) . (++ "\n")) xr ++
-    indent n "}"
------------------------------------------------------------------------------
-
 indent
   :: Int -> String -> String
 
