@@ -85,7 +85,9 @@ implement _ _ cfm@CFM{..} =
     , concatMap (prSwitchImpl cfm) outputs
     , prCircuitImpl control
     , replicate 77 '/'
-    , "//IMPLEMENTED FUNCTIONS"
+    , ""
+    , "// IMPLEMENTED FUNCTIONS"
+    , ""
     , implementWebAudio inputVars outputVars
     ]
 
@@ -133,16 +135,16 @@ strToJSElem = \case
 -- Implement rest of datatype.
   "False"       -> JSBool "false"
   "True"        -> JSBool "true"
-  "Sawtooth"    -> Waveform "Sawtooth"
-  "Square"      -> Waveform "Square"
-  "Sine"        -> Waveform "Sine"
-  "Triangle"    -> Waveform "Triangle"
-  "AMFreq"      -> Change "amFreq"
-  "Gain"        -> Change "Gain"
-  "AMSynthesis" -> Cell "amSynthesis"
-  "FMSynthesis" -> Cell "fmSynthesis"
-  "LFO"         -> Cell "LFO"
-  "Waveform"    -> Cell "waveform"
+  "sawtooth"    -> Waveform "sawtooth"
+  "square"      -> Waveform "square"
+  "sine"        -> Waveform "sine"
+  "triangle"    -> Waveform "triangle"
+  "amFreq"      -> Change "amFreq"
+  "gain"        -> Change "Gain"
+  "amSynthesis" -> Cell "amSynthesis"
+  "fmSynthesis" -> Cell "fmSynthesis"
+  "vibrato"     -> Cell "vibrato"
+  "waveform"    -> Cell "waveform"
   note          -> Note note
 
 implementWebAudio :: [String] -> [String] -> String 
@@ -163,7 +165,8 @@ implementWebAudio inputs outputs =
       eventableInputs = filter eventable inputSignals
 
       outputStr :: String
-      outputStr = show outputs
+      outputStr = prList $ 
+                  map (varName . strToJSElem) outputs
 
       -- TODO: implement rest
       eventable :: JSElem -> Bool
@@ -180,7 +183,7 @@ implementWebAudio inputs outputs =
       defineNotes :: JSElem -> String
       defineNotes (Note note) = 
         "const " ++ note ++ 
-        " = document.getElementByID(" ++
+        " = document.getElementById(" ++
         show note ++
         ");\n"
       defineNotes _ = ""
@@ -208,19 +211,25 @@ implementWebAudio inputs outputs =
           pipeSignal :: JSElem -> String
           pipeSignal (NullElem) = ""
           pipeSignal x = case eventable x of
-            False -> showSignal ++ varShown ++ nl
+            False -> signalShown ++ varShown ++ nl
             True -> case x == var of
-              False -> showSignal ++ "false" ++ nl
-              True  -> showSignal ++ "true" ++ nl
-            where showSignal = "s_" ++ varName x ++ " : "
-                  nl = ",\n"
+              False -> signalShown ++ "false" ++ nl
+              True  -> signalShown ++ "true" ++ nl
+            where
+              nl = ",\n"
+
+              signalShown :: String
+              signalShown = case x of
+                JSBool "true"  -> "s_True : "
+                JSBool "false" -> "s_False : "
+                _              -> "s_" ++ varName x ++ " : "
                   
-                  varShown :: String
-                  varShown = case x of 
-                    Waveform _ -> "\"" ++ 
-                      map toLower (varName x) ++ "\""
-                    _          -> varName x
-          
+              varShown :: String
+              varShown = case x of 
+                Waveform _ -> "\"" ++ 
+                  map toLower (varName x) ++ "\""
+                _          -> varName x
+      
           dropLastTwo :: String -> String
           dropLastTwo str = take (length str - 2) str
             
@@ -377,7 +386,15 @@ prCircuitImpl Circuit{..} =
         prReturn os
 
 -----------------------------------------------------------------------------
+prList
+  :: [String] -> String
 
+prList = \case
+  []   -> "[]"
+  [x]  -> "[" ++ x ++ "]"
+  x:xr -> "[" ++ x ++ concatMap ((',':) . (' ':)) xr ++ "]"
+
+-----------------------------------------------------------------------------
 prTuple
   :: [String] -> String
 
