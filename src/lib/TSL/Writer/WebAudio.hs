@@ -113,13 +113,10 @@ data JSElem = NullElem
             | JSBool {varName :: String}
             | Waveform {varName :: String}
             | Change {varName :: String}
-            | TurnOn {varName :: String}
-            | TurnOff {varName :: String}
             | Cell {varName :: String}
             | Note {varName :: String}
             deriving (Eq)
 
--- TODO
 actionName :: JSElem -> String
 actionName (NullElem) = ""
 actionName (JSBool _) = "" -- Should be error
@@ -127,12 +124,10 @@ actionName (Cell _) = "" -- Should be error
 actionName (Waveform _) = "change"
 actionName (Change _) = "change"
 actionName (Note _) = "click"
-actionName _ = undefined
 
 strToJSElem :: String -> JSElem
 strToJSElem = \case
 -- TODO: Allow eventlistener on waveform change.
--- Implement rest of datatype.
   "False"       -> JSBool "false"
   "True"        -> JSBool "true"
   "sawtooth"    -> Waveform "sawtooth"
@@ -140,26 +135,32 @@ strToJSElem = \case
   "sine"        -> Waveform "sine"
   "triangle"    -> Waveform "triangle"
   "amFreq"      -> Change "amFreq"
-  "gain"        -> Change "Gain"
+  "gain"        -> Change "gain"
   "amSynthesis" -> Cell "amSynthesis"
   "fmSynthesis" -> Cell "fmSynthesis"
-  "vibrato"     -> Cell "vibrato"
+  "lfo"         -> Cell "lfo"
   "waveform"    -> Cell "waveform"
   note          -> Note note
 
 implementWebAudio :: [String] -> [String] -> String 
 implementWebAudio inputs outputs = 
-  unlines $ functionImpl:(intersperse "\n" $ 
-    map defineNotes (filter isNote eventableInputs) ++ 
-    (map signalUpdateCode $ NullElem:eventableInputs))
+  unlines $ intersperse "\n" $ concat
+    [ functionImpl
+    , map defineNotes $ filter isNote eventableInputs
+    , map signalUpdateCode $ NullElem:eventableInputs
+    , map buttonEventListeners outputSignals
+    ]
     where 
-      functionImpl :: String
-      functionImpl = unlines
+      functionImpl :: [String]
+      functionImpl = 
         ["function p_Change(input){return input;}"
         ,"function p_Press(input){return input;}"]
 
       inputSignals :: [JSElem]
       inputSignals = map strToJSElem inputs
+
+      outputSignals :: [JSElem]
+      outputSignals = map strToJSElem outputs
 
       eventableInputs :: [JSElem]
       eventableInputs = filter eventable inputSignals
@@ -168,12 +169,9 @@ implementWebAudio inputs outputs =
       outputStr = prList $ 
                   map (varName . strToJSElem) outputs
 
-      -- TODO: implement rest
       eventable :: JSElem -> Bool
       eventable (Change _)  = True
       eventable (Note _)    = True
-      eventable (TurnOn _)  = True
-      eventable (TurnOff _) = True
       eventable _           = False
 
       isNote :: JSElem -> Bool
@@ -232,9 +230,42 @@ implementWebAudio inputs outputs =
       
           dropLastTwo :: String -> String
           dropLastTwo str = take (length str - 2) str
-            
 
------------------------------------------------------------------------------
+
+      buttonEventListeners :: JSElem -> String
+      buttonEventListeners = \case
+        Cell "amSynthesis" -> 
+          unlines [ "amOnBtn.addEventListener(\"click\", _ => {"
+                  , indent 4 "if(amSynthesis) {return};"
+                  , saveOutput 4 NullElem
+                  , "});\n"
+                  , "amOffBtn.addEventListener(\"click\", _ => {"
+                  , indent 4 "if(!amSynthesis) {return};"
+                  , saveOutput 4 NullElem
+                  , "});"
+                  ]
+        Cell "fmSynthesis" -> 
+          unlines [ "fmOnBtn.addEventListener(\"click\", _ => {"
+                  , indent 4 "if(fmSynthesis) {return};"
+                  , saveOutput 4 NullElem
+                  , "});\n"
+                  , "fmOffBtn.addEventListener(\"click\", _ => {"
+                  , indent 4 "if(!fmSynthesis) {return};"
+                  , saveOutput 4 NullElem
+                  , "});"
+                  ]
+        Cell "lfo" -> 
+          unlines [ "lfoOnBtn.addEventListener(\"click\", _ => {"
+                  , indent 4 "if(lfo) {return};"
+                  , saveOutput 4 NullElem
+                  , "});\n"
+                  , "lfoOffBtn.addEventListener(\"click\", _ => {"
+                  , indent 4 "if(!lfo) {return};"
+                  , saveOutput 4 NullElem
+                  , "});"
+                  ]
+        _ -> ""
+  -----------------------------------------------------------------------------
 
 prSwitchImpl
   :: CFM -> Output -> String
