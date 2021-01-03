@@ -21,10 +21,6 @@ import Data.List
   ( intersperse
   )
 
-import Data.Char
-  ( toLower
-  )
-
 import TSL.CFM
   ( Output
   , Wire
@@ -110,8 +106,6 @@ implement _ _ cfm@CFM{..} =
 -----------------------------------------------------------------------------
 
 data JSElem = NullElem
-            | JSBool {varName :: String}
-            | Waveform {varName :: String}
             | Change {varName :: String}
             | Cell {varName :: String}
             | Note {varName :: String}
@@ -119,21 +113,13 @@ data JSElem = NullElem
 
 actionName :: JSElem -> String
 actionName (NullElem) = ""
-actionName (JSBool _) = "" -- Should be error
 actionName (Cell _) = "" -- Should be error
-actionName (Waveform _) = "change"
 actionName (Change _) = "change"
 actionName (Note _) = "click"
 
 strToJSElem :: String -> JSElem
 strToJSElem = \case
 -- TODO: Allow eventlistener on waveform change.
-  "False"       -> JSBool "false"
-  "True"        -> JSBool "true"
-  "sawtooth"    -> Waveform "sawtooth"
-  "square"      -> Waveform "square"
-  "sine"        -> Waveform "sine"
-  "triangle"    -> Waveform "triangle"
   "amFreq"      -> Change "amFreq"
   "gain"        -> Change "gain"
   "amSynthesis" -> Cell "amSynthesis"
@@ -153,8 +139,15 @@ implementWebAudio inputs outputs =
     where 
       functionImpl :: [String]
       functionImpl = 
-        ["function p_Change(input){return input;}"
-        ,"function p_Press(input){return input;}"]
+        ["function p_change(input){return input;}"
+        ,"function p_press(input){return input;}"
+        ,"function f_True(){return true;}"
+        ,"function f_False(){return false;}"
+        ,"function f_sawtooth(){return \"sawtooth\";}"
+        ,"function f_sine(){return \"sine\";}"
+        ,"function f_square(){return \"square\";}"
+        ,"function f_triangle(){return \"triangle\";}"
+        ]
 
       inputSignals :: [JSElem]
       inputSignals = map strToJSElem inputs
@@ -180,7 +173,7 @@ implementWebAudio inputs outputs =
 
       defineNotes :: JSElem -> String
       defineNotes (Note note) = 
-        "const " ++ note ++ 
+        "var " ++ note ++ 
         " = document.getElementById(" ++
         show note ++
         ");\n"
@@ -209,7 +202,7 @@ implementWebAudio inputs outputs =
           pipeSignal :: JSElem -> String
           pipeSignal (NullElem) = ""
           pipeSignal x = case eventable x of
-            False -> signalShown ++ varShown ++ nl
+            False -> signalShown ++ varName x ++ nl
             True -> case x == var of
               False -> signalShown ++ "false" ++ nl
               True  -> signalShown ++ "true" ++ nl
@@ -217,16 +210,7 @@ implementWebAudio inputs outputs =
               nl = ",\n"
 
               signalShown :: String
-              signalShown = case x of
-                JSBool "true"  -> "s_True : "
-                JSBool "false" -> "s_False : "
-                _              -> "s_" ++ varName x ++ " : "
-                  
-              varShown :: String
-              varShown = case x of 
-                Waveform _ -> "\"" ++ 
-                  map toLower (varName x) ++ "\""
-                _          -> varName x
+              signalShown = "s_" ++ varName x ++ " : "
       
           dropLastTwo :: String -> String
           dropLastTwo str = take (length str - 2) str
