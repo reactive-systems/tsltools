@@ -27,6 +27,10 @@ import PrintUtils
   , cPutErrLn
   )
 
+import FileUtils
+  ( tryLoadTSL
+  )
+
 import TSL (toTSL)
 
 import TSLCoreGenerator (generateCore)
@@ -59,12 +63,12 @@ main = do
       _ -> printHelpAndExit helpMessage
   verbosity <- parseVerbosity verbosityStr
   poolSize <- parsePoolSize poolSizeStr
-  spec <- tryLoadTSL filepath
+  spec <- tryLoadTSL $ Just filepath
   potCore <-
     generateCore (createContext poolSize verbosity realizableCommand) spec
   case potCore of
     Nothing -> cPutOutLn Vivid Red "Specification is realizable"
     Just core -> do
-      putStrLn "UNREALIZBALE CORE"
+      putStrLn "UNREALIZABLE CORE"
       putStr $ toTSL core
 -----------------------------------------------------------------------------

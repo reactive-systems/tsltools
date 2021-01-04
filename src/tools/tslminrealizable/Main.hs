@@ -28,6 +28,10 @@ import PrintUtils
   , cPutErrLn
   )
 
+import FileUtils
+  ( tryLoadTSL
+  )
+
 import TSL (toTSL)
 
 import TSLCoreGenerator
@@ -64,7 +68,7 @@ main = do
       _ -> printHelpAndExit helpMessage
   verbosity <- parseVerbosity verbosityStr
   poolSize <- parsePoolSize poolSizeStr
-  spec <- tryLoadTSL filepath
+  spec <- tryLoadTSL $ Just filepath
   potMinimalRealizableSpec <-
     (if treeBased
        then treeBasedMinimalAssumptions

@@ -115,6 +115,7 @@ executable tslcoregen
     Utils
     PrintUtils
     EncodingUtils
+    FileUtils
 
   default-language:
     Haskell2010
@@ -146,6 +147,7 @@ executable tslminrealizable
     Utils
     PrintUtils
     EncodingUtils
+    FileUtils
 
   default-language:
     Haskell2010

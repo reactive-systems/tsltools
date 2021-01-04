@@ -98,30 +98,6 @@ createContext poolSize verbosity realCmd =
         }
 
 -----------------------------------------------------------------------------
--- | 'tryLoadTSL' is a helper function which load and parses a TSL file and
--- if this is not possible outputs a respective error on the command line
--- and exists
-tryLoadTSL :: FilePath -> IO Specification
-tryLoadTSL filepath = do
-  exists <- doesFileExist filepath
-  if not exists
-    then do
-      cPutErr Vivid Red "File not found: "
-      cPutErrLn Vivid White filepath
-      exitFailure
-    else do
-      str <- readFile filepath
-      let ?specFilePath = Just filepath
-      tsl <- fromTSL str
-      case tsl of
-        Left err -> do
-          cPutOut Vivid Red "invalid: "
-          cPutOutLn Vivid White filepath
-          putErrLn err
-          exitFailure
-        Right spec -> return spec
-
------------------------------------------------------------------------------
 -- | 'printHelpAndExit' prints a help message in an adequate format and exits
 -- afterwards with a failure
 printHelpAndExit :: [String] -> IO a
