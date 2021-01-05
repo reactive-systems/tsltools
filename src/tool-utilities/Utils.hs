@@ -3,7 +3,7 @@
 -- Module      :  Utils
 -- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
 --
--- This module implements differnt utilities that can are used in the 
+-- This module implements different utilities that can be used in the
 -- different core genearation tools
 --
 -----------------------------------------------------------------------------

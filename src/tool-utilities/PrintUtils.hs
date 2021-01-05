@@ -3,7 +3,7 @@
 -- Module      :  PrintUtils
 -- Maintainer  :  Marvin Stegner (Stenger@ProjectJARVIS.de)
 --
--- This module implements print utilities that can are used in
+-- This module implements print utilities that can be used in
 -- the executables of tsltools.
 --
 -----------------------------------------------------------------------------
