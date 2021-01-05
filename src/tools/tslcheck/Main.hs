@@ -30,7 +30,7 @@ import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
   , putErr
-  , putErrLn
+  , printErrLn
   , cPutOut
   , cPutOutLn
   , cPutErr
@@ -98,7 +98,7 @@ main = do
             Left err -> do
               cPutOut Vivid Red "invalid: "
               cPutOutLn Vivid White file
-              putErrLn err
+              printErrLn err
               putErr ""
               return False
             Right _ -> do
@@ -111,7 +111,7 @@ main = do
       getContents >>= fromTSL >>= \case
         Left err -> do
           cPutOut Vivid Red "invalid"
-          putErrLn err
+          printErrLn err
           putErr ""
           return False
         Right _  -> do

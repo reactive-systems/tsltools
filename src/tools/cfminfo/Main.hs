@@ -21,7 +21,7 @@ import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
   , putErr
-  , putErrLn
+  , printErrLn
   , cPutOut
   , cPutOutLn
   , cPutErr
@@ -98,7 +98,6 @@ main = do
     invalid file err = do
       cPutOut Vivid Red "invalid: "
       cPutOutLn Vivid White file
-      putErrLn err
-      putErr ""
+      printErrLn err
 
 -----------------------------------------------------------------------------

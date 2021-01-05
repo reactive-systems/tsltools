@@ -30,7 +30,7 @@ import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
   , putErr
-  , putErrLn
+  , printErrLn
   , cPutOut
   , cPutOutLn
   , cPutErr
@@ -91,7 +91,7 @@ main = do
           Left err -> do
             cPutOut Vivid Red "invalid: "
             cPutOutLn Vivid White $ filepath
-            putErrLn err
+            printErrLn err
             exitFailure
           Right s  -> do
             path <- getCurrentDirectory

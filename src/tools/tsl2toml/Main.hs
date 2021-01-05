@@ -22,7 +22,7 @@ import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
   , putErr
-  , putErrLn
+  , printErrLn
   , cPutOut
   , cPutOutLn
   , cPutErr
@@ -53,7 +53,7 @@ main = do
       case res of
         Left err -> do
           cPutOut Vivid Red "invalid"
-          putErrLn err
+          printErrLn err
           exitFailure
         Right s -> putStr $ toTOML "stdin" s
     Just filepath -> do
@@ -71,7 +71,7 @@ main = do
             Left err -> do
               cPutOut Vivid Red "invalid: "
               cPutOutLn Vivid White filepath
-              putErrLn err
+              printErrLn err
               exitFailure
             Right s -> putStr $ toTOML (takeBaseName filepath) s
   where

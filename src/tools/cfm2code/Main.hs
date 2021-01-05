@@ -35,10 +35,8 @@ import PrintUtils
   , ColorIntensity(..)
   , cPutOut
   , cPutOutLn
-  , cPutErr
-  , cPutErrLn
-  , putErr
   , putErrLn
+  , printErrLn
   )
 
 import TSL
@@ -126,7 +124,7 @@ main = do
 
   case fromCFM cnt of
     Left err -> do
-      putErrLn err
+      printErrLn err
       exitFailure
     Right cfm -> case codeTarget of
       Nothing -> assert False undefined -- TODO: check this earlier

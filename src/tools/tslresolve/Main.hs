@@ -29,7 +29,7 @@ import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
   , putErr
-  , putErrLn
+  , printErrLn
   , cPutOut
   , cPutOutLn
   , cPutErr
@@ -71,7 +71,7 @@ main = do
       case res of
         Left err -> do
           cPutOut Vivid Red "invalid"
-          putErrLn err
+          printErrLn err
           exitFailure
         Right s  ->
           putStr $ toTSL s
@@ -90,7 +90,7 @@ main = do
           Left err -> do
             cPutOut Vivid Red "invalid: "
             cPutOutLn Vivid White filepath
-            putErrLn err
+            printErrLn err
             exitFailure
           Right s  ->
             putStr $ toTSL s

@@ -26,7 +26,7 @@ import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
   , putErr
-  , putErrLn
+  , printErrLn
   , cPutOut
   , cPutOutLn
   , cPutErr
@@ -73,7 +73,7 @@ main = do
     getContents >>= fromTSL >>= \case
       Left err -> do
         cPutOutLn Vivid Red "invalid"
-        putErrLn err
+        printErrLn err
         exitFailure
       Right s  ->
         putStr $ toTLSF "stdin" s
@@ -92,7 +92,7 @@ main = do
         Left err -> do
           cPutOut Vivid Red "invalid: "
           cPutOutLn Vivid White path
-          putErrLn err
+          printErrLn err
           exitFailure
         Right s  ->
           putStr $ toTLSF (takeBaseName path) s
