@@ -9,6 +9,14 @@
 --
 -----------------------------------------------------------------------------
 
+{-# LANGUAGE
+
+    NamedFieldPuns
+
+  #-}
+
+-----------------------------------------------------------------------------
+
 module Main
   ( main
   ) where
@@ -18,6 +26,9 @@ module Main
 import EncodingUtils
   ( initEncoding
   )
+
+import Options.Applicative
+import Data.Semigroup ((<>))
 
 import PrintUtils
   ( Color(..)
@@ -39,12 +50,24 @@ import System.Directory
   , doesDirectoryExist
   )
 
-import System.Environment
-  ( getArgs
-  )
-
 import System.Exit
   ( exitFailure
+  )
+
+-----------------------------------------------------------------------------
+
+data Configuration = Configuration
+  { input :: Maybe [FilePath]
+  } deriving (Eq, Ord)
+
+configParser :: Parser Configuration
+configParser = Configuration
+  <$> optional (some (strArgument (metavar "FILES...")))
+
+configParserInfo :: ParserInfo Configuration
+configParserInfo = info (configParser <**> helper)
+  (  fullDesc
+  <> header "cfmcheck - checks for correct labels and structure of a CFM"
   )
 
 -----------------------------------------------------------------------------
@@ -55,15 +78,15 @@ main
 main = do
   initEncoding
 
-  args <- getArgs
+  Configuration{input} <- execParser configParserInfo
 
-  if null args
-  then do
-    cPutErr Vivid Yellow "Usage: "
-    cPutErrLn Vivid White "cfmcheck <files>"
-    exitFailure
-  else
-    mapM_ checkFile args
+  case input of
+    Nothing -> do
+      cPutErr Vivid Yellow "Usage: "
+      cPutErrLn Vivid White "cfmcheck <files>"
+      exitFailure
+    Just files ->
+      mapM_ checkFile files
 
   where
     checkFile file = do
