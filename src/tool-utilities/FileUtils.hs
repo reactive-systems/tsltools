@@ -17,6 +17,7 @@ module FileUtils
   , readContent
   , writeContent
   , tryLoadTSL
+  , tryLoadCFM
   ) where
 
 
@@ -31,9 +32,12 @@ import PrintUtils
   , cPutErr
   , cPutErrLn
   )
+
 import TSL
   ( Specification
+  , CFM
   , fromTSL
+  , fromCFM
   )
 
 import Control.Monad
@@ -87,6 +91,18 @@ writeContent :: Maybe FilePath -> String -> IO ()
 writeContent Nothing = putStrLn
 writeContent (Just file) = writeFile file
 
+
+-----------------------------------------------------------------------------
+printErrMessage :: Show a => Maybe FilePath -> a -> IO ()
+printErrMessage input err = do
+  case input of
+    Nothing -> do
+      cPutOutLn Vivid Red "invalid:"
+    Just file -> do
+      cPutOut Vivid Red "invalid: "
+      cPutOutLn Vivid White file
+  printErrLn err
+
 -----------------------------------------------------------------------------
 -- | 'tryLoadTSL' is a helper function which loads and parses a TSL file and
 -- if this is not possible outputs a respective error on the command line
@@ -103,14 +119,15 @@ tryLoadTSL input = do
       exitFailure
     Right spec -> return spec
 
-  where
-    printErrMessage input_ err = do
-      case input_ of
-        Nothing -> do
-          cPutOutLn Vivid Red "invalid:"
-        Just file -> do
-          cPutOut Vivid Red "invalid: "
-          cPutOutLn Vivid White file
-      printErrLn err
-
 -----------------------------------------------------------------------------
+-- | 'tryLoadCFM' is a helper function which loads and parses a CFM file and
+-- if this is not possible outputs a respective error on the command line
+-- and exits
+tryLoadCFM :: Maybe FilePath -> IO CFM
+tryLoadCFM input = do
+  content <- tryReadContent input
+  case fromCFM content of
+    Left err -> do
+      printErrMessage input err
+      exitFailure
+    Right cfm -> return cfm
