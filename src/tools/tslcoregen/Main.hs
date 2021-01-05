@@ -6,6 +6,17 @@
 -- Generates a core for a unrealizable specification
 --
 -----------------------------------------------------------------------------
+
+{-# LANGUAGE
+
+    LambdaCase
+  , RecordWildCards
+  , NamedFieldPuns
+
+  #-}
+
+-----------------------------------------------------------------------------
+
 module Main
   ( main
   ) where
@@ -15,6 +26,10 @@ module Main
 import EncodingUtils
   ( initEncoding
   )
+
+import Options.Applicative
+import Options.Applicative.Help.Pretty
+import Data.Semigroup ((<>))
 
 import PrintUtils
   ( Color(..)
@@ -35,38 +50,74 @@ import TSL (toTSL)
 
 import TSLCoreGenerator (generateCore)
 
-import System.Environment (getArgs)
-
 import Utils
 
 -----------------------------------------------------------------------------
-helpMessage :: [String]
-helpMessage =
-  [ "tslcoregen [--verbose [0 | 1 | 2 | 3]] <POOL SIZE> <REALIZABLE call> <file>"
-  , "  <REALIZABLE call>: a path to an executable taking a TLSF file on STDIN and outputting \"REALIZABLE\" or \"UNREALIZABLE\""
-  , "   Verbosity:"
+
+data Configuration = Configuration
+  { input :: Maybe FilePath
+  , poolSize :: Int
+  , verbosity :: Int
+  , realizableCommand :: String
+  } deriving (Eq, Ord)
+
+configParser :: Parser Configuration
+configParser = Configuration
+  <$> optional (argument str
+        (  metavar "FILE"
+        <> help "input file"
+        )
+      )
+  <*> option auto
+      (  long "poolsize"
+      <> short 'p'
+      <> help "pool size"
+      <> showDefault
+      <> value 1
+      <> metavar "INT"
+      )
+  <*> option auto
+      (  long "verbose"
+      <> short 'v'
+      <> help "verbosity"
+      <> showDefault
+      <> value 1
+      <> metavar "INT"
+      )
+  <*> option str
+      (  long "realizable-exec"
+      <> short 'r'
+      <> help "Path/Name of an executable taking a TLSF file on STDIN and outputting \"REALIZABLE\" or \"UNREALIZABLE\""
+      <> metavar "EXE"
+      )
+
+verbosityMessage :: String
+verbosityMessage = unlines
+  [ "   Verbosity:"
   , "    0: silent, only output the result"
   , "    1: quiet, only output the result and important information (default)"
   , "    2: output which intermediate steps are reached"
   , "    3: output all intermediate steps including the specifications"
   ]
 
+configParserInfo :: ParserInfo Configuration
+configParserInfo = info (configParser <**> helper)
+  (  fullDesc
+  <> header "tslcoregen - generates a core for a unrealizable specification"
+  <> progDesc "Generate an unrealizability core for FILE using EXE"
+  <> footerDoc (Just $ text verbosityMessage)
+  )
+
 -----------------------------------------------------------------------------
 main :: IO ()
 main = do
   initEncoding
-  args <- getArgs
-  (verbosityStr, poolSizeStr, realizableCommand, filepath) <-
-    case args of
-      ["--verbose", num, s, a, b] -> return (num, s, a, b)
-      [s, a, b] -> return ("1", s, a, b)
-      _ -> printHelpAndExit helpMessage
-  verbosity <- parseVerbosity verbosityStr
-  poolSize <- parsePoolSize poolSizeStr
-  spec <- tryLoadTSL $ Just filepath
-  potCore <-
-    generateCore (createContext poolSize verbosity realizableCommand) spec
-  case potCore of
+  Configuration{poolSize, verbosity, realizableCommand, input} <- execParser configParserInfo
+
+  verbosity' <- convertVerbosity $ verbosity
+  spec <- tryLoadTSL input
+  generateCore (createContext poolSize verbosity' realizableCommand) spec
+  >>= \case
     Nothing -> cPutOutLn Vivid Red "Specification is realizable"
     Just core -> do
       putStrLn "UNREALIZABLE CORE"
