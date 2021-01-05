@@ -7,6 +7,14 @@
 --
 -----------------------------------------------------------------------------
 
+{-# LANGUAGE
+
+    NamedFieldPuns
+
+  #-}
+
+-----------------------------------------------------------------------------
+
 module Main
   ( main
   ) where
@@ -15,6 +23,10 @@ module Main
 
 import EncodingUtils
   ( initEncoding
+  )
+
+import ArgParseUtils
+  ( parseMaybeFilePath
   )
 
 import PrintUtils
@@ -57,10 +69,10 @@ main
 main = do
   initEncoding
 
-  args <- getArgs
+  input <- parseMaybeFilePath "cfminfo"
 
-  case args of
-    [file] -> do
+  case input of
+    Just file  -> do
       exists <- doesFileExist file
 
       if not exists then do

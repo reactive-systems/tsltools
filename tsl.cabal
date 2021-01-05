@@ -405,6 +405,8 @@ executable cfminfo
   other-modules:
     PrintUtils
     EncodingUtils
+    ArgParseUtils
+    FileUtils
 
   build-depends:
       tsl
