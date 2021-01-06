@@ -229,6 +229,8 @@ executable tsl2toml
   other-modules:
     PrintUtils
     EncodingUtils
+    ArgParseUtils
+    FileUtils
 
   ghc-options:
     -Wall -Wno-name-shadowing
