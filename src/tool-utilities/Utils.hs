@@ -107,31 +107,52 @@ printHelpAndExit helpMessages = do
   exitFailure
 
 -----------------------------------------------------------------------------
+-- | 'checkPoolSize' checks the pool size and if this is invalid
+-- outputs an adequate error message on stderr and exists the program
+checkPoolSize :: Int -> IO ()
+checkPoolSize n =
+  if n <= 0
+    then do
+      cPutErrLn Vivid Red "The thread pool size has to be at least one"
+      exitFailure
+    else return ()
+
+-----------------------------------------------------------------------------
 -- | 'parsePoolSize' tries to parse the pool size and if this is not
--- possble outputs an aquedate error message on stderr and exists the program
+-- possible outputs an adequate error message on stderr and exists the program
 parsePoolSize :: String -> IO Int
 parsePoolSize poolSizeStr =
   case readMaybe poolSizeStr :: Maybe Int of
-    Just n ->
-      if n <= 0
-        then do
-          cPutErrLn Vivid Red "The thread pool size has to be at least one"
-          exitFailure
-        else return n
+    Just n -> do
+      checkPoolSize n
+      return n
     Nothing -> do
       cPutErrLn Vivid Red "The thread pool size has to be a (natural) number"
       exitFailure
 
 -----------------------------------------------------------------------------
+-- | 'convertVerbosity' tries to convert a verbosity and if this is not
+-- possible outputs an adequate error message on stderr and exits the program
+convertVerbosity :: Int -> IO Verbosity
+convertVerbosity v =
+  case v of
+    0 -> return SILENT
+    1 -> return QUIET
+    2 -> return STEPWISE
+    3 -> return DETAILED
+    _ -> do
+      cPutErrLn
+        Vivid Red
+        "The verbosity has to be given by a number between zero and three"
+      exitFailure
+
+-----------------------------------------------------------------------------
 -- | 'parseVerbosity' tries to parse a verbosity and if this is not
--- possble outputs an aquedate error message on stderr and exists the program
+-- possible outputs an adequate error message on stderr and exits the program
 parseVerbosity :: String -> IO Verbosity
 parseVerbosity string =
   case readMaybe string :: Maybe Int of
-    Just 0 -> return SILENT
-    Just 1 -> return QUIET
-    Just 2 -> return STEPWISE
-    Just 3 -> return DETAILED
+    Just n -> convertVerbosity n
     _ -> do
       cPutErrLn
         Vivid Red
