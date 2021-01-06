@@ -31,23 +31,13 @@ import EncodingUtils
   ( initEncoding
   )
 
-import PrintUtils
-  ( printErrLn
-  )
-
 import FileUtils
-  ( readContent
+  ( tryLoadCFM
   , writeContent
   )
 
 import TSL
-  ( fromCFM
-  , implement
-  )
-
-import System.Exit
-  ( exitSuccess
-  , exitFailure
+  ( implement
   )
 
 -----------------------------------------------------------------------------
@@ -60,16 +50,9 @@ main = do
 
   Configuration{input, output, codeTarget, moduleName, functionName} <- parseArguments
 
-  cnt <- readContent input
+  cfm <- tryLoadCFM input
 
-  case fromCFM cnt of
-    Left err -> do
-      printErrLn err
-      exitFailure
-    Right cfm ->
-      let code = implement codeTarget moduleName functionName cfm
-      in writeContent output code
-
-  exitSuccess
+  writeContent output $
+    implement codeTarget moduleName functionName cfm
 
 -----------------------------------------------------------------------------
