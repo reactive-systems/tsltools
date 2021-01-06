@@ -95,7 +95,7 @@ tryLoadTSL :: Maybe FilePath -> IO Specification
 tryLoadTSL input = do
   let ?specFilePath = input
 
-  content <- readContent input
+  content <- tryReadContent input
   fromTSL content
   >>= \case 
     Left err -> do
