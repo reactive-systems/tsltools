@@ -107,7 +107,6 @@ import Data.Function
 import Data.List
   ( sortBy
   , groupBy
-  , partition
   )
 
 import Data.Maybe
