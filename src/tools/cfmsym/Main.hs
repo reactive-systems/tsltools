@@ -23,6 +23,10 @@ import ArgParseUtils
   ( parseMaybeFilePath
   )
 
+import FileUtils
+  ( tryLoadCFM
+  )
+
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
@@ -38,10 +42,6 @@ import TSL
   , toCSV
   )
 
-import System.Exit
-  ( exitFailure
-  )
-
 -----------------------------------------------------------------------------
 
 main
@@ -52,31 +52,17 @@ main = do
 
   input <- parseMaybeFilePath "cfmsym"
 
-  case input of
-    Nothing -> do
-      cPutErr Vivid Yellow "Usage: "
-      cPutErrLn Dull White "cfmsym <file>"
-      exitFailure
-    Just file -> do
-      str <- readFile file
-      case fromCFM str of
-        Left err -> invalid file $ show err
-        Right m  -> do
-          let
-            table = toCSV $ symbolTable m
-            (h:es) = lines table
+  m <- tryLoadCFM input
 
-          header $ dropLast h
-          sep $ dropLast h
-          mapM_ (entries . dropLast) es
+  let
+    table = toCSV $ symbolTable m
+    (h:es) = lines table
+
+  header $ dropLast h
+  sep $ dropLast h
+  mapM_ (entries . dropLast) es
 
   where
-    invalid file err = do
-      cPutOut Vivid Red "invalid: "
-      cPutOutLn Vivid White file
-      cPutErrLn Dull White err
-      exitFailure
-
     dropLast x = case span (/= ';') $ reverse x of
       (_, ';':y) -> case span (/= ';') y of
         (_, ';':z) -> reverse z
