@@ -64,18 +64,15 @@ main = do
   initEncoding
 
   args <- getArgs
-  if null args
-  then do
-    valid <- checkStdIn
-    if valid
-    then exitSuccess
-    else exitFailure
-  else do
-    xs <- mapM checkFile args
+  valid <- if null args
+    then checkStdIn
+    else do
+      xs <- mapM checkFile args
+      return $ and xs
 
-    if and xs
-    then exitSuccess
-    else exitFailure
+  if valid
+  then exitSuccess
+  else exitFailure
 
   where
     checkFile file = do
