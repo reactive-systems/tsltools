@@ -10,6 +10,7 @@
 {-# LANGUAGE
 
     LambdaCase
+  , NamedFieldPuns
   , ImplicitParams
 
   #-}
@@ -25,6 +26,9 @@ module Main
 import EncodingUtils
   ( initEncoding
   )
+
+import Options.Applicative
+import Data.Semigroup ((<>))
 
 import PrintUtils
   ( Color(..)
@@ -57,17 +61,34 @@ import System.Exit
 
 -----------------------------------------------------------------------------
 
+data Configuration = Configuration
+  { input :: Maybe [FilePath]
+  } deriving (Eq, Ord)
+
+configParser :: Parser Configuration
+configParser = Configuration
+  <$> optional (some (strArgument (metavar "FILES...")))
+
+configParserInfo :: ParserInfo Configuration
+configParserInfo = info (configParser <**> helper)
+  (  fullDesc
+  <> header "tslcheck - checks TSL specifications to be in a valid format"
+  )
+
+-----------------------------------------------------------------------------
+
 main
   :: IO ()
 
 main = do
   initEncoding
 
-  args <- getArgs
-  valid <- if null args
-    then checkStdIn
-    else do
-      xs <- mapM checkFile args
+  Configuration{input} <- execParser configParserInfo
+
+  valid <- case input of
+    Nothing -> checkStdIn
+    Just files -> do
+      xs <- mapM checkFile files
       return $ and xs
 
   if valid
