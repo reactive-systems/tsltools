@@ -11,7 +11,10 @@
 
 -----------------------------------------------------------------------------
 module FileUtils
-  ( readContent
+  ( checkFile
+  , tryReadFile
+  , tryReadContent
+  , readContent
   , writeContent
   , tryLoadTSL
   ) where
@@ -25,10 +28,16 @@ import PrintUtils
   , printErrLn
   , cPutOut
   , cPutOutLn
+  , cPutErr
+  , cPutErrLn
   )
 import TSL
   ( Specification
   , fromTSL
+  )
+
+import Control.Monad
+  ( unless
   )
 
 import System.Directory
@@ -38,6 +47,33 @@ import System.Directory
 import System.Exit
   ( exitFailure
   )
+
+-----------------------------------------------------------------------------
+-- | Checks if given FilePath belongs to an existing file.
+-- If the file does not exists, function exits with an error mesage.
+checkFile :: FilePath -> IO ()
+checkFile file = do
+  (>>=) (doesFileExist file) $ flip unless $ do
+    cPutErr Vivid Red "Not found: "
+    cPutErrLn Vivid White file
+    exitFailure
+
+-----------------------------------------------------------------------------
+-- | Tries to read all content from given file.
+-- If the file does not exists, function exits with an error mesage.
+tryReadFile :: FilePath -> IO String
+tryReadFile file = do
+  checkFile file
+  readFile file
+
+-----------------------------------------------------------------------------
+-- | Tries to read all content from either given file or STDIN.
+-- If the file does not exists, function exits with an error mesage.
+tryReadContent :: Maybe FilePath -> IO String
+tryReadContent Nothing = getContents
+tryReadContent (Just file) = do
+  checkFile file
+  readFile file
 
 -----------------------------------------------------------------------------
 -- | Reads all content either from given file or STDIN
