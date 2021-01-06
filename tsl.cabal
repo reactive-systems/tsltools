@@ -470,6 +470,7 @@ executable cfm2code
     , filepath >= 1.4
     , directory >= 1.3
     , ansi-terminal >= 0.6
+    , optparse-applicative
 
   hs-source-dirs:
     src/tools/cfm2code

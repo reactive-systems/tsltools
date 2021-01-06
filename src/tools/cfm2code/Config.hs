@@ -10,6 +10,7 @@
 {-# LANGUAGE
 
     LambdaCase
+  , NamedFieldPuns
 
   #-}
 
@@ -30,6 +31,9 @@ import PrintUtils
   , cPutErr
   , cPutErrLn
   )
+
+import Options.Applicative
+import Data.Semigroup ((<>))
 
 import TSL
   ( CodeTarget(..)
@@ -58,163 +62,96 @@ import System.FilePath
 
 -----------------------------------------------------------------------------
 
--- | Supported library exportation formats
-
-data Args a = None a | Single a
-
------------------------------------------------------------------------------
-
 -- | The data type contains all flags and settings
 -- that can be adjusted to influence the behavior of the library:
-
 data Configuration =
   Configuration
   { -- | The input file containing the synthesized control flow
     -- model. If no input file is given we read from STDIN.
-    inputFile :: Maybe FilePath
-  , -- | Output file path. If no path is given, the output is writtend
+    input :: Maybe FilePath
+    -- | Output file path. If no path is given, the output is writtend
     -- to STDOUT.
-    outputFile :: Maybe FilePath
-  , -- | Target code type to generate.
-    codeTarget :: Maybe CodeTarget
-  , -- | The name of the generated module.
-    moduleName :: String
-  , -- | Name of the synthesized signal function that is exported by
+  , output :: Maybe FilePath
+    -- | Target code type to generate.
+  , codeTarget :: CodeTarget
+    -- | The name of the generated module.
+  , moduleName :: String
+    -- | Name of the synthesized signal function that is exported by
     -- the module.
-    functionName :: String
-    -- | A boolean flag specifying whether the help info should be
-    -- printed or not.
-  , pHelp :: Bool
+  , functionName :: String
   } deriving (Eq, Ord)
 
------------------------------------------------------------------------------
+configParser :: Parser Configuration
+configParser = Configuration
+  <$> optional (argument str
+        (  metavar "INFILE"
+        <> help "input file (STDIN, if not set)"
+        )
+      )
+  <*> optional (option str
+        (  long "output"
+        <> short 'o'
+        <> metavar "OUTFILE"
+        <> help "output file (STDOUT, if not set)"
+        )
+      )
+  <*> ( flag' Applicative (long "applicative" <> help "generates code for 'Applicative'-FRP libraries")
+    <|> flag' Monadic     (long "monadic"     <> help "generates code for 'Monadic'-FRP libraries")
+    <|> flag' Arrow       (long "arrow"       <> help "generates code for 'Arrowized'-FRP libraries")
+    <|> flag' Clash       (long "clash"       <> help "generates code for the hardware description language 'ClaSH'")
+    )
+  <*> option str
+      (  long "module-name"
+      <> short 'm'
+      <> help "overwrites the name of the generated module; if not set, the filename of the passed input file is used; if reading from STDIN, the default 'Synth' is used"
+      <> metavar "MOD"
+      <> value ""
+      )
+  <*> option str
+      (  long "function-name"
+      <> short 'f'
+      <> help "overwrites the name of the exported function; if not set, the filename of the passed input file is used; if reading from STDIN, the default 'cfm' is used"
+      <> metavar "FUNC"
+      <> value ""
+      )
 
--- ^ Default configuration.
+configParserInfo :: ParserInfo Configuration
+configParserInfo = info (configParser <**> helper)
+  (  fullDesc
+  <> header "cfm2code - generates code from a TSL control flow model"
+  )
 
-defaultCfg
-  :: Configuration
+parseArguments :: IO Configuration
+parseArguments = do
+  c@Configuration{input} <- customExecParser pprefs configParserInfo
 
-defaultCfg =
-  Configuration
-    { inputFile    = Nothing
-    , outputFile   = Nothing
-    , codeTarget   = Nothing
-    , moduleName   = ""
-    , functionName = ""
-    , pHelp        = False
-    }
+  case input of
+    Just file -> do
+      exists <- doesFileExist file
+      unless exists $ argsError "File not found" file
+    Nothing -> return ()
 
------------------------------------------------------------------------------
-
-parseArguments
-  :: [String] -> IO Configuration
-
-parseArguments args = do
-  c <- traverse defaultCfg args
-  case codeTarget c of
-    Nothing
-      | pHelp c   -> return c
-      | otherwise -> do
-          cPutErr Vivid Red    "Missing target:"
-          cPutErr Dull White   " Use"
-          cPutErr Dull Yellow  " --help"
-          cPutErrLn Dull White " to see supported targets."
-          exitFailure
-
-    Just _  ->
-      return
-        c { moduleName = fstUpper $ case moduleName c of
-              "" -> case inputFile c of
-                Just file -> takeBaseName file
-                Nothing   -> "Synth"
-              x  -> x
-          , functionName = fstLower $ case functionName c of
-               "" -> case inputFile c of
-                 Just file -> takeBaseName file
-                 Nothing   -> "cfm"
-               x  -> x
-          }
-
+  return
+    c { moduleName = fstUpper $ case moduleName c of
+          "" -> case input of
+            Just file -> takeBaseName file
+            Nothing   -> "Synth"
+          x  -> x
+      , functionName = fstLower $ case functionName c of
+          "" -> case input of
+            Just file -> takeBaseName file
+            Nothing   -> "cfm"
+          x  -> x
+      }
+  
   where
-    traverse c = \case
-      x:y:xr ->
-        parseArgument c (Just y) x >>= \case
-          Single c' -> traverse c' xr
-          None c'   -> traverse c' (y:xr)
-      [x]    ->
-        parseArgument c Nothing x >>= \case
-          Single c' -> return c'
-          None c'   -> return c'
-      []     ->
-        return c
+    pprefs = prefs disambiguate
 
-    parseArgument c next = \case
-      "-o"            -> case next of
-        Just file  -> return $ Single $ c { outputFile = Just file }
-        Nothing    -> argsError "-o" "No output file given."
-
-      "--output"      -> case next of
-        Just _  -> parseArgument c next "-o"
-        Nothing -> argsError "--output" "No output file given."
-
-      "-m"            -> case next of
-        Just name -> return $ Single $ c { moduleName = name }
-        Nothing   -> argsError "-m" "No module name given."
-
-      "--module-name" -> case next of
-        Just _  -> parseArgument c next "-m"
-        Nothing -> argsError "--module-name" "No module name given."
-
-      "-f"            ->case next of
-        Just name -> return $ Single $ c { functionName = name }
-        Nothing   -> argsError "-m" "No function export name given."
-
-      "--function-name" -> case next of
-        Just _  -> parseArgument c next "-f"
-        Nothing -> argsError "--function-name" "No function export name given."
-
-      "-h"          -> simple $ defaultCfg { pHelp = True }
-
-      "--help"      -> parseArgument c next "-h"
-
-      "applicative" -> case codeTarget c of
-        Nothing -> simple $ c { codeTarget = Just Applicative }
-        Just t  ->
-          argsError
-            ("applicative vs. " ++ prTarget t)
-            "The specified target must be unique."
-
-      "monadic" -> case codeTarget c of
-        Nothing -> simple $ c { codeTarget = Just Monadic }
-        Just t  ->
-          argsError
-            ("monadic vs. " ++ prTarget t)
-            "The specified target must be unique."
-
-      "arrow" -> case codeTarget c of
-        Nothing -> simple $ c { codeTarget = Just Arrow }
-        Just t  ->
-          argsError
-            ("arrow vs. " ++ prTarget t)
-            "The specified target must be unique."
-
-      "clash" -> case codeTarget c of
-        Nothing -> simple $ c { codeTarget = Just Clash }
-        Just t  ->
-          argsError
-            ("clash vs. " ++ prTarget t)
-            "The specified target must be unique."
-
-      file           -> do
-        exists <- doesFileExist file
-        unless exists $ argsError "File not found" file
-        simple $ c { inputFile = Just file  }
-
-    prTarget = \case
-      Applicative -> "applicative"
-      Arrow       -> "arrow"
-      Clash       -> "clash"
-      Monadic     -> "monadic"
+    argsError h str = do
+      unless (null h) $
+        cPutErr Vivid Red $ h ++ ": "
+      cPutErrLn Dull White str
+      exitFailure
 
     fstLower = \case
       []   -> []
@@ -223,14 +160,5 @@ parseArguments args = do
     fstUpper = \case
       []   -> []
       x:xr -> toUpper x : xr
-
-    argsError h str = do
-      unless (null h) $
-        cPutErr Vivid Red $ h ++ ": "
-      cPutErrLn Dull White str
-      exitFailure
-
-    simple =
-      return . None
 
 -----------------------------------------------------------------------------
