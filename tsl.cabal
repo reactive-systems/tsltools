@@ -197,6 +197,8 @@ executable tsl2tlsf
   other-modules:
     PrintUtils
     EncodingUtils
+    ArgParseUtils
+    FileUtils
 
   ghc-options:
     -Wall
