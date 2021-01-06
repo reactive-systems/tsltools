@@ -29,6 +29,10 @@ import ArgParseUtils
   ( parseMaybeFilePath
   )
 
+import FileUtils
+  ( tryLoadCFM
+  )
+
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
@@ -45,20 +49,8 @@ import TSL
   , statistics
   )
 
-import System.Directory
-  ( doesFileExist
-  )
-
-import System.Environment
-  ( getArgs
-  )
-
 import System.FilePath.Posix
   ( takeFileName
-  )
-
-import System.Exit
-  ( exitFailure
   )
 
 -----------------------------------------------------------------------------
@@ -71,41 +63,23 @@ main = do
 
   input <- parseMaybeFilePath "cfminfo"
 
+  cfm <- tryLoadCFM input
+
+  let (nI, nO, nP, nF, nC, nV) = statistics cfm
+
   case input of
-    Just file  -> do
-      exists <- doesFileExist file
+    Just file -> do
+      cPutOut Vivid Yellow $ takeFileName file
+      cPutOutLn Vivid White ":"
+    Nothing -> return ()
 
-      if not exists then do
-        cPutErr Vivid Yellow "File not found: "
-        cPutErrLn Vivid White file
-        exitFailure
-      else do
-        str <- readFile file
-
-        case fromCFM str of
-          Left err -> invalid file $ show err
-          Right cfm  -> do
-            let (nI, nO, nP, nF, nC, nV) = statistics cfm
-            cPutOut Vivid Yellow $ takeFileName file
-            cPutOutLn Vivid White ":"
-            cPutOutLn Vivid White $ unlines
-              [ "inputs:     " ++ show nI
-              , "outputs:    " ++ show nO
-              , "predicates: " ++ show nP
-              , "functions:  " ++ show nF
-              , "cells:      " ++ show nC
-              , "vertices:   " ++ show nV
-              ]
-
-    _ -> do
-      cPutErr Vivid Yellow "Usage: "
-      cPutErrLn Vivid White "cfminfo <file>"
-      exitFailure
-
-  where
-    invalid file err = do
-      cPutOut Vivid Red "invalid: "
-      cPutOutLn Vivid White file
-      printErrLn err
+  cPutOutLn Vivid White $ unlines
+    [ "inputs:     " ++ show nI
+    , "outputs:    " ++ show nO
+    , "predicates: " ++ show nP
+    , "functions:  " ++ show nF
+    , "cells:      " ++ show nC
+    , "vertices:   " ++ show nV
+    ]
 
 -----------------------------------------------------------------------------
