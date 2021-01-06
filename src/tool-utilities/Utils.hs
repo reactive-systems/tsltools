@@ -122,7 +122,7 @@ tryLoadTSL filepath = do
         Right spec -> return spec
 
 -----------------------------------------------------------------------------
--- | 'printHelpAndExit' prints a help message in an aquedate format and exits
+-- | 'printHelpAndExit' prints a help message in an adequate format and exits
 -- afterwards with a failure
 printHelpAndExit :: [String] -> IO a
 printHelpAndExit helpMessages = do
