@@ -25,6 +25,10 @@ import EncodingUtils
   ( initEncoding
   )
 
+import ArgParseUtils
+  ( parseMaybeFilePath
+  )
+
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
@@ -34,6 +38,10 @@ import PrintUtils
   , cPutOutLn
   , cPutErr
   , cPutErrLn
+  )
+
+import FileUtils
+  ( tryLoadTSL
   )
 
 import TSL
@@ -61,45 +69,8 @@ main
 main = do
   initEncoding
 
-  input <- parseArgs
-
-  case input of
-    Nothing -> do
-      let ?specFilePath = Nothing
-      str <- getContents
-      res <- fromTSL str
-      case res of
-        Left err -> do
-          cPutOut Vivid Red "invalid"
-          printErrLn err
-          exitFailure
-        Right s  ->
-          putStr $ toTSL s
-    Just filepath -> do
-      let ?specFilePath = Just filepath
-      exists <- doesFileExist filepath
-
-      if not exists then do
-        cPutErr Vivid Red "File not found: "
-        cPutErrLn Vivid White filepath
-        exitFailure
-      else do
-        str <- readFile filepath
-        res <- fromTSL str
-        case res of
-          Left err -> do
-            cPutOut Vivid Red "invalid: "
-            cPutOutLn Vivid White filepath
-            printErrLn err
-            exitFailure
-          Right s  ->
-            putStr $ toTSL s
-
-  where
-    parseArgs = do
-      args <- getArgs
-      case args of
-        []  -> return Nothing
-        x:_ -> return $ Just x
+  parseMaybeFilePath "tslresolve"
+  >>= tryLoadTSL
+  >>= (putStrLn . toTSL)
     
 -----------------------------------------------------------------------------
