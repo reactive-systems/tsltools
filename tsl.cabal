@@ -296,6 +296,7 @@ executable tslsym
   other-modules:
     PrintUtils
     EncodingUtils
+    FileUtils
     Config
 
   build-depends:
@@ -303,6 +304,7 @@ executable tslsym
     , base >=4.7 && <4.13
     , directory >= 1.3
     , ansi-terminal >= 0.6
+    , optparse-applicative
 
   hs-source-dirs:
     src/tools/tslsym
