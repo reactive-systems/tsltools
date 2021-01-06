@@ -19,6 +19,10 @@ import EncodingUtils
   ( initEncoding
   )
 
+import ArgParseUtils
+  ( parseMaybeFilePath
+  )
+
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
@@ -34,14 +38,6 @@ import TSL
   , toCSV
   )
 
-import System.Directory
-  ( doesFileExist
-  )
-
-import System.Environment
-  ( getArgs
-  )
-
 import System.Exit
   ( exitFailure
   )
@@ -54,23 +50,17 @@ main
 main = do
   initEncoding
 
-  args <- getArgs
+  input <- parseMaybeFilePath "cfmsym"
 
-  if length args /= 1 then do
-    cPutErr Vivid Yellow "Usage: "
-    cPutErrLn Dull White "cfmsym <file>"
-    exitFailure
-  else do
-    exists <- doesFileExist $ head args
-
-    if not exists then do
-      cPutErr Vivid Red "File not found: "
-      cPutErrLn Vivid White $ head args
+  case input of
+    Nothing -> do
+      cPutErr Vivid Yellow "Usage: "
+      cPutErrLn Dull White "cfmsym <file>"
       exitFailure
-    else do
-      str <- readFile $ head args
+    Just file -> do
+      str <- readFile file
       case fromCFM str of
-        Left err -> invalid (head args) $ show err
+        Left err -> invalid file $ show err
         Right m  -> do
           let
             table = toCSV $ symbolTable m
