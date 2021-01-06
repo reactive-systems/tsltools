@@ -50,10 +50,6 @@ import System.Directory
   , doesFileExist
   )
 
-import System.Environment
-  ( getArgs
-  )
-
 import System.Exit
   ( exitFailure
   , exitSuccess

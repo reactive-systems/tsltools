@@ -26,8 +26,6 @@ module Config
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
-  , cPutOut
-  , cPutOutLn
   , cPutErr
   , cPutErrLn
   )

@@ -36,17 +36,12 @@ import FileUtils
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
-  , putErr
-  , printErrLn
   , cPutOut
   , cPutOutLn
-  , cPutErr
-  , cPutErrLn
   )
 
 import TSL
-  ( fromCFM
-  , statistics
+  ( statistics
   )
 
 import System.FilePath.Posix

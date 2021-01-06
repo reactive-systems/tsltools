@@ -29,8 +29,6 @@ import EncodingUtils
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
-  , cPutOut
-  , cPutOutLn
   , cPutErr
   , cPutErrLn
   , cPrintErrLn

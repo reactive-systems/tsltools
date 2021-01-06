@@ -7,14 +7,6 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    ImplicitParams
-
-  #-}
-
------------------------------------------------------------------------------
-
 module Main
   ( main
   ) where
@@ -29,36 +21,12 @@ import ArgParseUtils
   ( parseMaybeFilePath
   )
 
-import PrintUtils
-  ( Color(..)
-  , ColorIntensity(..)
-  , putErr
-  , printErrLn
-  , cPutOut
-  , cPutOutLn
-  , cPutErr
-  , cPutErrLn
-  )
-
 import FileUtils
   ( tryLoadTSL
   )
 
 import TSL
-  ( fromTSL
-  , toTSL
-  )
-
-import System.Directory
-  ( doesFileExist
-  )
-
-import System.Environment
-  ( getArgs
-  )
-
-import System.Exit
-  ( exitFailure
+  ( toTSL
   )
 
 -----------------------------------------------------------------------------

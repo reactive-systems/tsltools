@@ -32,13 +32,10 @@ import PrintUtils
   , ColorIntensity(..)
   , cPutOut
   , cPutOutLn
-  , cPutErr
-  , cPutErrLn
   )
 
 import TSL
-  ( fromCFM
-  , symbolTable
+  ( symbolTable
   , toCSV
   )
 

@@ -13,40 +13,20 @@
 module Utils where
 
 import PrintUtils
-  ( putOut
-  , putOutLn
-  , putErr
-  , putErrLn
-  , cPutOut
-  , cPutOutLn
+  ( Color(..)
+  , ColorIntensity(..)
   , cPutErr
   , cPutErrLn
   )
 
+import TSL
+  ( toTLSF
+  )
+
 import TSLCoreGenerator (Context(..), Verbosity(..))
 
-import TSL (Specification, fromTSL, toTLSF)
-
-import System.Directory (doesFileExist)
 import System.Exit (exitFailure)
 import System.Process (readProcessWithExitCode)
-
-import System.Console.ANSI
-  ( Color(..)
-  , ColorIntensity(..)
-  , ConsoleLayer(..)
-  , SGR(..)
-  , hSetSGR
-  )
-
-import System.IO
-  ( BufferMode(..)
-  , hPutStr
-  , hPutStrLn
-  , hSetBuffering
-  , stderr
-  , stdout
-  )
 
 import Data.Foldable (traverse_)
 

@@ -22,29 +22,8 @@ module Config
 
 -----------------------------------------------------------------------------
 
-import PrintUtils
-  ( Color(..)
-  , ColorIntensity(..)
-  , cPutOut
-  , cPutOutLn
-  , cPutErr
-  , cPutErrLn
-  )
-
 import Options.Applicative
 import Data.Semigroup ((<>))
-
-import System.Exit
-  ( exitFailure
-  )
-
-import Control.Monad
-  ( unless
-  )
-
-import System.Directory
-  ( doesFileExist
-  )
 
 -----------------------------------------------------------------------------
 

@@ -34,12 +34,7 @@ import Data.Semigroup ((<>))
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
-  , putErr
-  , putErrLn
-  , cPutOut
   , cPutOutLn
-  , cPutErr
-  , cPutErrLn
   )
 
 import FileUtils
