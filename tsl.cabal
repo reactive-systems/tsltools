@@ -266,6 +266,7 @@ executable tslsplit
   other-modules:
     PrintUtils
     EncodingUtils
+    FileUtils
 
   build-depends:
       tsl
@@ -274,6 +275,7 @@ executable tslsplit
     , filepath >= 1.4
     , containers >=0.5 && <0.7
     , ansi-terminal >= 0.6
+    , optparse-applicative
 
   hs-source-dirs:
     src/tools/tslsplit
