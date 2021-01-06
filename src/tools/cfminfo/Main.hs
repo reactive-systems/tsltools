@@ -76,18 +76,14 @@ main = do
             let (nI, nO, nP, nF, nC, nV) = statistics cfm
             cPutOut Vivid Yellow $ takeFileName file
             cPutOutLn Vivid White ":"
-            cPutOut Vivid White "  inputs:     "
-            cPutOutLn Vivid White $ show nI
-            cPutOut Vivid White "  outputs:    "
-            cPutOutLn Vivid White $ show nO
-            cPutOut Vivid White "  predicates: "
-            cPutOutLn Vivid White $ show nP
-            cPutOut Vivid White "  functions:  "
-            cPutOutLn Vivid White $ show nF
-            cPutOut Vivid White "  cells:      "
-            cPutOutLn Vivid White $ show nC
-            cPutOut Vivid White "  vertices:   "
-            cPutOutLn Vivid White $ show nV
+            cPutOutLn Vivid White $ unlines
+              [ "inputs:     " ++ show nI
+              , "outputs:    " ++ show nO
+              , "predicates: " ++ show nP
+              , "functions:  " ++ show nF
+              , "cells:      " ++ show nC
+              , "vertices:   " ++ show nV
+              ]
 
     _ -> do
       cPutErr Vivid Yellow "Usage: "
