@@ -33,6 +33,7 @@ import PrintUtils
   , cPutOutLn
   , cPutErr
   , cPutErrLn
+  , cPrintErrLn
   )
 
 import TSL
@@ -87,7 +88,7 @@ main = do
           simulate
           exitSuccess
         Left err       -> do
-          cPutErr Vivid Red $ show err
+          cPrintErrLn Vivid Red err
           exitFailure
 
     _ -> do
