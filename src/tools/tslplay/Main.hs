@@ -36,16 +36,12 @@ import PrintUtils
   , cPrintErrLn
   )
 
+import FileUtils
+  ( tryReadFile
+  )
+
 import TSL
   ( simulate
-  )
-
-import Control.Monad
-  ( unless
-  )
-
-import System.Directory
-  ( doesFileExist
   )
 
 import System.Environment
@@ -68,20 +64,10 @@ main = do
   args <- getArgs
   case args of
     [tsl, cfm] -> do
-      (>>=) (doesFileExist tsl) $ flip unless $ do
-        cPutErr Vivid Red "Not found: "
-        cPutErrLn Vivid White tsl
-        exitFailure
-
-      spec <- readFile tsl
+      spec <- tryReadFile tsl
       let ?specFilePath = Just tsl
 
-      (>>=) (doesFileExist cfm) $ flip unless $ do
-        cPutErr Vivid Red "Not found: "
-        cPutErrLn Vivid White cfm
-        exitFailure
-
-      strat <- readFile cfm
+      strat <- tryReadFile cfm
 
       simulate spec strat >>= \case
         Right simulate -> do
