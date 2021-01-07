@@ -39,7 +39,7 @@ import PrintUtils
   )
 
 import FileUtils
-  ( tryLoadTSL
+  ( loadTSL
   )
 
 import TSL
@@ -122,7 +122,7 @@ main = do
   checkPoolSize poolSize
   verbosity' <- convertVerbosity verbosity
 
-  spec <- tryLoadTSL input
+  spec <- loadTSL input
   potMinimalRealizableSpec <-
     (if treeBased
        then treeBasedMinimalAssumptions

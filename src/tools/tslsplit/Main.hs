@@ -29,7 +29,7 @@ import Options.Applicative
 import Data.Semigroup ((<>))
 
 import FileUtils
-  ( tryLoadTSL
+  ( loadTSL
   )
 
 import TSL
@@ -93,7 +93,7 @@ main = do
 
   Configuration{inputFile, ignore} <- parseArguments
 
-  spec <- tryLoadTSL $ Just inputFile
+  spec <- loadTSL $ Just inputFile
   path <- getCurrentDirectory
 
   let

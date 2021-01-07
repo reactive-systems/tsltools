@@ -32,7 +32,7 @@ import EncodingUtils
   )
 
 import FileUtils
-  ( tryLoadCFM
+  ( loadCFM
   , writeContent
   )
 
@@ -50,7 +50,7 @@ main = do
 
   Configuration{input, output, codeTarget, moduleName, functionName} <- parseArguments
 
-  cfm <- tryLoadCFM input
+  cfm <- loadCFM input
 
   writeContent output $
     implement codeTarget moduleName functionName cfm

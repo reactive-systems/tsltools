@@ -22,7 +22,7 @@ import ArgParseUtils
   )
 
 import FileUtils
-  ( tryLoadTSL
+  ( loadTSL
   )
 
 import TSL
@@ -43,7 +43,7 @@ main = do
 
   input <- parseMaybeFilePath "tsl2tlsf"
 
-  spec <- tryLoadTSL input
+  spec <- loadTSL input
 
   putStrLn $ toTOML (
       case input of

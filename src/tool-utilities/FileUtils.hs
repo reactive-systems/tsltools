@@ -20,8 +20,8 @@ module FileUtils
   , tryReadContent
   , readContent
   , writeContent
-  , tryLoadTSL
-  , tryLoadCFM
+  , loadTSL
+  , loadCFM
   ) where
 
 
@@ -95,11 +95,11 @@ writeContent Nothing = putStrLn
 writeContent (Just file) = writeFile file
 
 -----------------------------------------------------------------------------
--- | 'tryLoadTSL' is a helper function which loads and parses a TSL file and
+-- | 'loadTSL' is a helper function which loads and parses a TSL file and
 -- if this is not possible outputs a respective error on the command line
 -- and exits
-tryLoadTSL :: Maybe FilePath -> IO Specification
-tryLoadTSL input = do
+loadTSL :: Maybe FilePath -> IO Specification
+loadTSL input = do
   tryReadContent input
   >>= fromTSL input
   >>= \case 
@@ -110,11 +110,11 @@ tryLoadTSL input = do
     Right spec -> return spec
 
 -----------------------------------------------------------------------------
--- | 'tryLoadCFM' is a helper function which loads and parses a CFM file and
+-- | 'loadCFM' is a helper function which loads and parses a CFM file and
 -- if this is not possible outputs a respective error on the command line
 -- and exits
-tryLoadCFM :: Maybe FilePath -> IO CFM
-tryLoadCFM input = do
+loadCFM :: Maybe FilePath -> IO CFM
+loadCFM input = do
   content <- tryReadContent input
   case fromCFM content of
     Left err -> do

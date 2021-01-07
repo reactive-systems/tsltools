@@ -22,7 +22,7 @@ import ArgParseUtils
   )
 
 import FileUtils
-  ( tryLoadTSL
+  ( loadTSL
   )
 
 import TSL
@@ -38,7 +38,7 @@ main = do
   initEncoding
 
   parseMaybeFilePath "tslresolve"
-  >>= tryLoadTSL
+  >>= loadTSL
   >>= (putStrLn . toTSL)
     
 -----------------------------------------------------------------------------

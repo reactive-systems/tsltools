@@ -30,7 +30,7 @@ import ArgParseUtils
   )
 
 import FileUtils
-  ( tryLoadCFM
+  ( loadCFM
   )
 
 import PrintUtils
@@ -58,7 +58,7 @@ main = do
 
   input <- parseMaybeFilePath "cfminfo"
 
-  cfm <- tryLoadCFM input
+  cfm <- loadCFM input
 
   let (nI, nO, nP, nF, nC, nV) = statistics cfm
 

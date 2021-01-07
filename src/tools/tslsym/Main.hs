@@ -33,7 +33,7 @@ import PrintUtils
   )
 
 import FileUtils
-  ( tryLoadTSL
+  ( loadTSL
   )
 
 import TSL
@@ -65,7 +65,7 @@ main = do
 
   Configuration{input, fullTable, noPositions} <- parseArguments
 
-  spec <- tryLoadTSL input
+  spec <- loadTSL input
   let
     table = toCSV $ symboltable spec
     (is,ts') = partition (isInfixOf "internal") es

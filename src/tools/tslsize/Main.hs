@@ -37,7 +37,7 @@ import PrintUtils
   )
 
 import FileUtils
-  ( tryLoadTSL
+  ( loadTSL
   )
 
 import TSL
@@ -60,7 +60,7 @@ main = do
 
   input <- parseMaybeFilePath "tslsize"
 
-  Specification{..} <- tryLoadTSL input
+  Specification{..} <- loadTSL input
 
   case input of
     Just file -> do

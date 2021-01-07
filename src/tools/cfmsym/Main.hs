@@ -24,7 +24,7 @@ import ArgParseUtils
   )
 
 import FileUtils
-  ( tryLoadCFM
+  ( loadCFM
   )
 
 import PrintUtils
@@ -49,7 +49,7 @@ main = do
 
   input <- parseMaybeFilePath "cfmsym"
 
-  m <- tryLoadCFM input
+  m <- loadCFM input
 
   let
     table = toCSV $ symbolTable m

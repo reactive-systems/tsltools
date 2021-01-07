@@ -38,7 +38,7 @@ import PrintUtils
   )
 
 import FileUtils
-  ( tryLoadTSL
+  ( loadTSL
   )
 
 import TSL (toTSL)
@@ -110,7 +110,7 @@ main = do
   Configuration{poolSize, verbosity, realizableCommand, input} <- execParser configParserInfo
 
   verbosity' <- convertVerbosity $ verbosity
-  spec <- tryLoadTSL input
+  spec <- loadTSL input
   generateCore (createContext poolSize verbosity' realizableCommand) spec
   >>= \case
     Nothing -> cPutOutLn Vivid Red "Specification is realizable"
