@@ -1,17 +1,17 @@
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- |
 -- Module      : CoreUtilities
--- Description : Basic utilities use in different core generation techniques
+-- Description : Basic utilities used in different core generation techniques
 -- Maintainer  : Philippe Heim
 --
 -- 'CoreUtilities' provides different functionalities that are used to
 -- generate different kind of cores. This includes the wrapping of
--- different IO stuff into a context.
+-- different IO-operations into a context.
 --
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase, RecordWildCards #-}
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 module CoreGeneration.CoreUtilities
   ( Context(..)
   , Verbosity(..)
@@ -21,62 +21,64 @@ module CoreGeneration.CoreUtilities
   , optimizeSpec
   ) where
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 import Data.Set as Set (Set, empty, fromList, insert, notMember, size, toList)
 
 import TSL (Formula(..), Specification(..))
 
 import Control.Monad (when)
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- | 'Context' holds the necessary informations that are used for the 
 -- synthesis calls and the program logging
 data Context =
   Context
     { tslSpecRealizable :: Specification -> IO Bool -- ^ 'tslSpecRealizable' 
                                                  -- checks whether some 
-                                                 -- 'Specification' is realizable
+                                                 -- 'Specification' is 
+                                                 -- realizable
     , verbosityLevel :: Verbosity -- ^ 'verbosityLevel' defines which output 
                                   -- logging verbosity should be applied
     , threadPoolSize :: Int -- ^ 'threadPoolSize' defines how many worker 
                             -- threads should be executed at once
     }
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- | 'Verbosity' represents the different verbosity levels for the output
 data Verbosity
   -- | Do only output the result
   = SILENT
   -- | Do only output the result and other necessary information
   | QUIET
-  -- | Output when certains intermediate states are executed
+  -- | Output when important intermediate states are executed
   | STEPWISE
   -- | Output all intermediate steps including the content of the queries
   | DETAILED
   deriving (Eq)
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- | 'logOn' writes a log message if the 'Verbosity' specified in the
--- context is one that has been given as argument
+-- context is one that has been given as argument.
 logOn :: [Verbosity] -> Context -> String -> IO ()
 logOn verbosities context logMessage =
   when (verbosityLevel context `elem` verbosities) (putStrLn logMessage)
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- | 'logNormal' writes a log message if the 'Verbosity' is at least 
--- 'STEPWISE'
+-- 'STEPWISE'.
 logNormal :: Context -> String -> IO ()
 logNormal = logOn [STEPWISE, DETAILED]
 
------------------------------------------------------------------------------
--- | 'logHigh' writes a log message if the 'Verbosity' is 'DETAILED'
+-------------------------------------------------------------------------------
+-- | 'logHigh' writes a log message if the 'Verbosity' is 'DETAILED'.
 logHigh :: Context -> String -> IO ()
 logHigh = logOn [DETAILED]
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- | 'sortedPowerSet' computes the powerset as list of sets such that the
 -- list is sorted with ascending size.  Note that this is not done by 
--- using 'powerset' and then sorting but in an on-the-fly manner
+-- using 'powerset' and then sorting but in an on-the-fly manner.
+
 sortedPowerSet :: Int -> [Set Int]
 sortedPowerSet n = powerSetB n n
   where
@@ -93,9 +95,10 @@ sortedPowerSet n = powerSetB n n
             new = toList (fromList subNew)
          in sub ++ new
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- | 'optimizeSpec' might do some preprocessing to make a specification more
--- sutiable for synthesis. 
+-- suitable for synthesis. 
+
 optimizeSpec :: Specification -> Specification
 optimizeSpec Specification {..} =
   Specification
@@ -109,3 +112,5 @@ optimizeSpec Specification {..} =
       \case
         And xs -> xs
         f -> [f]
+
+-------------------------------------------------------------------------------

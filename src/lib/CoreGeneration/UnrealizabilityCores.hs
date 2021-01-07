@@ -1,20 +1,22 @@
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- |
 -- Module      : UnrealizabilityCores
--- Description : TSL unrealizable-cores 
+-- Description : Computes TSL unrealizablility cores 
 -- Maintainer  : Philippe Heim
 --
--- Provides methods to generate unrealizability cores
+-- This module provides functions to compute TSL unrealizability core. This is
+-- a sub-specification of a given specification (with a subset of guarantees) 
+-- that is already unrealizable. 
 --
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 {-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 module CoreGeneration.UnrealizabilityCores
   ( generateCore
   ) where
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 import CoreGeneration.CoreUtilities
   ( Context(..)
   , logHigh
@@ -50,15 +52,16 @@ import TSL
 
 import CoreGeneration.FindFirstConcurrent (incParallelFirst)
 
------------------------------------------------------------------------------
--- | 'Query' represents some potential core and is therfore a 'Specification'
+-------------------------------------------------------------------------------
+-- | 'Query' represents some potential core and is therefore a 'Specification'
 type Query = Specification
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- | 'getCores' computes a list of possible queries that can be used to find
--- a unrelaizability core. Note that the queries are sorted in such a way 
--- that the first unrelaizable one is a core with a minimal amount of
+-- a unrealizability core. Note that the queries are sorted in such a way 
+-- that the first unrealizable one is a core with a minimal amount of
 -- guarantees.
+
 getCores :: Specification -> [Query]
 getCores tsl@Specification {guarantees = g} =
   concatMap
@@ -75,6 +78,7 @@ getCores tsl@Specification {guarantees = g} =
   where
     choose indices =
       fmap snd $ Prelude.filter (\(a, _) -> member a indices) $ zip [0 ..] g
+    --
     addMissingUpdates choosen =
       let otherUpdates =
             Or $
@@ -92,12 +96,13 @@ getCores tsl@Specification {guarantees = g} =
           Set.filter (\(s, _) -> member s outps) $
           union (updates form) selfUpdates
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- | 'testCoreQuery' checks whether some potential unrealizable core is
--- actually one. To make this more efficent assumption searching is used
--- to find realizbale (non-core) specifications faster. 'testCoreQuery' is
--- provideds a set of assumptions that is surley needed known from the 
--- previous queries.
+-- actually one. To make this more efficient, assumption searching is used
+-- to find realizable (hence non-core) specifications faster. 'testCoreQuery' 
+-- is provided a set of assumptions that is known to be needed for 
+-- realizability (known from the previous queries).
+
 testCoreQuery ::
      Context -> Set (Formula Int) -> Specification -> IO (Maybe Specification)
 testCoreQuery context minimalAssumptions tsl =
@@ -135,11 +140,12 @@ testCoreQuery context minimalAssumptions tsl =
         then return (Just True)
         else return Nothing
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- | 'generateCore' computes for a 'Specification' a minimal 
 -- sub-specification with a subset of guarantees that is unrealizable 
 -- (if it exists). This is called a unrealizable core. The computation is
--- done using synthesis calls and therfore a 'Context' is needed
+-- done using synthesis calls, and therefore a 'Context' is needed.
+
 generateCore :: Context -> Specification -> IO (Maybe Specification)
 generateCore context tsl = do
   let queries = getCores tsl
@@ -164,3 +170,5 @@ generateCore context tsl = do
                   else empty))
             qr
         core -> return core
+
+-------------------------------------------------------------------------------
