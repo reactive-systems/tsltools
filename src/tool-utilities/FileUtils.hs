@@ -100,8 +100,8 @@ writeContent (Just file) = writeFile file
 -- and exits
 tryLoadTSL :: Maybe FilePath -> IO Specification
 tryLoadTSL input = do
-  content <- tryReadContent input
-  fromTSL input content
+  tryReadContent input
+  >>= fromTSL input
   >>= \case 
     Left err -> do
       cPutMessageInput Red "invalid" input
