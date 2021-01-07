@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  FileUtils
--- Maintainer  :  Marvin Stenger (Stenger@ProjectJARVIS.de)
+-- Maintainer  :  Marvin Stenger
 --
 -- This module implements file utilities that can be used in
 -- the executables of tsltools.
