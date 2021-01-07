@@ -5,7 +5,7 @@
 -- A simple finite trace checker
 --
 -----------------------------------------------------------------------------
-{-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
+{-# LANGUAGE LambdaCase, RecordWildCards #-}
 
 -----------------------------------------------------------------------------
 module TSL.Simulation.FiniteTraceChecker
@@ -51,7 +51,7 @@ append ::
   -> (c -> SignalTerm c)
   -> (PredicateTerm c -> Bool)
   -> FiniteTrace c
-append (ft@FiniteTrace {..}) updates predicates =
+append ft@FiniteTrace {..} updates predicates =
   let newTrace = (updates, predicates) : trace
       newOb =
         fmap
@@ -67,7 +67,7 @@ append (ft@FiniteTrace {..}) updates predicates =
 -- | Reverts the last appending to the finite trace. If the trace is empty
 -- the trace stays empty
 rewind :: Ord c => FiniteTrace c -> FiniteTrace c
-rewind ft@(FiniteTrace {..}) =
+rewind ft@FiniteTrace {..} =
   case (trace, obligations) of
     ([], _) -> ft
     (_:tr, _:or) -> ft {trace = tr, obligations = or}
@@ -100,7 +100,7 @@ violated ft =
 -----------------------------------------------------------------------------
 -- | The next obligations of the trace
 nextObligations :: FiniteTrace c -> [Obligation c]
-nextObligations (FiniteTrace {..}) =
+nextObligations FiniteTrace {..} =
   case obligations of
     [] -> assert False undefined
     o:_ -> o
@@ -136,11 +136,11 @@ checkNextC ts@(t:tr) cache form =
                   TTrue -> (TTrue, empty)
                   FFalse -> (FFalse, empty)
                   Check p ->
-                    if (snd t) p
+                    if snd t p
                       then (TTrue, empty)
                       else (FFalse, empty)
                   Update c st ->
-                    if (fst t) c == st
+                    if fst t c == st
                       then (TTrue, empty)
                       else (FFalse, empty)
                   Not f ->
@@ -191,8 +191,8 @@ checkNextC ts@(t:tr) cache form =
                   Since f1 f2 ->
                     checkNextC ts cache $
                     Or [f2, And [f1, Previous (Since f1 f2)]]
-           in ( (simplify nextForm)
-              , insert simpForm (simplify nextForm) (union cache cache'))
+           in ( simplify nextForm
+              , insert simpForm (simplify nextForm) (cache `union` cache'))
 
 -----------------------------------------------------------------------------
 -- | Simplifies a TSL formula
@@ -208,7 +208,7 @@ simplify =
     And [f] -> simplify f
     And fs ->
       let fs' = map simplify fs
-       in if exists isFalse fs'
+       in if any isFalse fs'
             then FFalse
             else And $
                  removeDoubles $
@@ -224,7 +224,7 @@ simplify =
     Or [f] -> simplify f
     Or fs ->
       let fs' = map simplify fs
-       in if exists isTrue fs'
+       in if any isTrue fs'
             then TTrue
             else Or $
                  removeDoubles $
@@ -255,8 +255,6 @@ simplify =
     --
     isTrue TTrue = True
     isTrue _ = False
-    --
-    exists p xs = not (all (\z -> not (p z)) xs)
     -- 
     removeDoubles :: Eq a => [a] -> [a]
     removeDoubles [] = []

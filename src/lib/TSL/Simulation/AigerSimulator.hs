@@ -6,7 +6,7 @@
 -- A simple AIGER simulator
 --
 -----------------------------------------------------------------------------
-{-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
+{-# LANGUAGE LambdaCase, RecordWildCards #-}
 
 -----------------------------------------------------------------------------
 module TSL.Simulation.AigerSimulator
@@ -76,10 +76,10 @@ normalize renameInput renameOutput aig =
         { inputs = Aiger.inputs aig
         , outputs = Aiger.outputs aig
         , latches = Aiger.latches aig
-        , outputCir = \o -> iwire2ct $ Aiger.outputWire aig o
-        , latchCir = \l -> iwire2ct $ Aiger.latchInput aig l
-        , inputName = lookup $ rights $ renamedInputs
-        , outputName = lookup $ rights $ renamedOutputs
+        , outputCir = iwire2ct . Aiger.outputWire aig 
+        , latchCir = iwire2ct . Aiger.latchInput aig
+        , inputName = lookup $ rights renamedInputs
+        , outputName = lookup $ rights renamedOutputs
         }
   where
     renamedInputs = rename (Aiger.inputs aig) (Aiger.inputName aig) renameInput
@@ -118,10 +118,7 @@ normalize renameInput renameOutput aig =
         Nothing ->
           case isInputWire w of
             Just i -> Inp i
-            Nothing ->
-              case isLatchOutput w of
-                Just l -> InpL l
-                Nothing -> CT
+            Nothing -> maybe CT InpL (isLatchOutput w)
     --
     isInputWire :: Wire -> Maybe Input
     isInputWire w = find (\i -> w == Aiger.inputWire aig i) (Aiger.inputs aig)
@@ -146,8 +143,8 @@ type Outputs = Output -> Bool
 -- | Evaluat on and simulation step of an normalized circuit
 simStep :: NormCircuit i o -> State -> Inputs -> (State, Outputs)
 simStep NormCircuit {..} state inpt =
-  let latchMap = functionToMap (latches) $ \l -> eval (latchCir l) state inpt
-      outputMap = functionToMap (outputs) $ \o -> eval (outputCir o) state inpt
+  let latchMap = functionToMap latches $ \l -> eval (latchCir l) state inpt
+      outputMap = functionToMap outputs $ \o -> eval (outputCir o) state inpt
    in (strictLookup latchMap, strictLookup outputMap)
   where
     strictLookup m elem =

@@ -35,10 +35,6 @@ import TSL.Reader
   ( fromTSL
   )
 
-import TSL.Error
-  ( genericError
-  )
-
 import TSL.SymbolTable
   ( stName
   )
@@ -82,6 +78,7 @@ import TSL.Logic
 
 import TSL.Error
   ( Error
+  , genericError
   )
 
 import TSL.Specification
@@ -110,7 +107,7 @@ createSimulation aag spec =
           SystemSimulation
             { counterStrategy = naag
             , specification = spec
-            , stateStack = [\_ -> False]
+            , stateStack = [const False]
             , trace =
                 emptyTrace
                   (assumptionsStr spec, guaranteesStr spec)
@@ -119,7 +116,7 @@ createSimulation aag spec =
        in
          case SysSim.sanitize sim of
            Nothing -> Right (Left sim)
-           Just err -> genericError $ err
+           Just err -> genericError err
     Left _ ->
       case normalize decodeInputAP decodeOutputAP aag of
         Left err   -> Left err
@@ -129,14 +126,14 @@ createSimulation aag spec =
               EnvironmentSimulation
                 { strategy = naag
                 , specification = spec
-                , stateStack = [\_ -> False]
+                , stateStack = [const False]
                 , trace = emptyTrace ([], assumptionsStr spec)
                 , logTrace = []
                 }
            in
              case EnvSim.sanitize sim of
                Nothing -> Right (Right sim)
-               Just err -> genericError $ err
+               Just err -> genericError err
 
   where
     assumptionsStr = fmap (fmap (stName $ symboltable spec)) . assumptions

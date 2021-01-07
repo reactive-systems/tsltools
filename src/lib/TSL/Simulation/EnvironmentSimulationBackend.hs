@@ -145,7 +145,7 @@ options sim@EnvironmentSimulation{strategy = ct} =
         allPredicateChoices = toList $ powerSet $ fromList allPredicates
       in
         fmap
-          (\s -> (fromList allPredicates, \p -> p `member` s))
+          (\s -> (fromList allPredicates, (`member` s)))
           allPredicateChoices
 
 -----------------------------------------------------------------------------
@@ -172,7 +172,7 @@ step sim@EnvironmentSimulation{..} (predicates, predEval) =
 
   where
     (q, output) =
-      simStep strategy (head stateStack) (predEval . (inputName strategy))
+      simStep strategy (head stateStack) (predEval . inputName strategy)
 
     eval =
       [ outputName strategy o
@@ -253,8 +253,8 @@ sanitize EnvironmentSimulation{strategy = cst, specification = spec} =
     case ( specUpatedCells `isSubsetOf` strategyUpdatedCells
          , specPredicates `isSubsetOf` strategyPredicates) of
       (True, True) -> Nothing
-      (True, False) -> Just $ errorMsgPred
-      (False, True) -> Just $ errorMsgCells
+      (True, False) -> Just errorMsgPred
+      (False, True) -> Just errorMsgCells
       (False, False) -> Just $ errorMsgCells ++ "\n" ++ errorMsgPred
 
   where
