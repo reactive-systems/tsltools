@@ -7,6 +7,14 @@
 --
 -----------------------------------------------------------------------------
 
+{-# LANGUAGE
+
+    NamedFieldPuns
+
+  #-}
+
+-----------------------------------------------------------------------------
+
 module Main
   ( main
   ) where
@@ -17,36 +25,27 @@ import EncodingUtils
   ( initEncoding
   )
 
+import ArgParseUtils
+  ( parseMaybeFilePath
+  )
+
+import FileUtils
+  ( tryLoadCFM
+  )
+
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
-  , putErr
-  , putErrLn
   , cPutOut
   , cPutOutLn
-  , cPutErr
-  , cPutErrLn
   )
 
 import TSL
-  ( fromCFM
-  , statistics
-  )
-
-import System.Directory
-  ( doesFileExist
-  )
-
-import System.Environment
-  ( getArgs
+  ( statistics
   )
 
 import System.FilePath.Posix
   ( takeFileName
-  )
-
-import System.Exit
-  ( exitFailure
   )
 
 -----------------------------------------------------------------------------
@@ -57,48 +56,25 @@ main
 main = do
   initEncoding
 
-  args <- getArgs
+  input <- parseMaybeFilePath "cfminfo"
 
-  case args of
-    [file] -> do
-      exists <- doesFileExist file
+  cfm <- tryLoadCFM input
 
-      if not exists then do
-        cPutErr Vivid Yellow "File not found: "
-        cPutErrLn Vivid White file
-        exitFailure
-      else do
-        str <- readFile file
+  let (nI, nO, nP, nF, nC, nV) = statistics cfm
 
-        case fromCFM str of
-          Left err -> invalid file $ show err
-          Right cfm  -> do
-            let (nI, nO, nP, nF, nC, nV) = statistics cfm
-            cPutOut Vivid Yellow $ takeFileName file
-            cPutOutLn Vivid White ":"
-            cPutOut Vivid White "  inputs:     "
-            cPutOutLn Vivid White $ show nI
-            cPutOut Vivid White "  outputs:    "
-            cPutOutLn Vivid White $ show nO
-            cPutOut Vivid White "  predicates: "
-            cPutOutLn Vivid White $ show nP
-            cPutOut Vivid White "  functions:  "
-            cPutOutLn Vivid White $ show nF
-            cPutOut Vivid White "  cells:      "
-            cPutOutLn Vivid White $ show nC
-            cPutOut Vivid White "  vertices:   "
-            cPutOutLn Vivid White $ show nV
+  case input of
+    Just file -> do
+      cPutOut Vivid Yellow $ takeFileName file
+      cPutOutLn Vivid White ":"
+    Nothing -> return ()
 
-    _ -> do
-      cPutErr Vivid Yellow "Usage: "
-      cPutErrLn Vivid White "cfminfo <file>"
-      exitFailure
-
-  where
-    invalid file err = do
-      cPutOut Vivid Red "invalid: "
-      cPutOutLn Vivid White file
-      putErrLn err
-      putErr ""
+  cPutOutLn Vivid White $ unlines
+    [ "inputs:     " ++ show nI
+    , "outputs:    " ++ show nO
+    , "predicates: " ++ show nP
+    , "functions:  " ++ show nF
+    , "cells:      " ++ show nC
+    , "vertices:   " ++ show nV
+    ]
 
 -----------------------------------------------------------------------------

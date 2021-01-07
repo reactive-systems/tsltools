@@ -3,7 +3,7 @@
 -- Module      :  Utils
 -- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
 --
--- This module implements differnt utilities that can are used in the 
+-- This module implements different utilities that can be used in the
 -- different core genearation tools
 --
 -----------------------------------------------------------------------------
@@ -13,40 +13,20 @@
 module Utils where
 
 import PrintUtils
-  ( putOut
-  , putOutLn
-  , putErr
-  , putErrLn
-  , cPutOut
-  , cPutOutLn
+  ( Color(..)
+  , ColorIntensity(..)
   , cPutErr
   , cPutErrLn
   )
 
+import TSL
+  ( toTLSF
+  )
+
 import TSLCoreGenerator (Context(..), Verbosity(..))
 
-import TSL (Specification, fromTSL, toTLSF)
-
-import System.Directory (doesFileExist)
 import System.Exit (exitFailure)
 import System.Process (readProcessWithExitCode)
-
-import System.Console.ANSI
-  ( Color(..)
-  , ColorIntensity(..)
-  , ConsoleLayer(..)
-  , SGR(..)
-  , hSetSGR
-  )
-
-import System.IO
-  ( BufferMode(..)
-  , hPutStr
-  , hPutStrLn
-  , hSetBuffering
-  , stderr
-  , stdout
-  )
 
 import Data.Foldable (traverse_)
 
@@ -98,31 +78,7 @@ createContext poolSize verbosity realCmd =
         }
 
 -----------------------------------------------------------------------------
--- | 'tryLoadTSL' is a helper function which load and parses a TSL file and
--- if this is not possible outputs a respective error on the command line
--- and exists
-tryLoadTSL :: FilePath -> IO Specification
-tryLoadTSL filepath = do
-  exists <- doesFileExist filepath
-  if not exists
-    then do
-      cPutErr Vivid Red "File not found: "
-      cPutErrLn Vivid White filepath
-      exitFailure
-    else do
-      str <- readFile filepath
-      let ?specFilePath = Just filepath
-      tsl <- fromTSL str
-      case tsl of
-        Left err -> do
-          cPutOut Vivid Red "invalid: "
-          cPutOutLn Vivid White filepath
-          putErrLn err
-          exitFailure
-        Right spec -> return spec
-
------------------------------------------------------------------------------
--- | 'printHelpAndExit' prints a help message in an aquedate format and exits
+-- | 'printHelpAndExit' prints a help message in an adequate format and exits
 -- afterwards with a failure
 printHelpAndExit :: [String] -> IO a
 printHelpAndExit helpMessages = do
@@ -131,31 +87,52 @@ printHelpAndExit helpMessages = do
   exitFailure
 
 -----------------------------------------------------------------------------
+-- | 'checkPoolSize' checks the pool size and if this is invalid
+-- outputs an adequate error message on stderr and exists the program
+checkPoolSize :: Int -> IO ()
+checkPoolSize n =
+  if n <= 0
+    then do
+      cPutErrLn Vivid Red "The thread pool size has to be at least one"
+      exitFailure
+    else return ()
+
+-----------------------------------------------------------------------------
 -- | 'parsePoolSize' tries to parse the pool size and if this is not
--- possble outputs an aquedate error message on stderr and exists the program
+-- possible outputs an adequate error message on stderr and exists the program
 parsePoolSize :: String -> IO Int
 parsePoolSize poolSizeStr =
   case readMaybe poolSizeStr :: Maybe Int of
-    Just n ->
-      if n <= 0
-        then do
-          cPutErrLn Vivid Red "The thread pool size has to be at least one"
-          exitFailure
-        else return n
+    Just n -> do
+      checkPoolSize n
+      return n
     Nothing -> do
       cPutErrLn Vivid Red "The thread pool size has to be a (natural) number"
       exitFailure
 
 -----------------------------------------------------------------------------
+-- | 'convertVerbosity' tries to convert a verbosity and if this is not
+-- possible outputs an adequate error message on stderr and exits the program
+convertVerbosity :: Int -> IO Verbosity
+convertVerbosity v =
+  case v of
+    0 -> return SILENT
+    1 -> return QUIET
+    2 -> return STEPWISE
+    3 -> return DETAILED
+    _ -> do
+      cPutErrLn
+        Vivid Red
+        "The verbosity has to be given by a number between zero and three"
+      exitFailure
+
+-----------------------------------------------------------------------------
 -- | 'parseVerbosity' tries to parse a verbosity and if this is not
--- possble outputs an aquedate error message on stderr and exists the program
+-- possible outputs an adequate error message on stderr and exits the program
 parseVerbosity :: String -> IO Verbosity
 parseVerbosity string =
   case readMaybe string :: Maybe Int of
-    Just 0 -> return SILENT
-    Just 1 -> return QUIET
-    Just 2 -> return STEPWISE
-    Just 3 -> return DETAILED
+    Just n -> convertVerbosity n
     _ -> do
       cPutErrLn
         Vivid Red

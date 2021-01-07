@@ -9,8 +9,7 @@
 
 {-# LANGUAGE
 
-    LambdaCase
-  , ImplicitParams
+    NamedFieldPuns
 
   #-}
 
@@ -26,27 +25,21 @@ import EncodingUtils
   ( initEncoding
   )
 
-import PrintUtils
-  ( Color(..)
-  , ColorIntensity(..)
-  , putErr
-  , putErrLn
-  , cPutOut
-  , cPutOutLn
-  , cPutErr
-  , cPutErrLn
+import Options.Applicative
+import Data.Semigroup ((<>))
+
+import FileUtils
+  ( tryLoadTSL
   )
 
 import TSL
   ( split
   , toTSL
-  , fromTSL
   , splitIgnoreAssumptions
   )
 
 import System.Directory
-  ( doesFileExist
-  , getCurrentDirectory
+  ( getCurrentDirectory
   )
 
 import System.FilePath
@@ -55,13 +48,40 @@ import System.FilePath
   , (<.>)
   )
 
-import System.Environment
-  ( getArgs
+-----------------------------------------------------------------------------
+
+-- | The data type contains all flags and settings
+-- that can be adjusted to influence the behavior of the library:
+data Configuration =
+  Configuration
+  { -- | The input file containing the synthesized control flow
+    -- model.
+    inputFile :: FilePath
+  , -- | A Boolean flag specifying whether to ignore assumptions
+    -- in splitting process or not.
+    ignore :: Bool
+  } deriving (Eq, Ord)
+
+configParser :: Parser Configuration
+configParser = Configuration
+  <$> argument str
+      (  metavar "FILE"
+      <> help "input file"
+      )
+  <*> switch
+      (  long "ignore"
+      <> short 'i'
+      <> help "ignore assumptions in splitting process"
+      )
+
+configParserInfo :: ParserInfo Configuration
+configParserInfo = info (configParser <**> helper)
+  (  fullDesc
+  <> header "tslsplit - splits TSL specifications into smaller independent TSL specifications"
   )
 
-import System.Exit
-  ( exitFailure
-  )
+parseArguments :: IO Configuration
+parseArguments = execParser configParserInfo
 
 -----------------------------------------------------------------------------
 
@@ -71,50 +91,22 @@ main
 main = do
   initEncoding
 
-  (ignore, file) <- parseArgs
-  case file of
-    Nothing -> do
-      cPutErr Vivid Yellow "Usage: "
-      cPutErrLn Vivid White "tslsplit <file> [--ignore]"
-      cPutErrLn Vivid White "--ignore : ignore assumptions in splitting process"
-      exitFailure
-    Just filepath -> do
-      let ?specFilePath = Just filepath
-      exists <- doesFileExist filepath
+  Configuration{inputFile, ignore} <- parseArguments
 
-      if not exists then do
-        cPutErr Vivid Red "File not found: "
-        cPutErrLn Vivid White $ filepath
-        exitFailure
-      else
-        readFile filepath >>= fromTSL >>= \case
-          Left err -> do
-            cPutOut Vivid Red "invalid: "
-            cPutOutLn Vivid White $ filepath
-            putErrLn err
-            exitFailure
-          Right s  -> do
-            path <- getCurrentDirectory
+  spec <- tryLoadTSL $ Just inputFile
+  path <- getCurrentDirectory
 
-            let
-              specs
-                | ignore    = splitIgnoreAssumptions s
-                | otherwise = split s
+  let
+    specs
+      | ignore    = splitIgnoreAssumptions spec
+      | otherwise = split spec
 
-              filepathN n =
-                path </> (takeBaseName filepath) ++
-                "_" ++ (show n) <.> "tsl"
+    filepathN n =
+      path </> (takeBaseName inputFile) ++
+      "_" ++ (show n) <.> "tsl"
 
-            mapM_
-              (\(s,n) -> writeFile (filepathN n) (toTSL s))
-              (zip specs [1::Int,2..])
-
-  where
-    parseArgs = do
-      args <- getArgs
-      case args of
-        [x, "--ignore"] -> return (True, Just x)
-        [x]             -> return (False, Just x)
-        _               -> return (False, Nothing)
+  mapM_
+    (\(s,n) -> writeFile (filepathN n) (toTSL s))
+    (zip specs [1::Int,2..])
 
 -----------------------------------------------------------------------------

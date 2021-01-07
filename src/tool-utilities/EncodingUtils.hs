@@ -3,7 +3,7 @@
 -- Module      :  EncodingUtils
 -- Maintainer  :  Marvin Stegner (Stenger@ProjectJARVIS.de)
 --
--- This module implements encoding utilities that can are used in
+-- This module implements encoding utilities that can be used in
 -- the executables of tsltools.
 --
 -----------------------------------------------------------------------------

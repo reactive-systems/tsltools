@@ -10,7 +10,7 @@
 {-# LANGUAGE
 
     LambdaCase
-  , ImplicitParams
+  , NamedFieldPuns
 
   #-}
 
@@ -26,11 +26,14 @@ import EncodingUtils
   ( initEncoding
   )
 
+import Options.Applicative
+import Data.Semigroup ((<>))
+
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
   , putErr
-  , putErrLn
+  , printErrLn
   , cPutOut
   , cPutOutLn
   , cPutErr
@@ -46,13 +49,25 @@ import System.Directory
   , doesFileExist
   )
 
-import System.Environment
-  ( getArgs
-  )
-
 import System.Exit
   ( exitFailure
   , exitSuccess
+  )
+
+-----------------------------------------------------------------------------
+
+data Configuration = Configuration
+  { input :: Maybe [FilePath]
+  } deriving (Eq, Ord)
+
+configParser :: Parser Configuration
+configParser = Configuration
+  <$> optional (some (strArgument (metavar "FILES...")))
+
+configParserInfo :: ParserInfo Configuration
+configParserInfo = info (configParser <**> helper)
+  (  fullDesc
+  <> header "tslcheck - checks TSL specifications to be in a valid format"
   )
 
 -----------------------------------------------------------------------------
@@ -63,23 +78,20 @@ main
 main = do
   initEncoding
 
-  args <- getArgs
-  if null args
-  then do
-    valid <- checkStdIn
-    if valid
-    then exitSuccess
-    else exitFailure
-  else do
-    xs <- mapM checkFile args
+  Configuration{input} <- execParser configParserInfo
 
-    if and xs
-    then exitSuccess
-    else exitFailure
+  valid <- case input of
+    Nothing -> checkStdIn
+    Just files -> do
+      xs <- mapM checkFile files
+      return $ and xs
+
+  if valid
+  then exitSuccess
+  else exitFailure
 
   where
     checkFile file = do
-      let ?specFilePath = Just file
       exists <- doesFileExist file
       if not exists
         then do
@@ -94,11 +106,11 @@ main = do
               cPutErrLn Vivid White file
           return False
         else
-          readFile file >>= fromTSL >>= \case
+          readFile file >>= fromTSL (Just file) >>= \case
             Left err -> do
               cPutOut Vivid Red "invalid: "
               cPutOutLn Vivid White file
-              putErrLn err
+              printErrLn err
               putErr ""
               return False
             Right _ -> do
@@ -107,11 +119,10 @@ main = do
               return True
 
     checkStdIn =
-      let ?specFilePath = Nothing in
-      getContents >>= fromTSL >>= \case
+      getContents >>= fromTSL Nothing >>= \case
         Left err -> do
           cPutOut Vivid Red "invalid"
-          putErrLn err
+          printErrLn err
           putErr ""
           return False
         Right _  -> do

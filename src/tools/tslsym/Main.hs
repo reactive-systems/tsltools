@@ -9,9 +9,7 @@
 
 {-# LANGUAGE
 
-    RecordWildCards
-  , LambdaCase
-  , ImplicitParams
+    NamedFieldPuns
 
   #-}
 
@@ -32,13 +30,14 @@ import PrintUtils
   , ColorIntensity(..)
   , cPutOut
   , cPutOutLn
-  , cPutErr
-  , cPutErrLn
+  )
+
+import FileUtils
+  ( tryLoadTSL
   )
 
 import TSL
   ( Specification(..)
-  , fromTSL
   , toCSV
   )
 
@@ -56,15 +55,6 @@ import Control.Monad
   ( when
   )
 
-import System.Environment
-  ( getArgs
-  )
-
-import System.Exit
-  ( exitFailure
-  , exitSuccess
-  )
-
 -----------------------------------------------------------------------------
 
 main
@@ -73,69 +63,28 @@ main
 main = do
   initEncoding
 
-  Configuration{..} <- getArgs >>= parseArguments
+  Configuration{input, fullTable, noPositions} <- parseArguments
 
-  when pHelp $ do
-    cPutOutLn Dull White   ""
-    cPutOut Vivid Yellow   "Usage:"
-    cPutOut Vivid White    " tslsym [OPTIONS]"
-    cPutOutLn Dull White   " <file>"
-    cPutOutLn Dull White   ""
-    cPutOutLn Dull White   "  Prints the symboltable of a TSL specification."
-    cPutOutLn Dull White   ""
-    cPutOutLn Vivid Yellow "Options:"
-    cPutOutLn Dull White   ""
-    cPutOut Vivid White    "  -f, --full           "
-    cPutOutLn Dull White   "prints the full table, including locally bound definitions"
-    cPutOutLn Dull White   ""
-    cPutOut Vivid White    "  -n, --no-positions   "
-    cPutOutLn Dull White   "removes the 'Position'-column from the table such that"
-    cPutOut Dull White     "                       "
-    cPutOutLn Dull White   "the resulting table is identical to the one of 'cfmsym'"
-    cPutOutLn Dull White   ""
-    cPutOut Vivid White    "  -h, --help           "
-    cPutOutLn Dull White   "displays this help"
-    cPutOutLn Dull White   ""
-    cPutOutLn Dull White   "If no input file is given, the input is read from STDIN."
-    cPutOutLn Dull White   ""
-    exitSuccess
+  spec <- tryLoadTSL input
+  let
+    table = toCSV $ symboltable spec
+    (is,ts') = partition (isInfixOf "internal") es
+    (h':es) = lines table
 
-  cnt <- case inputFile of
-    Nothing   -> getContents
-    Just file -> readFile file
+    (h, ts, upd)
+      | fullTable =
+          (h', ts', if noPositions then rmSLast else id)
+      | otherwise =
+          let (h'':ts'') = rmSpaces [] (h':ts')
+          in (h'',ts'', if noPositions then rmLast . rmLast else rmLast)
 
-  let ?specFilePath = inputFile
+  header $ upd h
+  sep $ upd h
+  mapM_ (entries . upd) ts
 
-  fromTSL cnt >>= \case
-    Left err -> do
-      case inputFile of
-        Nothing   -> return ()
-        Just file -> do
-          cPutOut Vivid Red "invalid: "
-          cPutOutLn Vivid White file
-
-      cPutErrLn Dull White $ show err
-      exitFailure
-    Right s -> do
-      let
-        table = toCSV $ symboltable s
-        (is,ts') = partition (isInfixOf "internal") es
-        (h':es) = lines table
-
-        (h, ts, upd)
-          | fullTable =
-              (h', ts', if noPositions then rmSLast else id)
-          | otherwise =
-              let (h'':ts'') = rmSpaces [] (h':ts')
-              in (h'',ts'', if noPositions then rmLast . rmLast else rmLast)
-
-      header $ upd h
-      sep $ upd h
-      mapM_ (entries . upd) ts
-
-      when fullTable $ do
-        sep $ upd h
-        mapM_ (entries . upd) is
+  when fullTable $ do
+    sep $ upd h
+    mapM_ (entries . upd) is
 
   where
     rmSpaces a xs =

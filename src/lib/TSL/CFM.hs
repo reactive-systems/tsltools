@@ -525,7 +525,7 @@ symbolTable cfm@CFM{..} =
 
 -- | Parses a Control Flow Model that is given as an AIGER circuit,
 -- which has been synthesized from a TLSF specification that
--- (generated from a TSL specifciation).
+-- (generated from a TSL specification).
 
 fromCFM
   :: String -> Either Error CFM

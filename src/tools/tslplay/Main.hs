@@ -10,7 +10,6 @@
 {-# LANGUAGE
 
     LambdaCase
-  , ImplicitParams
 
   #-}
 
@@ -29,22 +28,17 @@ import EncodingUtils
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
-  , cPutOut
-  , cPutOutLn
   , cPutErr
   , cPutErrLn
+  , cPrintErrLn
+  )
+
+import FileUtils
+  ( tryReadFile
   )
 
 import TSL
   ( simulate
-  )
-
-import Control.Monad
-  ( unless
-  )
-
-import System.Directory
-  ( doesFileExist
   )
 
 import System.Environment
@@ -65,29 +59,18 @@ main = do
   initEncoding
 
   args <- getArgs
+
   case args of
     [tsl, cfm] -> do
-      (>>=) (doesFileExist tsl) $ flip unless $ do
-        cPutErr Vivid Red "Not found: "
-        cPutErrLn Vivid White tsl
-        exitFailure
+      spec <- tryReadFile tsl
+      strat <- tryReadFile cfm
 
-      spec <- readFile tsl
-      let ?specFilePath = Just tsl
-
-      (>>=) (doesFileExist cfm) $ flip unless $ do
-        cPutErr Vivid Red "Not found: "
-        cPutErrLn Vivid White cfm
-        exitFailure
-
-      strat <- readFile cfm
-
-      simulate spec strat >>= \case
+      simulate (Just tsl) spec strat >>= \case
         Right simulate -> do
           simulate
           exitSuccess
         Left err       -> do
-          cPutErr Vivid Red $ show err
+          cPrintErrLn Vivid Red err
           exitFailure
 
     _ -> do

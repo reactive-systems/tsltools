@@ -6,7 +6,6 @@
 -- Transforms TSL specifications into TLSF specifications.
 --
 -----------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase, ImplicitParams #-}
 
 module Main
   ( main
@@ -18,66 +17,38 @@ import EncodingUtils
   ( initEncoding
   )
 
-import PrintUtils
-  ( Color(..)
-  , ColorIntensity(..)
-  , putErr
-  , putErrLn
-  , cPutOut
-  , cPutOutLn
-  , cPutErr
-  , cPutErrLn
+import ArgParseUtils
+  ( parseMaybeFilePath
   )
 
-import TSL (fromTSL, toTOML)
+import FileUtils
+  ( tryLoadTSL
+  )
 
-import System.Directory (doesFileExist)
+import TSL
+  ( toTOML
+  )
 
-import System.FilePath (takeBaseName)
-
-import System.Environment (getArgs)
-
-import System.Exit (exitFailure)
+import System.FilePath
+  ( takeBaseName
+  )
 
 -----------------------------------------------------------------------------
-main :: IO ()
+
+main
+  :: IO ()
+
 main = do
   initEncoding
 
-  input <- parseArgs
-  case input of
-    Nothing -> do
-      str <- getContents
-      let ?specFilePath = Nothing
-      res <- fromTSL str
-      case res of
-        Left err -> do
-          cPutOut Vivid Red "invalid"
-          putErrLn err
-          exitFailure
-        Right s -> putStr $ toTOML "stdin" s
-    Just filepath -> do
-      exists <- doesFileExist filepath
-      if not exists
-        then do
-          cPutErr Vivid Red "File not found: "
-          cPutErrLn Vivid White filepath
-          exitFailure
-        else do
-          str <- readFile filepath
-          let ?specFilePath = Just filepath
-          res <- fromTSL str
-          case res of
-            Left err -> do
-              cPutOut Vivid Red "invalid: "
-              cPutOutLn Vivid White filepath
-              putErrLn err
-              exitFailure
-            Right s -> putStr $ toTOML (takeBaseName filepath) s
-  where
-    parseArgs = do
-      args <- getArgs
-      case args of
-        [] -> return Nothing
-        x:_ -> return $ Just x
+  input <- parseMaybeFilePath "tsl2tlsf"
+
+  spec <- tryLoadTSL input
+
+  putStrLn $ toTOML (
+      case input of
+        Nothing -> "STDIN"
+        Just file -> takeBaseName file
+    ) spec
+
 -----------------------------------------------------------------------------

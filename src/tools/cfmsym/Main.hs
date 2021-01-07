@@ -19,31 +19,24 @@ import EncodingUtils
   ( initEncoding
   )
 
+import ArgParseUtils
+  ( parseMaybeFilePath
+  )
+
+import FileUtils
+  ( tryLoadCFM
+  )
+
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
   , cPutOut
   , cPutOutLn
-  , cPutErr
-  , cPutErrLn
   )
 
 import TSL
-  ( fromCFM
-  , symbolTable
+  ( symbolTable
   , toCSV
-  )
-
-import System.Directory
-  ( doesFileExist
-  )
-
-import System.Environment
-  ( getArgs
-  )
-
-import System.Exit
-  ( exitFailure
   )
 
 -----------------------------------------------------------------------------
@@ -54,39 +47,19 @@ main
 main = do
   initEncoding
 
-  args <- getArgs
+  input <- parseMaybeFilePath "cfmsym"
 
-  if length args /= 1 then do
-    cPutErr Vivid Yellow "Usage: "
-    cPutErrLn Dull White "cfmsym <file>"
-    exitFailure
-  else do
-    exists <- doesFileExist $ head args
+  m <- tryLoadCFM input
 
-    if not exists then do
-      cPutErr Vivid Red "File not found: "
-      cPutErrLn Vivid White $ head args
-      exitFailure
-    else do
-      str <- readFile $ head args
-      case fromCFM str of
-        Left err -> invalid (head args) $ show err
-        Right m  -> do
-          let
-            table = toCSV $ symbolTable m
-            (h:es) = lines table
+  let
+    table = toCSV $ symbolTable m
+    (h:es) = lines table
 
-          header $ dropLast h
-          sep $ dropLast h
-          mapM_ (entries . dropLast) es
+  header $ dropLast h
+  sep $ dropLast h
+  mapM_ (entries . dropLast) es
 
   where
-    invalid file err = do
-      cPutOut Vivid Red "invalid: "
-      cPutOutLn Vivid White file
-      cPutErrLn Dull White err
-      exitFailure
-
     dropLast x = case span (/= ';') $ reverse x of
       (_, ';':y) -> case span (/= ';') y of
         (_, ';':z) -> reverse z
