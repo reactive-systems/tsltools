@@ -1,12 +1,13 @@
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Simulaton.EnvironmentSimulationBackend
+-- Description :  Backend of the environment simulation
 -- Maintainer  :  Philippe Heim
 --
--- The backend of the environment simulation when playing againts a
--- strategy / system
+-- This module is the backend of the environment simulation when playing 
+-- against a system strategy.
 --
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 {-# LANGUAGE
 
@@ -16,7 +17,7 @@
 
   #-}
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 module TSL.Simulation.EnvironmentSimulationBackend
   ( SystemStrategy
@@ -29,7 +30,7 @@ module TSL.Simulation.EnvironmentSimulationBackend
   , sanitize
   ) where
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 import Control.Exception
   ( assert
@@ -85,45 +86,51 @@ import qualified TSL.Logic as L
   ( outputs
   )
 
------------------------------------------------------------------------------
-
--- | A system startegy is a circuit with predicate evaluations as
--- inputs and updates as outputs
+-------------------------------------------------------------------------------
+-- | A 'SystemStrategy' is a circuit with predicate evaluations as
+-- inputs and updates as outputs.
 
 type SystemStrategy =
   NormCircuit (PredicateTerm String) (String, SignalTerm String)
 
------------------------------------------------------------------------------
 
--- | The options of the environment is the set of predicates, and the
--- choice for the predicates
+-------------------------------------------------------------------------------
+-- | The playable actions of the environment ('EnvironmentOption') are a set
+-- of predicates that should be set and their respective evaluations.
 
 type EnvironmentOption =
   (Set (PredicateTerm String), PredicateTerm String -> Bool)
 
------------------------------------------------------------------------------
-
+-------------------------------------------------------------------------------
+-- | A 'Witness' is a list of violated TSL 'Formula's. These are latter used
+-- to explain why some option is forbidden.
 type Witness = [Formula String]
 
------------------------------------------------------------------------------
-
--- | An environment simulation consists of the system strategy, the
--- respective specification, the stack of the startegies state, the
--- trace and a logging trace
+------------------------------------------------------------------------------ 
+-- | 'EnvironmentSimulation' is an instance of a game against some system 
+-- strategy for some specification.
 
 data EnvironmentSimulation =
   EnvironmentSimulation
+    -- | The strategy of the system played against
     { strategy :: SystemStrategy
+    -- | The considered specification
     , specification :: Specification
+    -- | The history of states that have been passed through as stack, the
+    -- topmost element is the current state.
     , stateStack :: [State]
+    -- | The trace of updates and predicate evaluation (this trace is the 
+    -- "trace" that is usually meant in a model checking context)
     , trace :: FiniteTrace String
+    -- | The trace of all played actions from the system and the environment
     , logTrace :: [(EnvironmentOption, [(String, SignalTerm String)])]
     }
 
------------------------------------------------------------------------------
-
--- | Gives all options of a simulation and a list of TSLFormulas
--- (Witness) that would be violated
+-------------------------------------------------------------------------------
+-- | 'options' computes all options that are potentially playable by the 
+-- environment. Additionally it also computes a 'Witness' of violated TSL 
+-- 'Formula's and the respective answer of the system. Note that an option 
+-- is only 'allowed' if the 'Witness' is empty.
 
 options
   :: EnvironmentSimulation
@@ -148,14 +155,15 @@ options sim@EnvironmentSimulation{strategy = ct} =
           (\s -> (fromList allPredicates, (`member` s)))
           allPredicateChoices
 
------------------------------------------------------------------------------
-
--- | Given an possible action option, simulate one step and calculate the
--- update choices
+-------------------------------------------------------------------------------
+-- | 'step' computes the next instance of an 'EnvironmentSimulation' provided
+-- an 'EnvironmentOption' played by the environment. It also returns the answer
+-- of the system to the environment`s move.
 --
--- ASSUMPTION: The option should be complete, i.e. on a higher level
--- for every cell in the formula, the circuit can update on of these cells
--- (can be checked using sanitize)
+-- ASSUMPTION: The option should be complete, i.e. for every cell in the 
+-- specification, the circuit of the system updates one of these cells. This 
+-- can be check using 'sanitize'. If this is not the case 'step' might fire
+-- an assertion error.
 
 step
   :: EnvironmentSimulation -> EnvironmentOption
@@ -190,16 +198,18 @@ step sim@EnvironmentSimulation{..} (predicates, predEval) =
       :: (a -> Bool) -> [(a, b)] -> b
 
     findFirst p = \case
-      -- can't happend iff the simulation is sanitized
+      -- This cannot happen if the simulation is sanitized
       []       -> assert False undefined
       -- otherwise
       (a,b):xr
         | p a       -> b
         | otherwise ->findFirst p xr
 
------------------------------------------------------------------------------
-
--- | Rewind steps the simulation one step back
+-------------------------------------------------------------------------------
+-- | 'rewind' undoes the last step of applied to an 'EnvironmentSimulation'
+-- instance. In the initial state this function is the identity. Note that
+-- the 'EnviromentSimulation' has to be well-defined i.e. there is some current
+-- state.
 
 rewind
   :: EnvironmentSimulation -> EnvironmentSimulation
@@ -208,7 +218,7 @@ rewind sim@EnvironmentSimulation{..} =
   sim
     { stateStack =
         case stateStack of
-          [] -> assert False undefined -- There is always an inital state
+          [] -> assert False undefined -- There is always an initial state
           [init] -> [init]
           _:sr -> sr
     , trace = FTC.rewind trace
@@ -218,9 +228,13 @@ rewind sim@EnvironmentSimulation{..} =
           _:lr -> lr
     }
 
------------------------------------------------------------------------------
-
--- | Sanitize the simulation
+-------------------------------------------------------------------------------
+-- | 'sanitize' checks that an 'EnvironmentSimulation' is consistent. This 
+-- means that the available predicates and updates in the system circuit and
+-- the specification match each other. 
+--
+-- TODO: It does not check for the existence of an initial state; maybe it 
+-- should.
 
 sanitize
   :: EnvironmentSimulation -> Maybe String
@@ -261,9 +275,9 @@ sanitize EnvironmentSimulation{strategy = cst, specification = spec} =
     assumptionsStr = fmap (fmap (stName $ symboltable spec)) . assumptions
     guaranteesStr = fmap (fmap (stName $ symboltable spec)) . guarantees
 
------------------------------------------------------------------------------
-
--- | Get the simulation log
+-------------------------------------------------------------------------------
+-- | 'getLog' returns the trace of chosen 'EnvironmentOption's and updates 
+-- (chosen by the system) in the chronological order.
 
 getLog
   :: EnvironmentSimulation
@@ -272,4 +286,4 @@ getLog
 getLog =
   reverse . logTrace
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------

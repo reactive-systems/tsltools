@@ -1,14 +1,16 @@
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Simulation.AigerSimulator
+-- Description :  A simple AIGER simulator
 -- Maintainer  :  Philippe Heim
 --
--- A simple AIGER simulator
+-- This module provides functionalities to evaluate AIGER circuits on 
+-- sequences of inputs, i.e. functionalities to simulate AIGER circuits.
 --
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase, RecordWildCards #-}
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 module TSL.Simulation.AigerSimulator
   ( NormCircuit(inputs, outputs, latches, inputName, outputName)
   , State
@@ -18,7 +20,7 @@ module TSL.Simulation.AigerSimulator
   , simStep
   ) where
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 import TSL.Aiger as Aiger
   ( Circuit(..)
   , Gate
@@ -37,7 +39,12 @@ import Data.Map as Map (Map, fromList, lookup)
 import Control.Exception (assert)
 
 -----------------------------------------------------------------------------
--- | Defines custom easier to evaluate intermediate tree-shaped circuit
+-- | 'NormCircuit' defines an intermediate tree-shaped representation of the
+-- AIGER circuit, that can be evaluated in an recursive manner. Hereby a
+-- 'CircuitTree' is the evaluation-tree (of an output or latch input). The 
+-- leafs of such an evaluation-tree are consequently latches or inputs of the
+-- circuit.
+
 data NormCircuit i o =
   NormCircuit
     { inputs :: [Input]
@@ -56,8 +63,8 @@ data CircuitTree
   | NG CircuitTree
   | CT
 
------------------------------------------------------------------------------
--- | Transform a circuit into a normalized circuit (incl. sanitizing)
+-------------------------------------------------------------------------------
+-- | 'normalize' transforms a 'Circuit' into a normalized 'NormCircuit'. 
 -- ASSUMPTIONS: 
 -- - The aiger circuit contains no logic loops
 --

@@ -1,13 +1,16 @@
+-------------------------------------------------------------------------------
 -- |
--- Module      :  TSL.Simulation.FinitTraceChecker
+-- Module      :  TSL.Simulation.FiniteTraceChecker
+-- Description :  Violation finder in finite TSL traces
 -- Maintainer  :  Philippe Heim
 --
--- A simple finite trace checker
+-- This module tries to check whether some finite TSL trace (consisting of 
+-- update an predicate evaluation) violates some TSL 'Formula'.
 --
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase, RecordWildCards #-}
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 module TSL.Simulation.FiniteTraceChecker
   ( FiniteTrace
   , Obligation(..)
@@ -18,33 +21,44 @@ module TSL.Simulation.FiniteTraceChecker
   , nextObligations
   ) where
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 import TSL.Logic as Logic (Formula(..), PredicateTerm, SignalTerm)
 
 import Control.Exception (assert)
 
 import Data.Map as Map (Map, empty, insert, lookup, union)
 
------------------------------------------------------------------------------
--- | A Finite Trace is a stack of updates and predicate evalutations 
--- (which are partial functions), a finite trace can be extended by append,
--- or rewind and the specification that should be fulfilled
---
+-------------------------------------------------------------------------------
+-- | A 'FiniteTrace' describes a trace of evaluations and 'Obligation's
+
 data FiniteTrace c =
   FiniteTrace
+    -- | The trace (anti-chronological) of the update and predicate evaluations
     { trace :: [(c -> SignalTerm c, PredicateTerm c -> Bool)]
+    -- | The anti-chronological trace of 'Obligation's that have to be 
+    -- fulfilled
     , obligations :: [[Obligation c]]
     }
 
+-------------------------------------------------------------------------------
+-- | An 'Obligation' describes what has to be fulfilled at a certain point.
+
 data Obligation c =
   Obligation
+    -- | The guarantee the obligations represents 
+    -- (this should not be modified over time)
     { guarantee :: Formula c
+    -- | The guarantee evolved over time (i.e. after some evaluation steps)
+    -- with additional assumptions
     , expTotalFormula :: Formula c
+    -- | The guarantee evolved over time (i.e. after some evaluation steps)
+    -- without assumptions
     , expGuarantee :: Formula c
     }
 
------------------------------------------------------------------------------
--- | Adds an update and predicate evaluation at the end of a finite trace
+-------------------------------------------------------------------------------
+-- | 'append' extends a 'FiniteTrace' by some predicate and update evaluation.
+
 append ::
      Ord c
   => FiniteTrace c
@@ -63,18 +77,23 @@ append ft@FiniteTrace {..} updates predicates =
           (nextObligations ft)
    in ft {trace = newTrace, obligations = newOb : obligations}
 
------------------------------------------------------------------------------
--- | Reverts the last appending to the finite trace. If the trace is empty
--- the trace stays empty
+-------------------------------------------------------------------------------
+-- | 'rewind' undoes the last extensions by 'append'. 
+
 rewind :: Ord c => FiniteTrace c -> FiniteTrace c
 rewind ft@FiniteTrace {..} =
   case (trace, obligations) of
     ([], _) -> ft
     (_:tr, _:or) -> ft {trace = tr, obligations = or}
+    -- this should never happen as 'append' only add on element to each list
+    -- and trace is initially empty
     _ -> assert False undefined
 
------------------------------------------------------------------------------
--- | The empty finite trace
+-------------------------------------------------------------------------------
+-- | 'emptyTrace' initializes a 'FiniteTrace'. To compute the initial 
+-- obligation the initial specification has to be passed in form of a list
+-- of assumptions and guarantees.
+
 emptyTrace :: Ord c => ([Formula c], [Formula c]) -> FiniteTrace c
 emptyTrace (assumptions, guarantees) =
   FiniteTrace
@@ -91,23 +110,27 @@ emptyTrace (assumptions, guarantees) =
         ]
     }
 
------------------------------------------------------------------------------
--- | This function returns the violated guarantees
+-------------------------------------------------------------------------------
+-- | 'violated' returns the 'Formula' that some finite trace violates.
 violated :: Eq c => FiniteTrace c -> [Formula c]
 violated ft =
-  fmap guarantee $ filter ((== FFalse) . expTotalFormula) (nextObligations ft)
+  guarantee <$> filter ((== FFalse) . expTotalFormula) (nextObligations ft)
 
------------------------------------------------------------------------------
--- | The next obligations of the trace
+-------------------------------------------------------------------------------
+-- | 'nextObligation' returns the obligation that has to be fulfilled with the
+-- next evaluation step.
 nextObligations :: FiniteTrace c -> [Obligation c]
 nextObligations FiniteTrace {..} =
   case obligations of
-    [] -> assert False undefined
     o:_ -> o
+    -- this should never happen as there is always an initial obligation
+    [] -> assert False undefined
 
------------------------------------------------------------------------------
--- | Given a formula and a trace calculates (using (local time) caching) the next 
--- obliation
+-------------------------------------------------------------------------------
+-- | 'checkNext' expands a 'Formula' by a single evaluation step by applying
+-- and simplifying temporal operations. E.g. if the 'Formula' has the form
+-- "F [x <- t]" and the last evaluation contained "[x <- t]" the formula should
+-- be simplified to "true". 
 checkNext ::
      Ord c
   => [(c -> SignalTerm c, PredicateTerm c -> Bool)]
@@ -115,6 +138,8 @@ checkNext ::
   -> Formula c
 checkNext trace form = fst $ checkNextC trace empty form
 
+-- To improve performance, the computation is enhanced with caching for 
+-- intermediate results.
 checkNextC ::
      Ord c
   => [(c -> SignalTerm c, PredicateTerm c -> Bool)]
@@ -122,6 +147,7 @@ checkNextC ::
   -> Formula c
   -> (Formula c, Map (Formula c) (Formula c))
 checkNextC [] cache form =
+  -- Even if the trace is empty some past operators simplify trivially
   case form of
     Historically _ -> (TTrue, cache)
     Triggered _ _ -> (TTrue, cache)
@@ -133,6 +159,7 @@ checkNextC ts@(t:tr) cache form =
         Nothing ->
           let (nextForm, cache') =
                 case form of
+                  -- Atomar expressions can be evaluated immediately
                   TTrue -> (TTrue, empty)
                   FFalse -> (FFalse, empty)
                   Check p ->
@@ -143,6 +170,7 @@ checkNextC ts@(t:tr) cache form =
                     if fst t c == st
                       then (TTrue, empty)
                       else (FFalse, empty)
+                  -- Boolean Operators
                   Not f ->
                     let (f', c) = checkNextC ts cache f
                      in (Not f', c)
@@ -164,6 +192,9 @@ checkNextC ts@(t:tr) cache form =
                             ([], cache)
                             (reverse fs)
                      in (Or fs', c)
+                  -- Essential temporal operators. Note that the past operators
+                  -- have to delete the caching when they consider older states
+                  -- of the trace as.
                   Next f -> (f, cache)
                   Previous f ->
                     case tr of
@@ -176,7 +207,10 @@ checkNextC ts@(t:tr) cache form =
                     checkNextC ts cache $
                     And
                       [f2, Or [f1, fst $ checkNextC tr empty (Triggered f1 f2)]]
-                  -- Expanded
+                  -- The following operators are expanded using either an 
+                  -- equivalent already defined form or the standard temporal
+                  -- expansion rules. The necessary operators have already been
+                  -- handled.
                   Implies f1 f2 -> checkNextC ts cache $ Or [Not f1, f2]
                   Equiv f1 f2 ->
                     checkNextC ts cache $ And [Implies f1 f2, Implies f2 f1]
@@ -194,8 +228,10 @@ checkNextC ts@(t:tr) cache form =
            in ( simplify nextForm
               , insert simpForm (simplify nextForm) (cache `union` cache'))
 
------------------------------------------------------------------------------
--- | Simplifies a TSL formula
+-------------------------------------------------------------------------------
+-- | 'simplify' simplifies a TSL 'formula' by applying some easy syntactic
+-- conversion on the boolean level. 
+
 simplify :: Eq c => Formula c -> Formula c
 simplify =
   \case
@@ -262,3 +298,5 @@ simplify =
       if x `elem` xr
         then removeDoubles xr
         else x : removeDoubles xr
+
+-------------------------------------------------------------------------------
