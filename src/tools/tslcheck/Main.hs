@@ -32,12 +32,14 @@ import Data.Semigroup ((<>))
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
-  , putErr
   , printErrLn
   , cPutOut
   , cPutOutLn
-  , cPutErr
-  , cPutErrLn
+  , cPutMessageInput
+  )
+
+import FileUtils
+  ( readContent
   )
 
 import TSL
@@ -81,52 +83,43 @@ main = do
   Configuration{input} <- execParser configParserInfo
 
   valid <- case input of
-    Nothing -> checkStdIn
-    Just files -> do
-      xs <- mapM checkFile files
-      return $ and xs
+    Nothing -> checkInput Nothing
+    Just files ->
+      mapM checkFile files
+      >>= return . and
 
   if valid
   then exitSuccess
   else exitFailure
 
   where
+    checkInput input =
+      readContent input
+      >>= fromTSL input
+      >>= \case
+        Left err -> do
+          cPutMessageInput Red "invalid" input
+          printErrLn err
+          return False
+        Right _  -> do
+          cPutMessageInput Green "valid" input
+          return True
+
     checkFile file = do
+      let input = Just file
       exists <- doesFileExist file
-      if not exists
-        then do
+      if exists
+        then checkInput input
+        else do
           dir <- doesDirectoryExist file
           if dir
             then do
               cPutOut Vivid Yellow "directory: "
               cPutOut Vivid White file
               cPutOutLn Vivid Yellow " (skipping)"
-            else do
-              cPutErr Vivid Red "Not found: "
-              cPutErrLn Vivid White file
-          return False
-        else
-          readFile file >>= fromTSL (Just file) >>= \case
-            Left err -> do
-              cPutOut Vivid Red "invalid: "
-              cPutOutLn Vivid White file
-              printErrLn err
-              putErr ""
-              return False
-            Right _ -> do
-              cPutOut Vivid Green "valid: "
-              cPutOutLn Vivid White file
               return True
-
-    checkStdIn =
-      getContents >>= fromTSL Nothing >>= \case
-        Left err -> do
-          cPutOut Vivid Red "invalid"
-          printErrLn err
-          putErr ""
-          return False
-        Right _  -> do
-          cPutOut Vivid Green "valid"
-          return True
+            else do
+              cPutMessageInput Red "Not found" input
+              return False
 
 -----------------------------------------------------------------------------
