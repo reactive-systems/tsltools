@@ -148,6 +148,7 @@ import qualified Data.Array.IArray as A
 
 import System.Directory
   ( doesFileExist
+  , doesPathExist
   , makeAbsolute
   )
 
@@ -228,43 +229,57 @@ resolveImports specPath ls str = case parse str of
   where
     loadImports spec = case PD.imports spec of
       [] -> return $ Right spec
-      (path, name, p1, _):xr
-        | any ((== path) . fst) ls ->
-            let (x, p) : _ = filter ((== path) . fst) ls
-            in return $ errCircularImp [(path, p1), (x, p)] p
-        | otherwise               -> do
-            path' <- resolvePath specPath path
-            exists <- doesFileExist path'
-
-            if not exists
+      (path, name, p1, _):xr ->
+        resolvePath path
+        >>= \case
+          Nothing ->
+            return $ genericError $
+            "Import path resolution failed: import path was: \"" ++ path ++ "\" in \"" ++ importer ++ "\""
+          Just path' ->
+            if any ((== path') . fst) ls
             then
-              return $ genericError $
-              "Imported file does not exist \"" ++ path' ++ "\" (import path was: \"" ++ path ++ "\")"
+              let (x, p) : _ = filter ((== path') . fst) ls
+              in return $ errCircularImp [(path', p1), (x, p)] p
             else do
-              readFile path'
-              >>= resolveImports (Just path') ((path, p1 { srcPath = Just path }):ls)
-              >>= \case
-                Left err    -> return $ Left err
-                Right spec' ->
-                  loadImports PD.Specification
-                    { imports = xr
-                    , definitions =
-                        map
-                          (updB path . fmap ((name ++ ".") ++))
-                          (PD.definitions spec')
-                        ++ PD.definitions spec
-                    , sections =
-                        map
-                          (id *** (upd path . fmap ((name ++ ".") ++)))
-                          (PD.sections spec')
-                        ++ PD.sections spec
-                    }
+              exists <- doesFileExist path'
+              if not exists
+              then
+                return $ genericError $
+                "Imported file does not exist \"" ++ path' ++ "\" (import path was: \"" ++ path ++ "\" in \"" ++ importer ++ "\")"
+              else
+                readFile path'
+                >>= resolveImports (Just path') ((path', p1 { srcPath = Just path' }):ls)
+                >>= \case
+                  Left err    -> return $ Left err
+                  Right spec' ->
+                    loadImports PD.Specification
+                      { imports = xr
+                      , definitions =
+                          map
+                            (updB path' . fmap ((name ++ ".") ++))
+                            (PD.definitions spec')
+                          ++ PD.definitions spec
+                      , sections =
+                          map
+                            (id *** (upd path' . fmap ((name ++ ".") ++)))
+                            (PD.sections spec')
+                          ++ PD.sections spec
+                      }
 
-    resolvePath specPath path =
-      makeAbsolute $
-        case specPath of
-          Nothing -> path
-          Just specPath -> combine (takeDirectory specPath) path
+    resolvePath path = do
+      let combinedPath = case specPath of
+            Nothing -> path
+            Just specPath -> combine (takeDirectory specPath) path
+      exists <- doesPathExist combinedPath 
+      if exists
+      then do
+        makeAbsolute combinedPath
+        >>= return . Just
+      else return Nothing
+
+    importer = case specPath of
+      Just specPath -> specPath
+      Nothing -> "STDIN"
 
     updE path = \case
       GuardedBinding xs    -> GuardedBinding $ map (upd path) xs
