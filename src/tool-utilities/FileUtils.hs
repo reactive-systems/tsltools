@@ -30,11 +30,10 @@ module FileUtils
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
-  , printErrLn
-  , cPutOut
-  , cPutOutLn
   , cPutErr
   , cPutErrLn
+  , printErrLn
+  , cPutMessageInput
   )
 
 import TSL
@@ -95,18 +94,6 @@ writeContent :: Maybe FilePath -> String -> IO ()
 writeContent Nothing = putStrLn
 writeContent (Just file) = writeFile file
 
-
------------------------------------------------------------------------------
-printErrMessage :: Show a => Maybe FilePath -> a -> IO ()
-printErrMessage input err = do
-  case input of
-    Nothing -> do
-      cPutOutLn Vivid Red "invalid:"
-    Just file -> do
-      cPutOut Vivid Red "invalid: "
-      cPutOutLn Vivid White file
-  printErrLn err
-
 -----------------------------------------------------------------------------
 -- | 'tryLoadTSL' is a helper function which loads and parses a TSL file and
 -- if this is not possible outputs a respective error on the command line
@@ -117,7 +104,8 @@ tryLoadTSL input = do
   fromTSL input content
   >>= \case 
     Left err -> do
-      printErrMessage input err
+      cPutMessageInput Red "invalid" input
+      printErrLn err
       exitFailure
     Right spec -> return spec
 
@@ -130,6 +118,7 @@ tryLoadCFM input = do
   content <- tryReadContent input
   case fromCFM content of
     Left err -> do
-      printErrMessage input err
+      cPutMessageInput Red "invalid" input
+      printErrLn err
       exitFailure
     Right cfm -> return cfm

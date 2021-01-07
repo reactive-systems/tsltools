@@ -29,6 +29,7 @@ module PrintUtils
   , cPutOutLn
   , cPutErr
   , cPutErrLn
+  , cPutMessageInput
   ) where
 
 import System.Console.ANSI
@@ -161,5 +162,17 @@ cPutErr = cHPutFunc hPutStr stderr
 -- | same as 'putErrLn', but with colors
 cPutErrLn :: ColorIntensity -> Color -> String -> IO ()
 cPutErrLn = cHPutFunc hPutStrLn stderr
+
+
+-----------------------------------------------------------------------------
+-- | writes a colored message + possible input description on STDOUT
+cPutMessageInput :: Color -> String -> Maybe FilePath -> IO ()
+cPutMessageInput c message input = do
+  case input of
+    Nothing -> do
+      cPutOutLn Vivid c message
+    Just file -> do
+      cPutOut Vivid c $ message ++ ": "
+      cPutOutLn Vivid White file
 
 -----------------------------------------------------------------------------
