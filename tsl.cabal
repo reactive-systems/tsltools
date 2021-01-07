@@ -391,6 +391,7 @@ executable cfmcheck
   other-modules:
     PrintUtils
     EncodingUtils
+    FileUtils
 
   build-depends:
       tsl

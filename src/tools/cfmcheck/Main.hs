@@ -33,12 +33,14 @@ import Data.Semigroup ((<>))
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
-  , putErrLn
   , printErrLn
   , cPutOut
   , cPutOutLn
-  , cPutErr
-  , cPutErrLn
+  , cPutMessageInput
+  )
+
+import FileUtils
+  ( readContent
   )
 
 import TSL
@@ -52,6 +54,7 @@ import System.Directory
 
 import System.Exit
   ( exitFailure
+  , exitSuccess
   )
 
 -----------------------------------------------------------------------------
@@ -67,7 +70,7 @@ configParser = Configuration
 configParserInfo :: ParserInfo Configuration
 configParserInfo = info (configParser <**> helper)
   (  fullDesc
-  <> header "cfmcheck - checks for correct labels and structure of a CFM"
+  <> header "cfmcheck - checks for correct labels and structure of a CFM created from a TSL specification"
   )
 
 -----------------------------------------------------------------------------
@@ -80,41 +83,43 @@ main = do
 
   Configuration{input} <- execParser configParserInfo
 
-  case input of
-    Nothing -> do
-      cPutErr Vivid Yellow "Usage: "
-      cPutErrLn Vivid White "cfmcheck <files>"
-      exitFailure
+  valid <- case input of
+    Nothing -> checkInput Nothing
     Just files ->
-      mapM_ checkFile files
+      mapM checkFile files
+      >>= return . and
+
+  if valid
+  then exitSuccess
+  else exitFailure
 
   where
+    checkInput input = do
+      content <- readContent input
+      case fromCFM content of
+        Left err -> do
+          cPutMessageInput Red "invalid" input
+          printErrLn err
+          return False
+        Right _  -> do
+          cPutMessageInput Green "valid" input
+          return True
+
     checkFile file = do
+      let input = Just file
       exists <- doesFileExist file
-
-      if not exists then do
-        dir <- doesDirectoryExist file
-
-        if dir
-        then do
-          cPutOut Vivid Yellow "directory: "
-          cPutOut Vivid White file
-          cPutOutLn Vivid Yellow " (skipping)"
+      if exists
+        then checkInput input
         else do
-          cPutErr Vivid Red "File not found: "
-          cPutErrLn Vivid White file
+          dir <- doesDirectoryExist file
+          if dir
+            then do
+              cPutOut Vivid Yellow "directory: "
+              cPutOut Vivid White file
+              cPutOutLn Vivid Yellow " (skipping)"
+              return True
+            else do
+              cPutMessageInput Red "Not found" input
+              return False
 
-      else do
-        str <- readFile file
-
-        case fromCFM str of
-          Left err -> invalid file $ show err
-          Right _  -> do
-            cPutOut Vivid Green "valid: "
-            cPutOutLn Vivid White file
-
-    invalid file err = do
-      cPutOut Vivid Red "invalid: "
-      cPutOutLn Vivid White file
-      printErrLn err
-      putErrLn ""
+-----------------------------------------------------------------------------
