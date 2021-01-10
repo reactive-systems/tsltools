@@ -1,4 +1,3 @@
-
 {-# LANGUAGE
 
     RecordWildCards
@@ -17,8 +16,10 @@ module TSL.Writer.WebAudio
   ) where
 
 -----------------------------------------------------------------------------
+
 import Data.List
-  ( intersperse
+  (
+    intersperse
   )
 
 import TSL.CFM
@@ -57,19 +58,22 @@ implement
 implement _ _ cfm@CFM{..} =
   let ?bounds = cfm in
   unlines
-    [ let
+    [ "// This module is intended to be used with the TSL Synthesis Synthesizer."
+    , "// Visit the project repository: https://github.com/Barnard-PL-Labs/TSLSynthesizer"
+    , ""
+    , let
         createArgList = map ("s_" ++)
       in
         "function control" ++ 
         entryParamDestructor 0 (createArgList (map (inputName) inputs)) ++ 
         "{"
     , ""
+    , indent 4 "// Cells"
+    , concatMap prOutputCell outputs
     , indent 4 "// Terms"
     , concatMap (prTerm' cfm) terms
     , indent 4 ("let innerCircuit = controlCircuit" ++ prTuple (map (prWire cfm . controlInputWire) is) ++ ";")
     , ""
-    , indent 4 "// Output Cells"
-    , concatMap prOutputCell outputs
     , indent 4 "// Switches"
     , concatMap prSwitch outputs
     -- RETURN STATEMENT
@@ -105,6 +109,7 @@ implement _ _ cfm@CFM{..} =
 
 -----------------------------------------------------------------------------
 
+-- TODO: make datatype more structured & intuitive.
 data JSElem = NullElem
             | Change {varName :: String}
             | Cell {varName :: String}
@@ -112,41 +117,42 @@ data JSElem = NullElem
             deriving (Eq)
 
 actionName :: JSElem -> String
-actionName (NullElem) = ""
-actionName (Cell _) = "" -- Should be error
-actionName (Change _) = "change"
 actionName (Note _) = "click"
+actionName _ = ""
 
 strToJSElem :: String -> JSElem
 strToJSElem = \case
--- TODO: Allow eventlistener on waveform change.
-  "amFreq"      -> Change "amFreq"
-  "gain"        -> Change "gain"
-  "amSynthesis" -> Cell "amSynthesis"
-  "fmSynthesis" -> Cell "fmSynthesis"
-  "lfo"         -> Cell "lfo"
-  "waveform"    -> Cell "waveform"
-  note          -> Note note
+  "amFreq"          -> Cell "amFreq"
+  "fmFreq"          -> Cell "fmFreq"
+  "amSynthesis"     -> Cell "amSynthesis"
+  "fmSynthesis"     -> Cell "fmSynthesis"
+  "lfo"             -> Cell "lfo"
+  "lfoFreq"         -> Cell "lfoFreq"
+  "lfoDepth"        -> Cell "lfoDepth"
+  "waveform"        -> Cell "waveform"
+  note              -> Note note
 
 implementWebAudio :: [String] -> [String] -> String 
 implementWebAudio inputs outputs = 
-  unlines $ intersperse "\n" $ concat
-    [ functionImpl
-    , map defineNotes $ filter isNote eventableInputs
-    , map signalUpdateCode $ NullElem:eventableInputs
-    , map buttonEventListeners outputSignals
-    ]
+  unlines [ functionImpl
+          , concatMap defineNotes reactiveNotes
+          , concat $ intersperse "\n\n" $
+            map signalUpdateCode (NullElem:eventableInputs)
+          , concatMap buttonEventListeners outputSignals
+          , makeMidiTriggers reactiveNotes
+          ]
     where 
-      functionImpl :: [String]
-      functionImpl = 
-        ["function p_change(input){return input;}"
-        ,"function p_press(input){return input;}"
+      -- TODO: add constant additions
+      functionImpl :: String
+      functionImpl = unlines
+        ["function p_play(input){return input;}"
         ,"function f_True(){return true;}"
         ,"function f_False(){return false;}"
         ,"function f_sawtooth(){return \"sawtooth\";}"
         ,"function f_sine(){return \"sine\";}"
         ,"function f_square(){return \"square\";}"
         ,"function f_triangle(){return \"triangle\";}"
+        ,"function f_inc10(arg){return arg+10;}"
         ]
 
       inputSignals :: [JSElem]
@@ -162,6 +168,9 @@ implementWebAudio inputs outputs =
       outputStr = prList $ 
                   map (varName . strToJSElem) outputs
 
+      updateVarsToUI :: String
+      updateVarsToUI = "updateVarsToUI();"
+
       eventable :: JSElem -> Bool
       eventable (Change _)  = True
       eventable (Note _)    = True
@@ -170,6 +179,9 @@ implementWebAudio inputs outputs =
       isNote :: JSElem -> Bool
       isNote (Note _) = True
       isNote _        = False
+
+      reactiveNotes :: [JSElem]
+      reactiveNotes = filter isNote eventableInputs
 
       defineNotes :: JSElem -> String
       defineNotes (Note note) = 
@@ -197,7 +209,9 @@ implementWebAudio inputs outputs =
                         (concatMap 
                         (indent (numIndents + 4) . pipeSignal) 
                         inputSignals) ++
-                      "});"
+                      "});\n" ++
+                      indent numIndents updateVarsToUI
+
         where
           pipeSignal :: JSElem -> String
           pipeSignal (NullElem) = ""
@@ -214,37 +228,61 @@ implementWebAudio inputs outputs =
       
           dropLastTwo :: String -> String
           dropLastTwo str = take (length str - 2) str
+      
+      makeMidiTriggers :: [JSElem] -> String
+      makeMidiTriggers [] = ""
+      makeMidiTriggers notes =
+        triggerNoteSetInit ++ 
+        fxnHeader ++
+        indent 4 "const noteSignal = 's_' + note;\n" ++
+        indent 4 inputTemplate ++ 
+        indent 4 "inputTemplate[noteSignal] = true;\n" ++
+        indent 4 "if(triggerNotes.has(noteSignal)){\n" ++ 
+        indent 8 (outputStr ++ " = control(inputTemplate);\n") ++
+        indent 4 "}\n" ++ 
+        "}"
+        where 
+          triggerNoteSetInit = "const triggerNotes = new Set(" ++
+                               prList (map varName notes) ++ 
+                               ");\n"
+          fxnHeader = "function reactiveUpdateOnMIDI" ++
+                      "(note, velocity){\n"
+          inputTemplate = 
+            "const inputTemplate = " ++
+            prDictFormatted 8 (map inSigInit notes) ++
+            ";\n"
+            where 
+              inSigInit :: JSElem -> String
+              inSigInit NullElem = ""
+              inSigInit x = case eventable x of
+                False -> signalShown ++ varName x
+                True  -> signalShown ++ "false"
+                where signalShown = "s_" ++ varName x ++ " : "
 
-
+      -- TODO: handle case when you press on btn when it's already on
       buttonEventListeners :: JSElem -> String
       buttonEventListeners = \case
         Cell "amSynthesis" -> 
           unlines [ "amOnBtn.addEventListener(\"click\", _ => {"
-                  , indent 4 "if(amSynthesis) {return};"
                   , saveOutput 4 NullElem
                   , "});\n"
                   , "amOffBtn.addEventListener(\"click\", _ => {"
-                  , indent 4 "if(!amSynthesis) {return};"
                   , saveOutput 4 NullElem
                   , "});"
                   ]
         Cell "fmSynthesis" -> 
           unlines [ "fmOnBtn.addEventListener(\"click\", _ => {"
-                  , indent 4 "if(fmSynthesis) {return};"
                   , saveOutput 4 NullElem
                   , "});\n"
                   , "fmOffBtn.addEventListener(\"click\", _ => {"
-                  , indent 4 "if(!fmSynthesis) {return};"
                   , saveOutput 4 NullElem
                   , "});"
                   ]
         Cell "lfo" -> 
           unlines [ "lfoOnBtn.addEventListener(\"click\", _ => {"
-                  , indent 4 "if(lfo) {return};"
                   , saveOutput 4 NullElem
                   , "});\n"
                   , "lfoOffBtn.addEventListener(\"click\", _ => {"
-                  , indent 4 "if(!lfo) {return};"
                   , saveOutput 4 NullElem
                   , "});"
                   ]
@@ -408,6 +446,18 @@ prList = \case
   []   -> "[]"
   [x]  -> "[" ++ x ++ "]"
   x:xr -> "[" ++ x ++ concatMap ((',':) . (' ':)) xr ++ "]"
+
+-----------------------------------------------------------------------------
+prDictFormatted
+  :: Int -> [String] -> String
+
+prDictFormatted numIndents = \case
+  []   -> "{}"
+  [x]  -> "{" ++ x ++ "}"
+  x:xr -> "{\n" ++ indent numIndents x ++ ",\n" ++
+          concatMap joinNext xr ++ 
+          indent (numIndents - 4) "}"
+    where joinNext y = indent numIndents y ++ ",\n"
 
 -----------------------------------------------------------------------------
 prTuple
