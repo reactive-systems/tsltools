@@ -34,52 +34,21 @@ module TSL.Logic
 
 -----------------------------------------------------------------------------
 
-import Data.Char
-  ( toLower
-  , isUpper
-  , toUpper
-  )
+import Data.Char (isUpper, toLower, toUpper)
 
-import Data.Set
-  ( Set
-  , empty
-  , insert
-  , difference
-  )
+import Data.Set (Set, difference, empty, insert)
 
-import qualified Data.Set as S
-  ( map
-  )
+import qualified Data.Set as S (map)
 
-import Control.Monad
-  ( void
-  )
+import Control.Monad (void)
 
-import TSL.Error
-  ( Error
-  , parseError
-  )
+import TSL.Error (Error, parseError)
 
-import Text.Parsec
-  ( (<|>)
-  , eof
-  , parse
-  , char
-  , try
-  , string
-  , alphaNum
-  , lookAhead
-  )
+import Text.Parsec (alphaNum, char, eof, lookAhead, parse, string, try, (<|>))
 
-import Text.Parsec.String
-  ( Parser
-  )
+import Text.Parsec.String (Parser)
 
-import Test.QuickCheck
-  ( Arbitrary
-  , arbitrary
-  , choose
-  )
+import Test.QuickCheck (Arbitrary, arbitrary, choose)
 
 -----------------------------------------------------------------------------
 

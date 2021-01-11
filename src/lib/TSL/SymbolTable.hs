@@ -24,68 +24,29 @@ module TSL.SymbolTable
 
 -----------------------------------------------------------------------------
 
-import Data.List
-  ( transpose
-  , sortBy
-  )
+import Data.List (sortBy, transpose)
 
-import TSL.Types
-  ( ExprType(..)
-  , prType
-  )
+import TSL.Types (ExprType(..), prType)
 
-import TSL.Expression
-  ( ExprPos(..)
-  , SrcPos(..)
-  )
+import TSL.Expression (ExprPos(..), SrcPos(..))
 
-import TSL.Binding
-  ( BoundExpr
-  )
+import TSL.Binding (BoundExpr)
 
-import Data.Char
-  ( toLower
-  )
+import Data.Char (toLower)
 
-import Data.Array
-  ( Array
-  , (!)
-  , assocs
-  , bounds
-  )
+import Data.Array (Array, assocs, bounds, (!))
 
-import Control.Monad.ST
-  ( ST
-  , runST
-  )
+import Control.Monad.ST (ST, runST)
 
-import qualified Data.IntMap.Strict as IM
-  ( (!)
-  , fromList
-  , member
-  )
+import qualified Data.IntMap.Strict as IM (fromList, member, (!))
 
-import Control.Exception
-  ( assert
-  )
+import Control.Exception (assert)
 
-import Data.Array.ST
-  ( STArray
-  , newArray
-  , readArray
-  , writeArray
-  )
+import Data.Array.ST (STArray, newArray, readArray, writeArray)
 
-import Data.Set
-  ( toList
-  , fromList
-  )
+import Data.Set (fromList, toList)
 
-import Data.Maybe
-  ( catMaybes
-  , mapMaybe
-  , fromMaybe
-  )
+import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 
 -----------------------------------------------------------------------------
 

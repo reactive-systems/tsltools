@@ -14,29 +14,17 @@
 
 module ArgParseUtils
   ( parseMaybeFilePath
-  )
-  where
+  ) where
 
 -----------------------------------------------------------------------------
 
-import FileUtils
-  ( checkFile
-  )
+import FileUtils (checkFile)
 
-import System.Environment
-  ( getArgs
-  )
+import System.Environment (getArgs)
 
-import System.Exit
-  ( exitFailure
-  )
+import System.Exit (exitFailure)
 
-import PrintUtils
-  ( Color(..)
-  , ColorIntensity(..)
-  , putErrLn
-  , cPutErrLn
-  )
+import PrintUtils (Color(..), ColorIntensity(..), cPutErrLn, putErrLn)
 
 -----------------------------------------------------------------------------
 

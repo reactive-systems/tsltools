@@ -39,133 +39,81 @@ module TSL.CFM
 
 -----------------------------------------------------------------------------
 
-import GHC.Generics
-  ( Generic
-  )
+import GHC.Generics (Generic)
 
-import Data.Maybe
-  ( fromMaybe
-  , mapMaybe
-  )
+import Data.Maybe (fromMaybe, mapMaybe)
 
-import Data.Either
-  ( partitionEithers
-  )
+import Data.Either (partitionEithers)
 
-import Control.Arrow
-  ( (***)
-  )
+import Control.Arrow ((***))
 
-import Data.List
-  ( groupBy
-  , sortBy
-  , find
-  , transpose
-  )
+import Data.List (find, groupBy, sortBy, transpose)
 
-import Data.Function
-  ( on
-  )
+import Data.Function (on)
 
-import Control.Monad
-  ( foldM
-  )
+import Control.Monad (foldM)
 
-import Control.Exception
-  ( assert
-  )
+import Control.Exception (assert)
 
-import Control.Monad.ST
-  ( ST
-  , runST
-  )
+import Control.Monad.ST (ST, runST)
 
 import Data.Set
-  ( insert
-  , toList
+  ( deleteAt
+  , difference
+  , elemAt
   , empty
   , fromList
+  , insert
   , member
+  , size
+  , toList
   , union
   , unions
-  , size
-  , deleteAt
-  , elemAt
-  , difference
   )
 
-import Data.Array
-  ( array
-  , (!)
-  )
+import Data.Array (array, (!))
 
-import qualified Data.Array as A
-  ( bounds
-  )
+import qualified Data.Array as A (bounds)
 
 import Data.Array.ST
   ( STArray
+  , mapArray
   , newArray
   , readArray
-  , writeArray
   , runSTArray
-  , mapArray
+  , writeArray
   )
 
-import TSL.SymbolTable
-  ( SymbolTable(..)
-  , IdRec(..)
-  )
+import TSL.SymbolTable (IdRec(..), SymbolTable(..))
 
-import qualified TSL.SymbolTable as ST
-  ( Kind(..)
-  , symbolTable
-  )
+import qualified TSL.SymbolTable as ST (Kind(..), symbolTable)
 
 import TSL.Logic
-  ( SignalTerm(..)
-  , FunctionTerm(..)
+  ( FunctionTerm(..)
   , PredicateTerm(..)
+  , SignalTerm(..)
   , decodeInputAP
   , decodeOutputAP
   )
 
-import TSL.Error
-  ( Error
-  , errFormat
-  )
+import TSL.Error (Error, errFormat)
 
-import TSL.Types
-  ( ExprType(..)
-  )
+import TSL.Types (ExprType(..))
 
-import qualified TSL.Types as T
-  ( prType
-  )
+import qualified TSL.Types as T (prType)
 
-import TSL.Aiger
-  ( Circuit
-  , parseAag
-  )
+import TSL.Aiger (Circuit, parseAag)
 
 import qualified TSL.Aiger as Circuit
-  ( Input(..)
-  , Output(..)
-  , Circuit(..)
+  ( Circuit(..)
+  , Input(..)
   , Invertible(..)
+  , Output(..)
   )
 
-import qualified Data.Map.Strict as Map
-  ( fromList
-  , member
-  , (!)
-  )
+import qualified Data.Map.Strict as Map (fromList, member, (!))
 
-import qualified Data.IntMap as IM
-  ( (!)
-  , fromList
-  , lookup
-  )
+import qualified Data.IntMap as IM (fromList, lookup, (!))
 
 -----------------------------------------------------------------------------
 

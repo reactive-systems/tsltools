@@ -41,8 +41,7 @@ import Data.Set as Set
   )
 
 import TSL
-  ( Formula
-  , Formula(..)
+  ( Formula(..)
   , SignalTerm(..)
   , Specification(..)
   , outputs

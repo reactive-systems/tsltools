@@ -13,21 +13,13 @@ module Main
 
 -----------------------------------------------------------------------------
 
-import EncodingUtils
-  ( initEncoding
-  )
+import EncodingUtils (initEncoding)
 
-import ArgParseUtils
-  ( parseMaybeFilePath
-  )
+import ArgParseUtils (parseMaybeFilePath)
 
-import FileUtils
-  ( loadTSL
-  )
+import FileUtils (loadTSL)
 
-import TSL
-  ( toTSL
-  )
+import TSL (toTSL)
 
 -----------------------------------------------------------------------------
 

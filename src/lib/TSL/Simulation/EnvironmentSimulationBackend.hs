@@ -27,17 +27,11 @@ module TSL.Simulation.EnvironmentSimulationBackend
 
 -------------------------------------------------------------------------------
 
-import Control.Exception
-  ( assert
-  )
+import Control.Exception (assert)
 
-import TSL.Specification
-  ( Specification(..)
-  )
+import TSL.Specification (Specification(..))
 
-import TSL.SymbolTable
-  ( stName
-  )
+import TSL.SymbolTable (stName)
 
 import Data.Set as Set
   ( Set
@@ -59,27 +53,19 @@ import TSL.Simulation.AigerSimulator
   , simStep
   )
 
-import TSL.Simulation.FiniteTraceChecker
-  ( FiniteTrace
-  , append
-  , violated
-  )
+import TSL.Simulation.FiniteTraceChecker (FiniteTrace, append, violated)
 
-import qualified TSL.Simulation.FiniteTraceChecker as FTC
-  ( rewind
-  )
+import qualified TSL.Simulation.FiniteTraceChecker as FTC (rewind)
 
 import TSL.Logic
   ( Formula(..)
   , PredicateTerm
   , SignalTerm(..)
-  , tslFormula
   , checks
+  , tslFormula
   )
 
-import qualified TSL.Logic as L
-  ( outputs
-  )
+import qualified TSL.Logic as L (outputs)
 
 -------------------------------------------------------------------------------
 -- | A 'SystemStrategy' is a circuit with predicate evaluations as

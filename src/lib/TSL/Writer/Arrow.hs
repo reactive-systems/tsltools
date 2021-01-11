@@ -22,42 +22,28 @@ module TSL.Writer.Arrow
 
 -----------------------------------------------------------------------------
 
-import Control.Exception
-  ( assert
-  )
+import Control.Exception (assert)
 
 import TSL.CFM
-  ( Output
-  , Wire
+  ( CFM(..)
+  , Output
   , Term
   , Type(..)
-  , CFM(..)
+  , Wire
   , constants
-  , predicates
   , functions
-  , termType
   , prType
+  , predicates
+  , termType
   )
 
-import Data.Maybe
-  ( mapMaybe
-  )
+import Data.Maybe (mapMaybe)
 
-import Data.Set
-  ( toList
-  , fromList
-  )
+import Data.Set (fromList, toList)
 
-import TSL.Aiger
-  ( Circuit(..)
-  , Invertible(..)
-  )
+import TSL.Aiger (Circuit(..), Invertible(..))
 
-import qualified TSL.Aiger as Circuit
-  ( Wire(..)
-  , inputs
-  , outputs
-  )
+import qualified TSL.Aiger as Circuit (Wire(..), inputs, outputs)
 
 -----------------------------------------------------------------------------
 

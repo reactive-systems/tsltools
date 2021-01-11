@@ -17,34 +17,23 @@ module Main
 
 -----------------------------------------------------------------------------
 
-import EncodingUtils
-  ( initEncoding
-  )
+import EncodingUtils (initEncoding)
 
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
+  , cPrintErrLn
   , cPutErr
   , cPutErrLn
-  , cPrintErrLn
   )
 
-import FileUtils
-  ( tryReadFile
-  )
+import FileUtils (tryReadFile)
 
-import TSL
-  ( simulate
-  )
+import TSL (simulate)
 
-import System.Environment
-  ( getArgs
-  )
+import System.Environment (getArgs)
 
-import System.Exit
-  ( exitFailure
-  , exitSuccess
-  )
+import System.Exit (exitFailure, exitSuccess)
 
 -----------------------------------------------------------------------------
 

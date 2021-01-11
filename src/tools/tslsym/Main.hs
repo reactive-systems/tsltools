@@ -17,39 +17,19 @@ module Main
 
 -----------------------------------------------------------------------------
 
-import EncodingUtils
-  ( initEncoding
-  )
+import EncodingUtils (initEncoding)
 
-import PrintUtils
-  ( Color(..)
-  , ColorIntensity(..)
-  , cPutOut
-  , cPutOutLn
-  )
+import PrintUtils (Color(..), ColorIntensity(..), cPutOut, cPutOutLn)
 
-import FileUtils
-  ( loadTSL
-  )
+import FileUtils (loadTSL)
 
-import TSL
-  ( Specification(..)
-  , toCSV
-  )
+import TSL (Specification(..), toCSV)
 
-import Config
-  ( Configuration(..)
-  , parseArguments
-  )
+import Config (Configuration(..), parseArguments)
 
-import Data.List
-  ( isInfixOf
-  , partition
-  )
+import Data.List (isInfixOf, partition)
 
-import Control.Monad
-  ( when
-  )
+import Control.Monad (when)
 
 -----------------------------------------------------------------------------
 

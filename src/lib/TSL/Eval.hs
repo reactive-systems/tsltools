@@ -20,76 +20,48 @@ module TSL.Eval
 -----------------------------------------------------------------------------
 
 import TSL.Logic
-  ( SignalTerm(..)
+  ( Formula(..)
   , FunctionTerm(..)
   , PredicateTerm(..)
-  , Formula(..)
+  , SignalTerm(..)
   )
 
-import TSL.Types
-  ( ExprType(..)
-  )
+import TSL.Types (ExprType(..))
 
 import TSL.SymbolTable
-  ( SymbolTable(..)
-  , Kind(..)
-  , stKind
+  ( Kind(..)
+  , SymbolTable(..)
   , stArgs
-  , stType
   , stBindings
+  , stKind
+  , stType
   )
 
-import TSL.Binding
-  ( BoundExpr(..)
-  )
+import TSL.Binding (BoundExpr(..))
 
-import Control.Exception
-  ( assert
-  )
+import Control.Exception (assert)
 
-import TSL.Expression
-  ( Expression
-  , Expr(..)
-  , Expr'(..)
-  , ExprPos
-  )
+import TSL.Expression (Expr(..), Expr'(..), ExprPos, Expression)
 
-import TSL.Error
-  ( Error
-  , runtimeError
-  )
+import TSL.Error (Error, runtimeError)
 
-import Data.Array
-  ( bounds
-  )
+import Data.Array (bounds)
 
-import Data.Array.ST
-  ( STArray
-  , newArray
-  , writeArray
-  , readArray
-  )
+import Data.Array.ST (STArray, newArray, readArray, writeArray)
 
-import Control.Monad.ST
-  ( ST
-  , runST
-  )
+import Control.Monad.ST (ST, runST)
 
-import Control.Monad
-  ( foldM
-  , liftM2
-  , liftM3
-  )
+import Control.Monad (foldM, liftM2, liftM3)
 
 import Data.Set
   ( Set
-  , member
-  , toList
-  , fromList
-  , union
-  , intersection
   , difference
+  , fromList
+  , intersection
+  , member
   , size
+  , toList
+  , union
   )
 
 -----------------------------------------------------------------------------

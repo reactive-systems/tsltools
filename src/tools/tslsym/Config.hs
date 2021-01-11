@@ -14,8 +14,8 @@ module Config
 
 -----------------------------------------------------------------------------
 
-import Options.Applicative
 import Data.Semigroup ((<>))
+import Options.Applicative
 
 -----------------------------------------------------------------------------
 

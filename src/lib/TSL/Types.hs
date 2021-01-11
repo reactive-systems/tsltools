@@ -24,20 +24,11 @@ module TSL.Types
 
 -----------------------------------------------------------------------------
 
-import Data.Char
-  ( ord
-  , chr
-  )
+import Data.Char (chr, ord)
 
-import Data.IntMap
-  ( (!)
-  , insert
-  , empty
-  )
+import Data.IntMap (empty, insert, (!))
 
-import qualified Data.IntMap as IM
-  ( lookup
-  )
+import qualified Data.IntMap as IM (lookup)
 
 -----------------------------------------------------------------------------
 

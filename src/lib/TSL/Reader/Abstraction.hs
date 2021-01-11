@@ -19,64 +19,30 @@ module TSL.Reader.Abstraction
 
 -----------------------------------------------------------------------------
 
-import TSL.Binding
-  ( Binding(..)
-  , BoundExpr(..)
-  )
+import TSL.Binding (Binding(..), BoundExpr(..))
 
-import TSL.Expression
-  ( Expr(..)
-  , Expr'(..)
-  , ExprPos(..)
-  )
+import TSL.Expression (Expr(..), Expr'(..), ExprPos(..))
 
 import TSL.Reader.Data
-  ( NameTable
+  ( ArgumentTable
+  , NameTable
   , PositionTable
-  , ArgumentTable
   , Specification(..)
   )
 
-import TSL.Error
-  ( Error
-  , errUnknown
-  , errConflict
-  , errPattern
-  )
+import TSL.Error (Error, errConflict, errPattern, errUnknown)
 
-import qualified TSL.StringMap as SM
-  ( StringMap
-  , empty
-  , insert
-  , lookup
-  , remove
-  )
+import qualified TSL.StringMap as SM (StringMap, empty, insert, lookup, remove)
 
-import qualified TSL.Parser.Data as PD
-  ( Specification(..)
-  )
+import qualified TSL.Parser.Data as PD (Specification(..))
 
-import Data.Maybe
-  ( mapMaybe
-  )
+import Data.Maybe (mapMaybe)
 
-import Control.Monad.State
-  ( StateT(..)
-  , evalStateT
-  , foldM
-  , get
-  , put
-  )
+import Control.Monad.State (StateT(..), evalStateT, foldM, get, put)
 
-import Control.Exception
-  ( assert
-  )
+import Control.Exception (assert)
 
-import qualified Data.IntMap.Strict as IM
-  ( empty
-  , insert
-  , lookup
-  )
+import qualified Data.IntMap.Strict as IM (empty, insert, lookup)
 
 -----------------------------------------------------------------------------
 

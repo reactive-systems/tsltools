@@ -17,44 +17,30 @@ module TSL.Parser.Utils
 
 -----------------------------------------------------------------------------
 
-import TSL.Expression
-  ( ExprPos(..)
-  , SrcPos(..)
-  )
+import TSL.Expression (ExprPos(..), SrcPos(..))
 
-import TSL.Parser.Data
-  ( globalDef
-  )
+import TSL.Parser.Data (globalDef)
 
-import Control.Monad
-  ( void
-  )
+import Control.Monad (void)
 
-import Data.Functor.Identity
-  ( Identity
-  )
+import Data.Functor.Identity (Identity)
 
 import Text.Parsec
   ( ParsecT
   , Stream
-  , (<|>)
-  , char
-  , many
   , anyChar
-  , noneOf
+  , char
   , getPosition
-  , sourceLine
+  , many
+  , noneOf
   , sourceColumn
+  , sourceLine
+  , (<|>)
   )
 
-import Text.Parsec.String
-  ( Parser
-  )
+import Text.Parsec.String (Parser)
 
-import Text.Parsec.Token
-  ( identStart
-  , identLetter
-  )
+import Text.Parsec.Token (identLetter, identStart)
 
 -----------------------------------------------------------------------------
 

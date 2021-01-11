@@ -18,39 +18,27 @@ module Main
 
 -----------------------------------------------------------------------------
 
-import EncodingUtils
-  ( initEncoding
-  )
+import EncodingUtils (initEncoding)
 
-import Options.Applicative
 import Data.Semigroup ((<>))
+import Options.Applicative
 
 import PrintUtils
   ( Color(..)
   , ColorIntensity(..)
-  , printErrLn
+  , cPutMessageInput
   , cPutOut
   , cPutOutLn
-  , cPutMessageInput
+  , printErrLn
   )
 
-import FileUtils
-  ( readContent
-  )
+import FileUtils (readContent)
 
-import TSL
-  ( fromTSL
-  )
+import TSL (fromTSL)
 
-import System.Directory
-  ( doesDirectoryExist
-  , doesFileExist
-  )
+import System.Directory (doesDirectoryExist, doesFileExist)
 
-import System.Exit
-  ( exitFailure
-  , exitSuccess
-  )
+import System.Exit (exitFailure, exitSuccess)
 
 -----------------------------------------------------------------------------
 

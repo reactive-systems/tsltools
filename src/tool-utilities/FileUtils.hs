@@ -28,29 +28,17 @@ import PrintUtils
   , ColorIntensity(..)
   , cPutErr
   , cPutErrLn
-  , printErrLn
   , cPutMessageInput
+  , printErrLn
   )
 
-import TSL
-  ( Specification
-  , CFM
-  , Error
-  , fromTSL
-  , fromCFM
-  )
+import TSL (CFM, Error, Specification, fromCFM, fromTSL)
 
-import Control.Monad
-  ( unless
-  )
+import Control.Monad (unless)
 
-import System.Directory
-  ( doesFileExist
-  )
+import System.Directory (doesFileExist)
 
-import System.Exit
-  ( exitFailure
-  )
+import System.Exit (exitFailure)
 
 -----------------------------------------------------------------------------
 -- | Checks if given FilePath belongs to an existing file.

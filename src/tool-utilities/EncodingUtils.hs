@@ -15,18 +15,13 @@ module EncodingUtils
 -----------------------------------------------------------------------------
 
 import GHC.IO.Encoding
-  ( utf8
-  , setLocaleEncoding
-  , setFileSystemEncoding
+  ( setFileSystemEncoding
   , setForeignEncoding
+  , setLocaleEncoding
+  , utf8
   )
 
-import System.IO
-  ( BufferMode(..)
-  , hSetBuffering
-  , stderr
-  , stdout
-  )
+import System.IO (BufferMode(..), hSetBuffering, stderr, stdout)
 
 -----------------------------------------------------------------------------
 -- | 'initEncoding' initializes the standard encoding

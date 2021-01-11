@@ -24,57 +24,35 @@ module TSL.Aiger
 
 -----------------------------------------------------------------------------
 
-import Data.Array
-  ( array
-  , (!)
-  )
+import Data.Array (array, (!))
 
-import Data.Array.ST
-  ( newListArray
-  , writeArray
-  , runSTArray
-  )
+import Data.Array.ST (newListArray, runSTArray, writeArray)
 
-import TSL.Error
-  ( Error
-  , parseError
-  , errFormat
-  )
+import TSL.Error (Error, errFormat, parseError)
 
-import Control.Monad
-  ( unless
-  , void
-  )
+import Control.Monad (unless, void)
 
-import Control.Arrow
-  ( (>>>)
-  , second
-  )
+import Control.Arrow (second, (>>>))
 
-import Data.Graph
-  ( topSort
-  , buildG
-  )
+import Data.Graph (buildG, topSort)
 
-import Text.Parsec.String
-  ( Parser
-  )
+import Text.Parsec.String (Parser)
 
 import Text.Parsec
-  ( manyTill
+  ( anyChar
+  , char
+  , count
+  , digit
+  , eof
+  , lookAhead
   , many
   , many1
-  , count
-  , lookAhead
-  , try
-  , string
+  , manyTill
   , newline
-  , anyChar
-  , char
-  , digit
   , oneOf
   , parse
-  , eof
+  , string
+  , try
   )
 
 -----------------------------------------------------------------------------

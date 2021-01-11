@@ -17,42 +17,27 @@ module TSL.TLSF
 
 -----------------------------------------------------------------------------
 
-import TSL.SymbolTable
-  ( stName
-  )
+import TSL.SymbolTable (stName)
 
-import TSL.Specification
-  ( Specification(..)
-  , toFormula
-  )
+import TSL.Specification (Specification(..), toFormula)
 
 import TSL.Logic
   ( Formula(..)
   , SignalTerm(..)
+  , checks
+  , exactlyOne
+  , outputs
   , tlsfFormula
   , updates
-  , checks
-  , outputs
-  , exactlyOne
   )
 
-import Data.Set
-  ( elems
-  , union
-  , toList
-  )
+import Data.Set (elems, toList, union)
 
-import qualified Data.Set as S
-  ( map
-  )
+import qualified Data.Set as S (map)
 
-import Data.List
-  ( groupBy
-  )
+import Data.List (groupBy)
 
-import Data.Function
-  ( on
-  )
+import Data.Function (on)
 
 -----------------------------------------------------------------------------
 

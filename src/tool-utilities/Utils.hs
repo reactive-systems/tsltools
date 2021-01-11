@@ -12,16 +12,9 @@
 -----------------------------------------------------------------------------
 module Utils where
 
-import PrintUtils
-  ( Color(..)
-  , ColorIntensity(..)
-  , cPutErr
-  , cPutErrLn
-  )
+import PrintUtils (Color(..), ColorIntensity(..), cPutErr, cPutErrLn)
 
-import TSL
-  ( toTLSF
-  )
+import TSL (toTLSF)
 
 import TSLCoreGenerator (Context(..), Verbosity(..))
 

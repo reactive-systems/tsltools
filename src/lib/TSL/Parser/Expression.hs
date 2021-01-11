@@ -7,11 +7,7 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    LambdaCase
-
-  #-}
+{-# LANGUAGE LambdaCase #-}
 
 -----------------------------------------------------------------------------
 
@@ -21,69 +17,44 @@ module TSL.Parser.Expression
 
 -----------------------------------------------------------------------------
 
-import TSL.Expression
-  ( Expr(..)
-  , Expr'(..)
-  , SrcPos(..)
-  , ExprPos(..)
-  )
+import TSL.Expression (Expr(..), Expr'(..), ExprPos(..), SrcPos(..))
 
-import TSL.Parser.Data
-  ( globalDef
-  )
+import TSL.Parser.Data (globalDef)
 
-import TSL.Parser.Utils
-  ( ch
-  , getPos
-  , identifier
-  , positionParser
-  )
+import TSL.Parser.Utils (ch, getPos, identifier, positionParser)
 
-import Control.Monad
-  ( void
-  )
+import Control.Monad (void)
 
-import Data.Char
-  ( isAlpha
-  , toLower
-  )
+import Data.Char (isAlpha, toLower)
 
-import Data.List
-  ( sort
-  )
+import Data.List (sort)
 
 import Text.Parsec
-  ( (<|>)
-  , (<?>)
-  , try
-  , oneOf
+  ( choice
+  , digit
+  , lookAhead
   , many
   , many1
-  , digit
-  , choice
-  , lookAhead
   , notFollowedBy
+  , oneOf
+  , try
   , unexpected
+  , (<?>)
+  , (<|>)
   )
 
-import Text.Parsec.Expr
-  ( Assoc(..)
-  , Operator(..)
-  , buildExpressionParser
-  )
+import Text.Parsec.Expr (Assoc(..), Operator(..), buildExpressionParser)
 
-import Text.Parsec.String
-  ( Parser
-  )
+import Text.Parsec.String (Parser)
 
 import Text.Parsec.Token
   ( GenLanguageDef(..)
   , commaSep
-  , reservedNames
-  , whiteSpace
   , makeTokenParser
   , reserved
+  , reservedNames
   , reservedOp
+  , whiteSpace
   )
 
 -----------------------------------------------------------------------------
@@ -460,9 +431,9 @@ exprParser = (~~) >> buildExpressionParser table term
     scan str = \case
       []   -> False
       r:rs -> case compare r str of
-        LT  -> scan str rs
-        EQ  -> True
-        GT  -> False
+        LT -> scan str rs
+        EQ -> True
+        GT -> False
 
     sortedReservedNames =
       if caseSensitive tokenDef

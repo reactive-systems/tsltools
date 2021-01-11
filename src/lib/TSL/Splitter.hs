@@ -24,61 +24,43 @@ module TSL.Splitter
 
 -----------------------------------------------------------------------------
 
-import TSL.SymbolTable
-  ( SymbolTable(..)
-  , IdRec(..)
-  , Kind(..)
-  , symbolTable
-  )
+import TSL.SymbolTable (IdRec(..), Kind(..), SymbolTable(..), symbolTable)
 
-import TSL.Specification
-  ( Specification(..)
-  )
+import TSL.Specification (Specification(..))
 
-import TSL.Logic
-  ( Formula(..)
-  , inputs
-  , outputs
-  )
+import TSL.Logic (Formula(..), inputs, outputs)
 
 import Data.Map.Strict as Map
   ( Map
+  , delete
+  , fromDescList
   , fromListWith
+  , keys
   , (!)
   , (!?)
-  , delete
-  , keys
-  , fromDescList
   )
 
 import Data.Set as Set
   ( Set
-  , empty
-  , insert
   , delete
-  , size
-  , union
-  , unions
-  , intersection
   , difference
   , disjoint
-  , toList
+  , empty
+  , insert
+  , intersection
   , isSubsetOf
+  , size
   , toAscList
+  , toList
+  , union
+  , unions
   )
 
-import Data.Array as Ar
-  ( listArray
-  , (!)
-  )
+import Data.Array as Ar (listArray, (!))
 
-import Data.Maybe
-  ( fromMaybe
-  )
+import Data.Maybe (fromMaybe)
 
-import Data.Ix
-  ( range
-  )
+import Data.Ix (range)
 
 -----------------------------------------------------------------------------
 

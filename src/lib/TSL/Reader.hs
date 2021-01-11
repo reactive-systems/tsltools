@@ -24,143 +24,72 @@ import TSL.Expression
   ( Expr(..)
   , Expr'(..)
   , ExprPos(..)
-  , subExpressions
   , applySub
+  , subExpressions
   )
 
-import TSL.Error
-  ( Error
-  , errCircularImp
-  , genericError
-  )
+import TSL.Error (Error, errCircularImp, genericError)
 
-import TSL.SymbolTable
-  ( SymbolTable
-  , IdRec(..)
-  , Kind(..)
-  , symbolTable
-  )
+import TSL.SymbolTable (IdRec(..), Kind(..), SymbolTable, symbolTable)
 
-import TSL.Specification
-  ( Specification(..)
-  )
+import TSL.Specification (Specification(..))
 
-import TSL.Reader.Sugar
-  ( replaceSugar
-  )
+import TSL.Reader.Sugar (replaceSugar)
 
-import TSL.Parser
-  ( parse
-  )
+import TSL.Parser (parse)
 
-import TSL.Logic
-  ( Formula(..)
-  )
+import TSL.Logic (Formula(..))
 
-import TSL.Eval
-  ( eval
-  )
+import TSL.Eval (eval)
 
-import TSL.Reader.Bindings
-  ( specBindings
-  )
+import TSL.Reader.Bindings (specBindings)
 
-import TSL.Binding
-  ( BoundExpr(..)
-  , Binding(..)
-  )
+import TSL.Binding (Binding(..), BoundExpr(..))
 
-import TSL.Reader.InferType
-  ( inferTypes
-  )
+import TSL.Reader.InferType (inferTypes)
 
-import TSL.Types
-  ( ExprType(..)
-  , SectionType(..)
-  )
+import TSL.Types (ExprType(..), SectionType(..))
 
-import TSL.Reader.Abstraction
-  ( abstract
-  )
+import TSL.Reader.Abstraction (abstract)
 
-import qualified TSL.Parser.Data as PD
-  ( Specification(..)
-  )
+import qualified TSL.Parser.Data as PD (Specification(..))
 
-import qualified TSL.Reader.Data as RD
-  ( Specification(..)
-  )
+import qualified TSL.Reader.Data as RD (Specification(..))
 
-import Control.Exception
-  ( assert
-  )
+import Control.Exception (assert)
 
-import Data.Function
-  ( on
-  )
+import Data.Function (on)
 
-import Data.List
-  ( sortBy
-  , groupBy
-  )
+import Data.List (groupBy, sortBy)
 
-import Data.Maybe
-  ( fromJust
-  , fromMaybe
-  )
+import Data.Maybe (fromJust, fromMaybe)
 
-import Data.Graph
-  ( buildG
-  , transposeG
-  , topSort
-  )
+import Data.Graph (buildG, topSort, transposeG)
 
 import qualified Data.IntMap as IM
   ( IntMap
-  , (!)
-  , null
-  , lookup
-  , keys
-  , toAscList
-  , minViewWithKey
-  , maxViewWithKey
   , fromList
+  , keys
+  , lookup
+  , maxViewWithKey
   , member
-  )
-
-import Control.Arrow
-  ( second
-  )
-
-import Control.Monad
-  ( (>=>)
-  )
-
-import qualified Data.Array.IArray as A
-  ( Array
-  , array
+  , minViewWithKey
+  , null
+  , toAscList
   , (!)
   )
 
-import System.Directory
-  ( doesFileExist
-  , doesPathExist
-  , canonicalizePath
-  )
+import Control.Arrow (second)
 
-import System.FilePath.Posix
-  ( combine
-  , isAbsolute
-  , takeDirectory
-  )
+import Control.Monad ((>=>))
 
-import Data.Set
-  ( Set
-  , empty
-  , member
-  , insert
-  , toList
-  )
+import qualified Data.Array.IArray as A (Array, array, (!))
+
+import System.Directory (canonicalizePath, doesFileExist, doesPathExist)
+
+import System.FilePath.Posix (combine, isAbsolute, takeDirectory)
+
+import Data.Set (Set, empty, insert, member, toList)
 
 -----------------------------------------------------------------------------
 

@@ -19,14 +19,9 @@ module TSL.Binding
 
 -----------------------------------------------------------------------------
 
-import TSL.Expression
-  ( Expr
-  , ExprPos
-  )
+import TSL.Expression (Expr, ExprPos)
 
-import Control.Arrow
-  ( first
-  )
+import Control.Arrow (first)
 
 -----------------------------------------------------------------------------
 

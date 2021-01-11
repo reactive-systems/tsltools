@@ -17,32 +17,18 @@ module Main
 
 -----------------------------------------------------------------------------
 
-import EncodingUtils
-  ( initEncoding
-  )
+import EncodingUtils (initEncoding)
 
-import Options.Applicative
 import Data.Semigroup ((<>))
+import Options.Applicative
 
-import FileUtils
-  ( loadTSL
-  )
+import FileUtils (loadTSL)
 
-import TSL
-  ( split
-  , toTSL
-  , splitIgnoreAssumptions
-  )
+import TSL (split, splitIgnoreAssumptions, toTSL)
 
-import System.Directory
-  ( getCurrentDirectory
-  )
+import System.Directory (getCurrentDirectory)
 
-import System.FilePath
-  ( takeBaseName
-  , (</>)
-  , (<.>)
-  )
+import System.FilePath (takeBaseName, (<.>), (</>))
 
 -----------------------------------------------------------------------------
 

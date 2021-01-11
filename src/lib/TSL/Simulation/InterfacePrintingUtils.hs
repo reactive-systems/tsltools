@@ -29,17 +29,9 @@ module TSL.Simulation.InterfacePrintingUtils
 
 -------------------------------------------------------------------------------
 
-import TSL.Logic
-  ( Formula(..)
-  , PredicateTerm
-  , SignalTerm
-  , tslFormula
-  )
+import TSL.Logic (Formula(..), PredicateTerm, SignalTerm, tslFormula)
 
-import Data.Set
-  ( Set
-  , toList
-  )
+import Data.Set (Set, toList)
 
 import GHC.IO.Encoding
   ( setFileSystemEncoding

@@ -19,9 +19,7 @@ module TSL.Simulation.SystemSimulationInterface
 
 -------------------------------------------------------------------------------
 
-import Text.Read
-  ( readMaybe
-  )
+import Text.Read (readMaybe)
 
 import TSL.Simulation.SystemSimulationBackend
   ( SystemOption
@@ -37,11 +35,7 @@ import TSL.Simulation.FiniteTraceChecker
   , nextObligations
   )
 
-import TSL.Logic
-  ( Formula
-  , PredicateTerm
-  , tslFormula
-  )
+import TSL.Logic (Formula, PredicateTerm, tslFormula)
 
 import TSL.Simulation.InterfacePrintingUtils
   ( Color(..)

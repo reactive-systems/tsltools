@@ -17,32 +17,17 @@ module Main
 
 -----------------------------------------------------------------------------
 
-import EncodingUtils
-  ( initEncoding
-  )
+import EncodingUtils (initEncoding)
 
-import ArgParseUtils
-  ( parseMaybeFilePath
-  )
+import ArgParseUtils (parseMaybeFilePath)
 
-import FileUtils
-  ( loadCFM
-  )
+import FileUtils (loadCFM)
 
-import PrintUtils
-  ( Color(..)
-  , ColorIntensity(..)
-  , cPutOut
-  , cPutOutLn
-  )
+import PrintUtils (Color(..), ColorIntensity(..), cPutOut, cPutOutLn)
 
-import TSL
-  ( statistics
-  )
+import TSL (statistics)
 
-import System.FilePath.Posix
-  ( takeFileName
-  )
+import System.FilePath.Posix (takeFileName)
 
 -----------------------------------------------------------------------------
 

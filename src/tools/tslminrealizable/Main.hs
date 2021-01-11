@@ -18,33 +18,19 @@ module Main
 
 -----------------------------------------------------------------------------
 
-import EncodingUtils
-  ( initEncoding
-  )
+import EncodingUtils (initEncoding)
 
+import Data.Semigroup ((<>))
 import Options.Applicative
 import Options.Applicative.Help.Pretty
-import Data.Semigroup ((<>))
 
-import PrintUtils
-  ( Color(..)
-  , ColorIntensity(..)
-  , cPutOutLn
-  )
+import PrintUtils (Color(..), ColorIntensity(..), cPutOutLn)
 
-import FileUtils
-  ( loadTSL
-  )
+import FileUtils (loadTSL)
 
-import Utils
-  ( checkPoolSize
-  , convertVerbosity
-  , createContext
-  )
+import Utils (checkPoolSize, convertVerbosity, createContext)
 
-import TSL
-  ( toTSL
-  )
+import TSL (toTSL)
 
 import TSLCoreGenerator
   ( generateMinimalAssumptions

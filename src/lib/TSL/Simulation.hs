@@ -33,13 +33,9 @@ module TSL.Simulation
 
 -------------------------------------------------------------------------------
 
-import TSL.Reader
-  ( fromTSL
-  )
+import TSL.Reader (fromTSL)
 
-import TSL.SymbolTable
-  ( stName
-  )
+import TSL.SymbolTable (stName)
 
 import TSL.Simulation.SystemSimulationBackend as SysSim
   ( SystemOption
@@ -56,40 +52,23 @@ import TSL.Simulation.EnvironmentSimulationBackend as EnvSim
   , sanitize
   )
 
-import TSL.Simulation.SystemSimulationInterface as SysSymInt
-  ( runSimulation
-  )
+import TSL.Simulation.SystemSimulationInterface as SysSymInt (runSimulation)
 
 import TSL.Simulation.EnvironmentSimulationInterface as EnvSymInt
   ( runSimulation
   )
 
-import TSL.Aiger
-  ( Circuit
-  , parseAag
-  )
+import TSL.Aiger (Circuit, parseAag)
 
-import TSL.Simulation.AigerSimulator
-  ( normalize
-  )
+import TSL.Simulation.AigerSimulator (normalize)
 
-import TSL.Logic
-  ( decodeInputAP
-  , decodeOutputAP
-  )
+import TSL.Logic (decodeInputAP, decodeOutputAP)
 
-import TSL.Error
-  ( Error
-  , genericError
-  )
+import TSL.Error (Error, genericError)
 
-import TSL.Specification
-  ( Specification(..)
-  )
+import TSL.Specification (Specification(..))
 
-import TSL.Simulation.FiniteTraceChecker as FTC
-  ( emptyTrace
-  )
+import TSL.Simulation.FiniteTraceChecker as FTC (emptyTrace)
 
 -------------------------------------------------------------------------------
 -- | 'createSimulation' generates a  simulation of a AIGER circuit/strategy and

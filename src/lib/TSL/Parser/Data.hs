@@ -14,34 +14,17 @@ module TSL.Parser.Data
 
 -----------------------------------------------------------------------------
 
-import TSL.Expression
-  ( Expr
-  , ExprPos
-  )
+import TSL.Expression (Expr, ExprPos)
 
-import TSL.Types
-  ( SectionType
-  )
+import TSL.Types (SectionType)
 
-import TSL.Binding
-  ( Binding
-  )
+import TSL.Binding (Binding)
 
-import Text.Parsec
-  ( (<|>)
-  , char
-  , letter
-  , alphaNum
-  )
+import Text.Parsec (alphaNum, char, letter, (<|>))
 
-import Text.Parsec.Token
-  ( LanguageDef
-  , GenLanguageDef(..)
-  )
+import Text.Parsec.Token (GenLanguageDef(..), LanguageDef)
 
-import Text.Parsec.Language
-  ( emptyDef
-  )
+import Text.Parsec.Language (emptyDef)
 
 -----------------------------------------------------------------------------
 

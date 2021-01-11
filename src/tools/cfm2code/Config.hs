@@ -19,40 +19,22 @@ module Config
 
 -----------------------------------------------------------------------------
 
-import PrintUtils
-  ( Color(..)
-  , ColorIntensity(..)
-  , cPutErr
-  , cPutErrLn
-  )
+import PrintUtils (Color(..), ColorIntensity(..), cPutErr, cPutErrLn)
 
-import Options.Applicative
 import Data.Semigroup ((<>))
+import Options.Applicative
 
-import TSL
-  ( CodeTarget(..)
-  )
+import TSL (CodeTarget(..))
 
-import Data.Char
-  ( toLower
-  , toUpper
-  )
+import Data.Char (toLower, toUpper)
 
-import System.Exit
-  ( exitFailure
-  )
+import System.Exit (exitFailure)
 
-import Control.Monad
-  ( unless
-  )
+import Control.Monad (unless)
 
-import System.Directory
-  ( doesFileExist
-  )
+import System.Directory (doesFileExist)
 
-import System.FilePath
-  ( takeBaseName
-  )
+import System.FilePath (takeBaseName)
 
 -----------------------------------------------------------------------------
 

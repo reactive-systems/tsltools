@@ -15,29 +15,15 @@ module Main
 
 -----------------------------------------------------------------------------
 
-import EncodingUtils
-  ( initEncoding
-  )
+import EncodingUtils (initEncoding)
 
-import ArgParseUtils
-  ( parseMaybeFilePath
-  )
+import ArgParseUtils (parseMaybeFilePath)
 
-import FileUtils
-  ( loadCFM
-  )
+import FileUtils (loadCFM)
 
-import PrintUtils
-  ( Color(..)
-  , ColorIntensity(..)
-  , cPutOut
-  , cPutOutLn
-  )
+import PrintUtils (Color(..), ColorIntensity(..), cPutOut, cPutOutLn)
 
-import TSL
-  ( symbolTable
-  , toCSV
-  )
+import TSL (symbolTable, toCSV)
 
 -----------------------------------------------------------------------------
 

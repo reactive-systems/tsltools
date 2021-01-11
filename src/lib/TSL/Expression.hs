@@ -23,7 +23,6 @@ module TSL.Expression
   , subExpressions
   , applySub
   , prExpr
---  , prPrettyExpr
   ) where
 
 -----------------------------------------------------------------------------

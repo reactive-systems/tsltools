@@ -19,45 +19,38 @@ module Test
 -----------------------------------------------------------------------------
 
 import Distribution.TestSuite
-  ( TestInstance(..)
-  , Progress(..)
+  ( Progress(..)
   , Result(..)
   , Test(..)
+  , TestInstance(..)
   )
 
 import TSL
   ( PredicateTerm
   , SignalTerm
-  , encodeInputAP
-  , encodeOutputAP
   , decodeInputAP
   , decodeOutputAP
+  , encodeInputAP
+  , encodeOutputAP
   , fromTSL
-  , toTSL
   , split
+  , toTSL
   )
 
-import SplitTests
-  ( splitTests
-  )
+import SplitTests (splitTests)
 
 import Test.QuickCheck
-  ( Result(..)
-  , Arbitrary
-  , quickCheckResult
+  ( Arbitrary
+  , Result(..)
   , arbitrary
   , choose
   , listOf
+  , quickCheckResult
   )
 
-import Data.Char
-  ( isSpace
-  )
+import Data.Char (isSpace)
 
-import Data.Char
-  ( chr
-  , ord
-  )
+import Data.Char (chr, ord)
 
 -----------------------------------------------------------------------------
 

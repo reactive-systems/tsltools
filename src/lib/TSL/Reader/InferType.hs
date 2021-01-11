@@ -20,77 +20,29 @@ module TSL.Reader.InferType
 
 -----------------------------------------------------------------------------
 
-import TSL.Types
-  ( ExprType(..)
-  )
+import TSL.Types (ExprType(..))
 
-import TSL.Binding
-  ( Binding(..)
-  , BoundExpr(..)
-  )
+import TSL.Binding (Binding(..), BoundExpr(..))
 
-import TSL.Expression
-  ( Expr(..)
-  , Expr'(..)
-  , Expression
-  )
+import TSL.Expression (Expr(..), Expr'(..), Expression)
 
-import TSL.Reader.Data
-  ( TypeTable
-  , ArgumentTable
-  , Specification(..)
-  )
+import TSL.Reader.Data (ArgumentTable, Specification(..), TypeTable)
 
-import TSL.Error
-  ( Error
-  , errExpect
-  , errRange
-  )
+import TSL.Error (Error, errExpect, errRange)
 
-import Control.Monad
-  ( foldM_
-  , void
-  )
+import Control.Monad (foldM_, void)
 
-import Control.Monad.State
-  ( StateT(..)
-  , execStateT
-  , get
-  , gets
-  , put
-  , modify
-  )
+import Control.Monad.State (StateT(..), execStateT, get, gets, modify, put)
 
-import Control.Exception
-  ( assert
-  )
+import Control.Exception (assert)
 
-import Data.IntMap.Strict
-  ( IntMap
-  , (!)
-  , insert
-  , fromList
-  , empty
-  , member
-  , keys
-  )
+import Data.IntMap.Strict (IntMap, empty, fromList, insert, keys, member, (!))
 
-import qualified Data.IntMap.Strict as IM
-  ( lookup
-  )
+import qualified Data.IntMap.Strict as IM (lookup)
 
-import Data.Graph
-  ( Graph
-  , buildG
-  , transposeG
-  , topSort
-  )
+import Data.Graph (Graph, buildG, topSort, transposeG)
 
-import qualified Data.Set as S
-  ( fromList
-  , toList
-  , intersection
-  )
+import qualified Data.Set as S (fromList, intersection, toList)
 
 -----------------------------------------------------------------------------
 

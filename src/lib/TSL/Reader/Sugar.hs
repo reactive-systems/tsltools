@@ -16,27 +16,15 @@ module TSL.Reader.Sugar
 
 -----------------------------------------------------------------------------
 
-import TSL.Error
-  ( Error
-  )
+import TSL.Error (Error)
 
-import TSL.Binding
-  ( Binding(..)
-  , BoundExpr(..)
-  )
+import TSL.Binding (Binding(..), BoundExpr(..))
 
-import TSL.Reader.Data
-  ( Specification(..)
-  )
+import TSL.Reader.Data (Specification(..))
 
-import TSL.Expression
-  ( Expr(..)
-  , Expr'(..)
-  )
+import TSL.Expression (Expr(..), Expr'(..))
 
-import Control.Exception
-  ( assert
-  )
+import Control.Exception (assert)
 
 -----------------------------------------------------------------------------
 

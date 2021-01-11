@@ -19,9 +19,7 @@ module TSL.Simulation.EnvironmentSimulationInterface
 
 -------------------------------------------------------------------------------
 
-import Text.Read
-  ( readMaybe
-  )
+import Text.Read (readMaybe)
 
 import TSL.Simulation.EnvironmentSimulationBackend
   ( EnvironmentOption
@@ -32,11 +30,7 @@ import TSL.Simulation.EnvironmentSimulationBackend
   , step
   )
 
-import TSL.Logic
-  ( Formula
-  , SignalTerm
-  , tslFormula
-  )
+import TSL.Logic (Formula, SignalTerm, tslFormula)
 
 import TSL.Simulation.InterfacePrintingUtils
   ( Color(..)

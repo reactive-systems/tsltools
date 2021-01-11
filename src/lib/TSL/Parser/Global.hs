@@ -16,74 +16,51 @@ module TSL.Parser.Global
 
 -----------------------------------------------------------------------------
 
-import TSL.Binding
-  ( Binding(..)
-  , BoundExpr(..)
-  )
+import TSL.Binding (Binding(..), BoundExpr(..))
 
-import TSL.Expression
-  ( Expr(..)
-  , ExprPos(..)
-  )
+import TSL.Expression (Expr(..), ExprPos(..))
 
-import TSL.Types
-  ( SectionType(..)
-  )
+import TSL.Types (SectionType(..))
 
-import TSL.Parser.Data
-  ( globalDef
-  )
+import TSL.Parser.Data (globalDef)
 
-import TSL.Parser.Utils
-  ( identifier
-  , positionParser
-  )
+import TSL.Parser.Utils (identifier, positionParser)
 
-import TSL.Parser.Expression
-  ( exprParser
-  )
+import TSL.Parser.Expression (exprParser)
 
-import Data.Functor.Identity
-  ( Identity
-  )
+import Data.Functor.Identity (Identity)
 
-import Data.Maybe
-  ( catMaybes
-  )
+import Data.Maybe (catMaybes)
 
-import Control.Monad
-  ( void
-  )
+import Control.Monad (void)
 
 import Text.Parsec
   ( ParsecT
-  , (<|>)
-  , upper
-  , char
-  , space
   , alphaNum
+  , char
   , lookAhead
+  , many
+  , many1
   , oneOf
   , sepBy
-  , many1
-  , many
+  , space
+  , upper
+  , (<|>)
   )
 
-import Text.Parsec.String
-  ( Parser
-  )
+import Text.Parsec.String (Parser)
 
 import Text.Parsec.Token
   ( GenLanguageDef(..)
   , GenTokenParser
+  , braces
+  , makeTokenParser
+  , natural
+  , reserved
   , reservedNames
+  , reservedOp
   , stringLiteral
   , whiteSpace
-  , natural
-  , makeTokenParser
-  , reserved
-  , braces
-  , reservedOp
   )
 
 -----------------------------------------------------------------------------

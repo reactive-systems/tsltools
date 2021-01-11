@@ -40,46 +40,23 @@ module TSL.Error
 
 -----------------------------------------------------------------------------
 
-import TSL.Types
-  ( ExprType(..)
-  , prType
-  , reducer
-  )
+import TSL.Types (ExprType(..), prType, reducer)
 
-import TSL.Expression
-  ( ExprPos(..)
-  , SrcPos(..)
-  )
+import TSL.Expression (ExprPos(..), SrcPos(..))
 
-import Text.Parsec.Error
-  ( ParseError
-  )
+import Text.Parsec.Error (ParseError)
 
-import System.Exit
-  ( exitFailure
-  )
+import System.Exit (exitFailure)
 
-import System.IO
-  ( hPrint
-  , stderr
-  )
+import System.IO (hPrint, stderr)
 
-import Control.Monad.State
-  ( StateT(..)
-  )
+import Control.Monad.State (StateT(..))
 
-import Data.Maybe
-  ( fromMaybe
-  )
+import Data.Maybe (fromMaybe)
 
-import Data.IntMap
-  ( empty
-  , insert
-  )
+import Data.IntMap (empty, insert)
 
-import qualified Data.IntMap as IM
-  ( lookup
-  )
+import qualified Data.IntMap as IM (lookup)
 
 -----------------------------------------------------------------------------
 

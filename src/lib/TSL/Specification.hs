@@ -20,15 +20,9 @@ module TSL.Specification
 
 -----------------------------------------------------------------------------
 
-import TSL.Logic
-  ( Formula(..)
-  , tslFormula
-  )
+import TSL.Logic (Formula(..), tslFormula)
 
-import TSL.SymbolTable
-  ( SymbolTable
-  , stName
-  )
+import TSL.SymbolTable (SymbolTable, stName)
 
 -----------------------------------------------------------------------------
 

@@ -17,17 +17,11 @@ module TSL.TOML
 
 -----------------------------------------------------------------------------
 
-import TSL.SymbolTable
-  ( stName
-  )
+import TSL.SymbolTable (stName)
 
-import TSL.Specification
-  ( Specification(..)
-  )
+import TSL.Specification (Specification(..))
 
-import TSL.Logic
-  ( tslFormula
-  )
+import TSL.Logic (tslFormula)
 
 -----------------------------------------------------------------------------
 

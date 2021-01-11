@@ -20,24 +20,13 @@ module TSL.Reader.Data
 
 -----------------------------------------------------------------------------
 
-import TSL.Types
-  ( ExprType
-  , SectionType
-  )
+import TSL.Types (ExprType, SectionType)
 
-import TSL.Expression
-  ( Expr
-  , ExprPos
-  )
+import TSL.Expression (Expr, ExprPos)
 
-import TSL.Binding
-  ( Binding
-  , BoundExpr
-  )
+import TSL.Binding (Binding, BoundExpr)
 
-import  Data.IntMap.Strict
-  ( IntMap
-  )
+import Data.IntMap.Strict (IntMap)
 
 -----------------------------------------------------------------------------
 

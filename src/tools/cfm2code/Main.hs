@@ -17,23 +17,13 @@ module Main
 
 -----------------------------------------------------------------------------
 
-import Config
-  ( Configuration(..)
-  , parseArguments
-  )
+import Config (Configuration(..), parseArguments)
 
-import EncodingUtils
-  ( initEncoding
-  )
+import EncodingUtils (initEncoding)
 
-import FileUtils
-  ( loadCFM
-  , writeContent
-  )
+import FileUtils (loadCFM, writeContent)
 
-import TSL
-  ( implement
-  )
+import TSL (implement)
 
 -----------------------------------------------------------------------------
 

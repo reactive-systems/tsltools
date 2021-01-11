@@ -69,80 +69,48 @@ module TSL
 
 import TSL.Logic
   ( Formula(..)
-  , SignalTerm(..)
   , FunctionTerm(..)
   , PredicateTerm(..)
-  , updates
+  , SignalTerm(..)
   , checks
-  , inputs
-  , outputs
-  , functions
-  , predicates
-  , encodeInputAP
-  , encodeOutputAP
   , decodeInputAP
   , decodeOutputAP
+  , encodeInputAP
+  , encodeOutputAP
+  , functions
+  , inputs
+  , outputs
+  , predicates
   , size
   , tslFormula
+  , updates
   )
 
-import TSL.Error
-  ( Error
-  )
+import TSL.Error (Error)
 
-import TSL.SymbolTable
-  ( SymbolTable(..)
-  , Kind(..)
-  , toCSV
-  )
+import TSL.SymbolTable (Kind(..), SymbolTable(..), toCSV)
 
-import TSL.Specification
-  ( Specification(..)
-  , toFormula
-  , toTSL
-  )
+import TSL.Specification (Specification(..), toFormula, toTSL)
 
-import TSL.Reader
-  ( fromTSL
-  )
+import TSL.Reader (fromTSL)
 
-import TSL.TLSF
-  ( toTLSF
-  )
+import TSL.TLSF (toTLSF)
 
-import TSL.Splitter
-  ( split
-  , splitIgnoreAssumptions
-  )
+import TSL.Splitter (split, splitIgnoreAssumptions)
 
-import TSL.Simulation
-  ( simulate
-  )
+import TSL.Simulation (simulate)
 
 import TSL.TOML (toTOML)
 
-import TSL.CFM
-  ( CFM
-  , symbolTable
-  , fromCFM
-  , statistics
-  )
+import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
 
-import qualified TSL.Writer.Clash as Clash
-  ( implement
-  )
+import qualified TSL.Writer.Clash as Clash (implement)
 
-import qualified TSL.Writer.Applicative as Applicative
-  ( implement
-  )
+import qualified TSL.Writer.Applicative as Applicative (implement)
 
-import qualified TSL.Writer.Arrow as Arrow
-  ( implement
-  )
+import qualified TSL.Writer.Arrow as Arrow (implement)
 
-import qualified TSL.Writer.Monadic as Monadic
-  ( implement
-  )
+import qualified TSL.Writer.Monadic as Monadic (implement)
 
 -----------------------------------------------------------------------------
 

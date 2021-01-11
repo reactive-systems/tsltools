@@ -40,13 +40,7 @@ import System.Console.ANSI
   , hSetSGR
   )
 
-import System.IO
-  ( Handle
-  , hPutStr
-  , hPutStrLn
-  , stderr
-  , stdout
-  )
+import System.IO (Handle, hPutStr, hPutStrLn, stderr, stdout)
 
 
 -----------------------------------------------------------------------------

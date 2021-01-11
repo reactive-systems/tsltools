@@ -19,76 +19,36 @@ module TSL.Reader.Bindings
 
 -----------------------------------------------------------------------------
 
-import TSL.Binding
-  ( Binding(..)
-  , BoundExpr(..)
-  )
+import TSL.Binding (Binding(..), BoundExpr(..))
 
-import TSL.Expression
-  ( ExprId
-  , Expr(..)
-  , Expr'(..)
-  , subExpressions
-  )
+import TSL.Expression (Expr(..), Expr'(..), ExprId, subExpressions)
 
 import TSL.Reader.Data
-  ( Specification(..)
+  ( ArgumentTable
   , ExpressionTable
   , NameTable
   , PositionTable
-  , ArgumentTable
   , ScopeTable
+  , Specification(..)
   )
 
-import TSL.Error
-  ( Error
-  , errConditional
-  , errCircularDep
-  )
+import TSL.Error (Error, errCircularDep, errConditional)
 
-import Data.Graph
-  ( buildG
-  , scc
-  )
+import Data.Graph (buildG, scc)
 
-import Data.Tree
-  ( flatten
-  )
+import Data.Tree (flatten)
 
-import Control.Monad.State
-  ( StateT(..)
-  , execStateT
-  , put
-  , get
-  , when
-  )
+import Control.Monad.State (StateT(..), execStateT, get, put, when)
 
-import Control.Exception
-  ( assert
-  )
+import Control.Exception (assert)
 
-import Data.IntMap.Strict
-  ( (!)
-  , member
-  , empty
-  , insert
-  , toList
-  , findMax
-  )
+import Data.IntMap.Strict (empty, findMax, insert, member, toList, (!))
 
-import qualified Data.IntMap.Strict as IM
-  ( map
-  , lookup
-  )
+import qualified Data.IntMap.Strict as IM (lookup, map)
 
-import Data.Set
-  ( elems
-  , fromList
-  )
+import Data.Set (elems, fromList)
 
-import TSL.Types
-  ( SectionType
-  )
+import TSL.Types (SectionType)
 
 -----------------------------------------------------------------------------
 

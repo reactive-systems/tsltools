@@ -18,31 +18,17 @@ module TSL.Parser
 
 -----------------------------------------------------------------------------
 
-import TSL.Error
-  ( Error
-  , parseError
-  )
+import TSL.Error (Error, parseError)
 
-import TSL.Parser.Data
-  ( Specification(..)
-  )
+import TSL.Parser.Data (Specification(..))
 
-import TSL.Parser.Global
-  ( GlobalElement(..)
-  , elementsParser
-  )
+import TSL.Parser.Global (GlobalElement(..), elementsParser)
 
-import Text.Parsec
-  ( many1
-  )
+import Text.Parsec (many1)
 
-import qualified Text.Parsec as P
-  ( parse
-  )
+import qualified Text.Parsec as P (parse)
 
-import Text.Parsec.String
-  ( Parser
-  )
+import Text.Parsec.String (Parser)
 
 -----------------------------------------------------------------------------
 
