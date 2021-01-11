@@ -7,14 +7,10 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    LambdaCase
-  , MultiParamTypeClasses
-  , TypeSynonymInstances
-  , FlexibleInstances
-
-  #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 
 -----------------------------------------------------------------------------
 

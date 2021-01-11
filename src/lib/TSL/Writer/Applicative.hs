@@ -7,15 +7,11 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    RecordWildCards
-  , LambdaCase
-  , FlexibleContexts
-  , ViewPatterns
-  , MultiWayIf
-
-  #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE MultiWayIf       #-}
+{-# LANGUAGE RecordWildCards  #-}
+{-# LANGUAGE ViewPatterns     #-}
 
 -----------------------------------------------------------------------------
 

@@ -8,7 +8,8 @@
 -- sequences of inputs, i.e. functionalities to simulate AIGER circuits.
 --
 -------------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase, RecordWildCards #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -------------------------------------------------------------------------------
 module TSL.Simulation.AigerSimulator

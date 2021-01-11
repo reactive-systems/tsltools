@@ -8,7 +8,8 @@
 -- update an predicate evaluation) violates some TSL 'Formula'.
 --
 -------------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase, RecordWildCards #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -------------------------------------------------------------------------------
 module TSL.Simulation.FiniteTraceChecker

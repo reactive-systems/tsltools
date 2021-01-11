@@ -7,13 +7,9 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    RecordWildCards
-  , LambdaCase
-  , TupleSections
-
-  #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections   #-}
 
 -----------------------------------------------------------------------------
 

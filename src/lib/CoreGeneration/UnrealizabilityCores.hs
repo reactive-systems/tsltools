@@ -9,7 +9,8 @@
 -- that is already unrealizable.
 --
 -------------------------------------------------------------------------------
-{-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -------------------------------------------------------------------------------
 module CoreGeneration.UnrealizabilityCores

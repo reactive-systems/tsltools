@@ -7,13 +7,8 @@
 --
 ------------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    ViewPatterns
-  , LambdaCase
-  , RecordWildCards
-
-  #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -----------------------------------------------------------------------------
 

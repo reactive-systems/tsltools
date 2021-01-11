@@ -9,7 +9,8 @@
 -- different IO-operations into a context.
 --
 -------------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase, RecordWildCards #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -------------------------------------------------------------------------------
 module CoreGeneration.CoreUtilities

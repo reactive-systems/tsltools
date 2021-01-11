@@ -7,16 +7,12 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    MultiParamTypeClasses
-  , DeriveGeneric
-  , LambdaCase
-  , RecordWildCards
-  , TupleSections
-  , FlexibleContexts
-
-  #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE TupleSections         #-}
 
 -----------------------------------------------------------------------------
 

@@ -8,11 +8,7 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    LambdaCase
-
-  #-}
+{-# LANGUAGE LambdaCase #-}
 
 module TSL.Reader.Sugar
   ( replaceSugar
