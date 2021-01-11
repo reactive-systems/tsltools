@@ -39,6 +39,7 @@ import PrintUtils
 import TSL
   ( Specification
   , CFM
+  , Error
   , fromTSL
   , fromCFM
   )
@@ -94,6 +95,17 @@ writeContent :: Maybe FilePath -> String -> IO ()
 writeContent Nothing = putStrLn
 writeContent (Just file) = writeFile file
 
+
+-----------------------------------------------------------------------------
+-- | helper function returning valid result or exiting with an error message
+rightOrInvalidInput :: Maybe FilePath -> Either Error a -> IO a
+rightOrInvalidInput input = \case
+  Right r -> return r
+  Left err -> do
+    cPutMessageInput Red "invalid" input
+    printErrLn err
+    exitFailure
+
 -----------------------------------------------------------------------------
 -- | 'loadTSL' is a helper function which loads and parses a TSL file and
 -- if this is not possible outputs a respective error on the command line
@@ -102,12 +114,7 @@ loadTSL :: Maybe FilePath -> IO Specification
 loadTSL input = do
   tryReadContent input
   >>= fromTSL input
-  >>= \case 
-    Left err -> do
-      cPutMessageInput Red "invalid" input
-      printErrLn err
-      exitFailure
-    Right spec -> return spec
+  >>= rightOrInvalidInput input
 
 -----------------------------------------------------------------------------
 -- | 'loadCFM' is a helper function which loads and parses a CFM file and
@@ -116,9 +123,5 @@ loadTSL input = do
 loadCFM :: Maybe FilePath -> IO CFM
 loadCFM input = do
   content <- tryReadContent input
-  case fromCFM content of
-    Left err -> do
-      cPutMessageInput Red "invalid" input
-      printErrLn err
-      exitFailure
-    Right cfm -> return cfm
+  let e = fromCFM content
+  rightOrInvalidInput input e
