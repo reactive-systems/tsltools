@@ -112,6 +112,6 @@ optimizeSpec Specification {..} =
     splitOnAnd =
       \case
         And xs -> xs
-        f -> [f]
+        f      -> [f]
 
 -------------------------------------------------------------------------------

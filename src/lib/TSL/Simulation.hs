@@ -96,7 +96,7 @@ createSimulation aag spec =
             }
        in
          case SysSim.sanitize sim of
-           Nothing -> Right (Left sim)
+           Nothing  -> Right (Left sim)
            Just err -> genericError err
     Left _ ->
       case normalize decodeInputAP decodeOutputAP aag of
@@ -113,7 +113,7 @@ createSimulation aag spec =
                 }
            in
              case EnvSim.sanitize sim of
-               Nothing -> Right (Right sim)
+               Nothing  -> Right (Right sim)
                Just err -> genericError err
 
   where

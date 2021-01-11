@@ -113,7 +113,7 @@ normalize renameInput renameOutput aig =
         (\x ->
            case rnm (toStr x) of
              Left err -> Left err
-             Right v -> Right (x, v))
+             Right v  -> Right (x, v))
         xs
     --
     lookup :: Eq a => [(a, b)] -> a -> b
@@ -138,7 +138,7 @@ normalize renameInput renameOutput aig =
             (iwire2ct $ Aiger.gateInputB aig g)
         Nothing ->
           case isInputWire w of
-            Just i -> Inp i
+            Just i  -> Inp i
             Nothing -> maybe CT InpL (isLatchOutput w)
     --
     isInputWire :: Wire -> Maybe Input
@@ -174,7 +174,7 @@ simStep NormCircuit {..} state inpt =
     -- evaluated in a lazy manner each step
     strictLookup m elem =
       case Map.lookup elem m of
-        Just a -> a
+        Just a  -> a
         Nothing -> assert False undefined
     --
     functionToMap :: Ord a => [a] -> (a -> b) -> Map a b
@@ -186,8 +186,8 @@ simStep NormCircuit {..} state inpt =
 eval :: CircuitTree -> State -> Inputs -> Bool
 eval ct state inpt =
   case ct of
-    Inp i -> inpt i
+    Inp i  -> inpt i
     InpL l -> state l
     AG x y -> eval x state inpt && eval y state inpt
-    NG x -> not $ eval x state inpt
-    CT -> True
+    NG x   -> not $ eval x state inpt
+    CT     -> True

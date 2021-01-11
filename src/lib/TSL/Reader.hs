@@ -291,7 +291,7 @@ symtable RD.Specification{..} =
         aT = tEn so si a $ idT a
         bT = tEn so si b $ idT b
       in if
-        | aT /= bT   -> compare aT bT
+        | aT /= bT  -> compare aT bT
         | otherwise -> cmpD a b
 
     -- sorted identifiers by above ordering
@@ -369,7 +369,7 @@ extractInputs sc tt a e@Expr{..} = case expr of
   BaseId i -> case assert (IM.member i tt) (tt IM.! i) of
     TSignal {} -> case IM.lookup i sc of
       Nothing -> insert i a
-      Just ()  -> a
+      Just () -> a
     _          -> a
   _             -> foldl (extractInputs sc tt) a $ subExpressions e
 
@@ -379,8 +379,8 @@ extractOutputs
   :: Set Int -> Expr Int -> Set Int
 
 extractOutputs a e@Expr{..} = case expr of
-  BaseUpd _ x   -> insert x a
-  _             -> foldl extractOutputs a $ subExpressions e
+  BaseUpd _ x -> insert x a
+  _           -> foldl extractOutputs a $ subExpressions e
 
 -----------------------------------------------------------------------------
 

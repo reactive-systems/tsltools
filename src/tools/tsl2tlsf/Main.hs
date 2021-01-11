@@ -37,7 +37,7 @@ main = do
 
   putStrLn $ toTLSF (
       case input of
-        Nothing -> "STDIN"
+        Nothing   -> "STDIN"
         Just file -> takeBaseName file
     ) spec
 

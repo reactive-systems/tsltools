@@ -131,22 +131,22 @@ exprBindings
   :: Expr Int -> GetBindings ()
 
 exprBindings e@Expr{..} = case expr of
-  NumRPlus xs x        -> mapM_ conditional xs >> exprBindings x
-  NumRMul xs x         -> mapM_ conditional xs >> exprBindings x
-  SetRCup xs x         -> mapM_ conditional xs >> exprBindings x
-  SetRCap xs x         -> mapM_ conditional xs >> exprBindings x
-  BlnRAnd xs x         -> mapM_ conditional xs >> exprBindings x
-  BlnROr xs x          -> mapM_ conditional xs >> exprBindings x
-  TslRNext _ x         -> exprBindings x
-  TslRPrevious _ x     -> exprBindings x
-  TslRGlobally _ x     -> exprBindings x
-  TslRFinally _ x      -> exprBindings x
-  TslRHistorically _ x -> exprBindings x
-  TslROnce _ x         -> exprBindings x
+  NumRPlus xs x          -> mapM_ conditional xs >> exprBindings x
+  NumRMul xs x           -> mapM_ conditional xs >> exprBindings x
+  SetRCup xs x           -> mapM_ conditional xs >> exprBindings x
+  SetRCap xs x           -> mapM_ conditional xs >> exprBindings x
+  BlnRAnd xs x           -> mapM_ conditional xs >> exprBindings x
+  BlnROr xs x            -> mapM_ conditional xs >> exprBindings x
+  TslRNext _ x           -> exprBindings x
+  TslRPrevious _ x       -> exprBindings x
+  TslRGlobally _ x       -> exprBindings x
+  TslRFinally _ x        -> exprBindings x
+  TslRHistorically _ x   -> exprBindings x
+  TslROnce _ x           -> exprBindings x
   Colon w@(Expr v _ _) z -> case v of
     Pattern x y -> addPatternIds (PatternBinding x y) y >> exprBindings z
-    _ -> exprBindings w >> exprBindings z
-  _                    -> mapM_ exprBindings $ subExpressions e
+    _           -> exprBindings w >> exprBindings z
+  _                      -> mapM_ exprBindings $ subExpressions e
 
   where
     addPatternIds

@@ -116,6 +116,6 @@ main = do
       (createContext poolSize verbosity' realizableCommand)
       spec
   case potMinimalRealizableSpec of
-    Nothing -> cPutOutLn Vivid Red "UNREALIZABLE"
+    Nothing   -> cPutOutLn Vivid Red "UNREALIZABLE"
     Just core -> putStr $ toTSL core
 -----------------------------------------------------------------------------

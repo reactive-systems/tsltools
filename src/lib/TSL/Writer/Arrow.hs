@@ -263,7 +263,7 @@ implement mName fName cfm@CFM{..} =
 
     filterP = \case
       Boolean -> Nothing
-      t  -> Just t
+      t       -> Just t
 
     prSwitch o =
       indent 4 (outputName o) ++ "Out <-\n" ++
@@ -366,9 +366,9 @@ prCircuitImpl Circuit{..} =
 
   where
     isNeg = \case
-      Positive _                  -> False
+      Positive _                   -> False
       Negative (Circuit.wire -> 0) -> False
-      Negative _                  -> True
+      Negative _                   -> True
 
     prWire' x
       | Circuit.wire x <= length inputs = "controlIn" ++ show (Circuit.wire x - 1)
@@ -398,8 +398,8 @@ prCircuitImpl Circuit{..} =
     poled = \case
       Positive (Circuit.wire -> 0) -> "True"
       Negative (Circuit.wire -> 0) -> "False"
-      Positive w -> prWire' w
-      Negative w -> "not " ++ prWire' w
+      Positive w                   -> prWire' w
+      Negative w                   -> "not " ++ prWire' w
 
     polarized i c = \case
       Positive (Circuit.wire -> 0) ->
@@ -448,8 +448,8 @@ prTerm' cfm@CFM{..} t =
        if
          | termName t == "true"  -> "True"
          | termName t == "false" -> "False"
-         | isPredicate t        -> termName t
-         | otherwise            -> termName t
+         | isPredicate t         -> termName t
+         | otherwise             -> termName t
      (x:xr) ->
        "arr " ++
        (iterate (("(uncurry " ++) . (++ ")"))

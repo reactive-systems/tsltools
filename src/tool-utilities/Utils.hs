@@ -61,11 +61,11 @@ createContext poolSize verbosity realCmd =
         command
           realCmd
           (\case
-             "REALIZABLE" -> Just True
-             "REALIZABLE\n" -> Just True
-             "UNREALIZABLE" -> Just False
+             "REALIZABLE"     -> Just True
+             "REALIZABLE\n"   -> Just True
+             "UNREALIZABLE"   -> Just False
              "UNREALIZABLE\n" -> Just False
-             _ -> Nothing)
+             _                -> Nothing)
    in Context
         { tslSpecRealizable = realCall . toTLSF "Specification"
         , verbosityLevel = verbosity

@@ -267,7 +267,7 @@ implement mName fName cfm@CFM{..} =
 
     filterP = \case
       Boolean -> Nothing
-      t  -> Just t
+      t       -> Just t
 
 -----------------------------------------------------------------------------
 
@@ -367,9 +367,9 @@ prCircuitImpl Circuit{..} =
 
   where
     isNeg = \case
-      Positive _                  -> False
+      Positive _                   -> False
       Negative (Circuit.wire -> 0) -> False
-      Negative _                  -> True
+      Negative _                   -> True
 
     prWire' x
       | Circuit.wire x <= length inputs = "controlIn" ++
@@ -421,7 +421,7 @@ prTerm' cfm@CFM{..} t =
        if
          | termName t == "true"  -> "True"
          | termName t == "false" -> "False"
-         | otherwise            -> termName t
+         | otherwise             -> termName t
      (x:xr) ->
        termName t ++
        " <$> " ++

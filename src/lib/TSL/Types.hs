@@ -49,14 +49,14 @@ data ExprType =
 
 instance Show ExprType where
   show = \case
-    TSignal s  -> "signal " ++ show s
-    TFml a b   -> "fn " ++ show a ++ " -> " ++ show b
-    TNumber    -> "numerical"
-    TBoolean   -> "boolean"
-    TTSL       -> "tsl"
-    TPattern   -> "pattern"
-    TPoly x    -> "a" ++ show x
-    TSet x     -> show x ++ " set"
+    TSignal s -> "signal " ++ show s
+    TFml a b  -> "fn " ++ show a ++ " -> " ++ show b
+    TNumber   -> "numerical"
+    TBoolean  -> "boolean"
+    TTSL      -> "tsl"
+    TPattern  -> "pattern"
+    TPoly x   -> "a" ++ show x
+    TSet x    -> show x ++ " set"
 
 -----------------------------------------------------------------------------
 
@@ -81,14 +81,14 @@ polyIds
 polyIds = reverse . collect []
   where
     collect a = \case
-      TSignal x  -> collect a x
-      TFml x y   -> collect (collect a x) y
-      TNumber    -> a
-      TBoolean   -> a
-      TTSL       -> a
-      TPattern   -> a
-      TPoly i    -> i:a
-      TSet x     -> collect a x
+      TSignal x -> collect a x
+      TFml x y  -> collect (collect a x) y
+      TNumber   -> a
+      TBoolean  -> a
+      TTSL      -> a
+      TPattern  -> a
+      TPoly i   -> i:a
+      TSet x    -> collect a x
 
 -----------------------------------------------------------------------------
 
@@ -114,14 +114,14 @@ prType
   :: (Int -> Int) -> ExprType -> String
 
 prType f = \case
-  TNumber         -> "int"
-  TTSL            -> "tsl"
-  TBoolean        -> "bool"
-  TPattern        -> "pattern"
-  TSignal s       -> prType f s
-  TFml a b        -> prType f a ++ " -> " ++ prType f b
-  TSet x          -> prType f x ++ " set"
-  TPoly i         -> prPoly $ f i
+  TNumber   -> "int"
+  TTSL      -> "tsl"
+  TBoolean  -> "bool"
+  TPattern  -> "pattern"
+  TSignal s -> prType f s
+  TFml a b  -> prType f a ++ " -> " ++ prType f b
+  TSet x    -> prType f x ++ " set"
+  TPoly i   -> prPoly $ f i
 
   where
     prPoly i

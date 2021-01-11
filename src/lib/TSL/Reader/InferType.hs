@@ -215,47 +215,47 @@ inferType
   :: ExprType -> Expression -> TypeCheck ()
 
 inferType t e = case expr e of
-  BaseTrue             -> checkExprType e t TBoolean
-  BaseFalse            -> checkExprType e t TBoolean
-  BaseWild             -> checkExprType e t TPattern
-  BaseOtherwise        -> checkExprType e t TBoolean
-  BaseCon {}           -> checkExprType e t TNumber
+  BaseTrue      -> checkExprType e t TBoolean
+  BaseFalse     -> checkExprType e t TBoolean
+  BaseWild      -> checkExprType e t TPattern
+  BaseOtherwise -> checkExprType e t TBoolean
+  BaseCon {}    -> checkExprType e t TNumber
 
-  NumSMin x            -> inferE1 e t TNumber x $ TSet t
-  NumSMax x            -> inferE1 e t TNumber x $ TSet t
-  NumSSize x           -> newP >>= \p -> inferE1 e t TNumber x $ TSet p
-  NumPlus x y          -> inferE2 e t TNumber x t y t
-  NumRPlus xs x        -> inferEI e t TNumber xs x t
-  NumMinus x y         -> inferE2 e t TNumber x t y t
-  NumMul x y           -> inferE2 e t TNumber x t y t
-  NumRMul xs x         -> inferEI e t TNumber xs x t
-  NumDiv x y           -> inferE2 e t TNumber x t y t
-  NumMod x y           -> inferE2 e t TNumber x t y t
+  NumSMin x     -> inferE1 e t TNumber x $ TSet t
+  NumSMax x     -> inferE1 e t TNumber x $ TSet t
+  NumSSize x    -> newP >>= \p -> inferE1 e t TNumber x $ TSet p
+  NumPlus x y   -> inferE2 e t TNumber x t y t
+  NumRPlus xs x -> inferEI e t TNumber xs x t
+  NumMinus x y  -> inferE2 e t TNumber x t y t
+  NumMul x y    -> inferE2 e t TNumber x t y t
+  NumRMul xs x  -> inferEI e t TNumber xs x t
+  NumDiv x y    -> inferE2 e t TNumber x t y t
+  NumMod x y    -> inferE2 e t TNumber x t y t
 
-  SetExplicit []       -> newP >>= \p -> checkExprType e t $ TSet p
-  SetExplicit xs       -> newP >>= \p -> inferEX e t (TSet p) xs p
-  SetRange x y z       -> inferE3 e t (TSet TNumber) x TNumber y TNumber z TNumber
-  SetCup x y           -> newP >>= \p -> inferE2 e t (TSet p) x t y t
-  SetCap x y           -> newP >>= \p -> inferE2 e t (TSet p) x t y t
-  SetMinus x y         -> newP >>= \p -> inferE2 e t (TSet p) x t y t
-  SetRCap xs x         -> newP >>= \p -> inferEI e t (TSet p) xs x t
-  SetRCup xs x         -> newP >>= \p -> inferEI e t (TSet p) xs x t
+  SetExplicit [] -> newP >>= \p -> checkExprType e t $ TSet p
+  SetExplicit xs -> newP >>= \p -> inferEX e t (TSet p) xs p
+  SetRange x y z -> inferE3 e t (TSet TNumber) x TNumber y TNumber z TNumber
+  SetCup x y     -> newP >>= \p -> inferE2 e t (TSet p) x t y t
+  SetCap x y     -> newP >>= \p -> inferE2 e t (TSet p) x t y t
+  SetMinus x y   -> newP >>= \p -> inferE2 e t (TSet p) x t y t
+  SetRCap xs x   -> newP >>= \p -> inferEI e t (TSet p) xs x t
+  SetRCup xs x   -> newP >>= \p -> inferEI e t (TSet p) xs x t
 
-  BlnEQ x y            -> inferE2 e t TBoolean x TNumber y TNumber
-  BlnNEQ x y           -> inferE2 e t TBoolean x TNumber y TNumber
-  BlnGE x y            -> inferE2 e t TBoolean x TNumber y TNumber
-  BlnGEQ x y           -> inferE2 e t TBoolean x TNumber y TNumber
-  BlnLE  x y           -> inferE2 e t TBoolean x TNumber y TNumber
-  BlnLEQ x y           -> inferE2 e t TBoolean x TNumber y TNumber
-  BlnElem x y          -> newP >>= \p -> inferE2 e t TBoolean x p y (TSet p)
+  BlnEQ x y   -> inferE2 e t TBoolean x TNumber y TNumber
+  BlnNEQ x y  -> inferE2 e t TBoolean x TNumber y TNumber
+  BlnGE x y   -> inferE2 e t TBoolean x TNumber y TNumber
+  BlnGEQ x y  -> inferE2 e t TBoolean x TNumber y TNumber
+  BlnLE  x y  -> inferE2 e t TBoolean x TNumber y TNumber
+  BlnLEQ x y  -> inferE2 e t TBoolean x TNumber y TNumber
+  BlnElem x y -> newP >>= \p -> inferE2 e t TBoolean x p y (TSet p)
 
-  BlnNot x             -> inferE1 e t TBoolean x t
-  BlnOr x y            -> inferE2 e t TBoolean x t y t
-  BlnROr xs x          -> inferEI e t TBoolean xs x t
-  BlnAnd x y           -> inferE2 e t TBoolean x t y t
-  BlnRAnd xs x         -> inferEI e t TBoolean xs x t
-  BlnImpl x y          -> inferE2 e t TBoolean x t y t
-  BlnEquiv x y         -> inferE2 e t TBoolean x t y t
+  BlnNot x     -> inferE1 e t TBoolean x t
+  BlnOr x y    -> inferE2 e t TBoolean x t y t
+  BlnROr xs x  -> inferEI e t TBoolean xs x t
+  BlnAnd x y   -> inferE2 e t TBoolean x t y t
+  BlnRAnd xs x -> inferEI e t TBoolean xs x t
+  BlnImpl x y  -> inferE2 e t TBoolean x t y t
+  BlnEquiv x y -> inferE2 e t TBoolean x t y t
 
   TslNext x            -> inferE1 e t TTSL x t
   TslRNext x y         -> inferE2 e t TTSL x TNumber y t
@@ -686,8 +686,8 @@ liftToSignalLevel = \case
     lkType i >>= \case
       TPoly j -> poly j
       t       -> liftToSignalLevel t
-  TFml x y  -> liftToSignalLevel' (TFml x y)
-  x         -> return $ liftS x
+  TFml x y -> liftToSignalLevel' (TFml x y)
+  x        -> return $ liftS x
 
   where
     liftToSignalLevel' = \case
@@ -699,8 +699,8 @@ liftToSignalLevel = \case
         x' <- liftToSignalLevel x
         y' <- liftToSignalLevel' y
         return $ TFml x' y'
-      TTSL      -> return $ TSignal TBoolean
-      x         -> return $ liftS x
+      TTSL -> return $ TSignal TBoolean
+      x    -> return $ liftS x
 
     poly j = do
       p <- newP

@@ -86,7 +86,7 @@ append ft@FiniteTrace {..} updates predicates =
 rewind :: Ord c => FiniteTrace c -> FiniteTrace c
 rewind ft@FiniteTrace {..} =
   case (trace, obligations) of
-    ([], _) -> ft
+    ([], _)      -> ft
     (_:tr, _:or) -> ft {trace = tr, obligations = or}
     -- this should never happen as 'append' only add on element to each list
     -- and trace is initially empty
@@ -153,8 +153,8 @@ checkNextC [] cache form =
   -- Even if the trace is empty some past operators simplify trivially
   case form of
     Historically _ -> (TTrue, cache)
-    Triggered _ _ -> (TTrue, cache)
-    f -> (f, cache)
+    Triggered _ _  -> (TTrue, cache)
+    f              -> (f, cache)
 checkNextC ts@(t:tr) cache form =
   let simpForm = simplify form
    in case Map.lookup simpForm cache of
@@ -202,7 +202,7 @@ checkNextC ts@(t:tr) cache form =
                   Previous f ->
                     case tr of
                       [] -> (FFalse, empty)
-                      _ -> checkNextC ts cache $ fst $ checkNextC tr empty f
+                      _  -> checkNextC ts cache $ fst $ checkNextC tr empty f
                   Historically f ->
                     checkNextC ts cache $
                     And [f, fst $ checkNextC tr empty (Historically f)]
@@ -240,9 +240,9 @@ simplify =
   \case
     Not f ->
       case simplify f of
-        TTrue -> FFalse
+        TTrue  -> FFalse
         FFalse -> TTrue
-        f' -> Not f'
+        f'     -> Not f'
     And [] -> TTrue
     And [f] -> simplify f
     And fs ->
@@ -256,7 +256,7 @@ simplify =
                       case e of
                         And g -> g ++ xs
                         TTrue -> xs
-                        g -> g : xs)
+                        g     -> g : xs)
                    []
                    fs'
     Or [] -> FFalse
@@ -270,30 +270,30 @@ simplify =
                  foldl
                    (\xs e ->
                       case e of
-                        Or g -> g ++ xs
+                        Or g   -> g ++ xs
                         FFalse -> xs
-                        g -> g : xs)
+                        g      -> g : xs)
                    []
                    fs'
     Implies f1 f2 ->
       case (simplify f1, simplify f2) of
         (FFalse, _) -> TTrue
-        (TTrue, f) -> f
-        (f1', f2') -> Implies f1' f2'
+        (TTrue, f)  -> f
+        (f1', f2')  -> Implies f1' f2'
     Equiv f1 f2 ->
       case (simplify f1, simplify f2) of
         (FFalse, f) -> simplify (Not f)
         (f, FFalse) -> simplify (Not f)
-        (f, TTrue) -> f
-        (TTrue, f) -> f
-        (f1', f2') -> Equiv f1' f2'
+        (f, TTrue)  -> f
+        (TTrue, f)  -> f
+        (f1', f2')  -> Equiv f1' f2'
     f -> f
   where
     isFalse FFalse = True
-    isFalse _ = False
+    isFalse _      = False
     --
     isTrue TTrue = True
-    isTrue _ = False
+    isTrue _     = False
     --
     removeDoubles :: Eq a => [a] -> [a]
     removeDoubles [] = []

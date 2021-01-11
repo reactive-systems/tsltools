@@ -200,13 +200,13 @@ rewind sim@EnvironmentSimulation{..} =
   sim
     { stateStack =
         case stateStack of
-          [] -> assert False undefined -- There is always an initial state
+          []     -> assert False undefined -- There is always an initial state
           [init] -> [init]
-          _:sr -> sr
+          _:sr   -> sr
     , trace = FTC.rewind trace
     , logTrace =
         case logTrace of
-          [] -> []
+          []   -> []
           _:lr -> lr
     }
 
@@ -248,9 +248,9 @@ sanitize EnvironmentSimulation{strategy = cst, specification = spec} =
    in
     case ( specUpatedCells `isSubsetOf` strategyUpdatedCells
          , specPredicates `isSubsetOf` strategyPredicates) of
-      (True, True) -> Nothing
-      (True, False) -> Just errorMsgPred
-      (False, True) -> Just errorMsgCells
+      (True, True)   -> Nothing
+      (True, False)  -> Just errorMsgPred
+      (False, True)  -> Just errorMsgCells
       (False, False) -> Just $ errorMsgCells ++ "\n" ++ errorMsgPred
 
   where

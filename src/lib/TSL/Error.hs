@@ -466,17 +466,17 @@ errExpect x y pos =
     joinPoly im (rmS -> TPoly i) t                 =
       case readType im (TPoly i) of
         Left i' -> insert i t $ insert i' t im
-        _ -> im
+        _       -> im
     joinPoly im t               (rmS -> TPoly i)   =
       case readType im (TPoly i) of
         Left i' -> insert i t $ insert i' t im
-        _ -> im
+        _       -> im
     joinPoly im _               _                 = im
 
     rmS =
       \case
         TSignal x -> rmS x
-        x -> x
+        x         -> x
 
 -----------------------------------------------------------------------------
 

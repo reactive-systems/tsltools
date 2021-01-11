@@ -137,8 +137,8 @@ implement
 
 implement = \case
   Applicative -> Applicative.implement
-  Arrow -> Arrow.implement
-  Clash -> Clash.implement
-  Monadic -> Monadic.implement
+  Arrow       -> Arrow.implement
+  Clash       -> Clash.implement
+  Monadic     -> Monadic.implement
 
 -----------------------------------------------------------------------------

@@ -200,9 +200,9 @@ evalExpression s a e =
             Just (GuardedBinding xs) -> vFirst xs
             _                        -> assert False undefined
         v      -> return v
-    BaseFn {}            -> evalFnApplication [] e
-    Pattern {}           -> assert False undefined
-    Colon {}             -> assert False undefined
+    BaseFn {}  -> evalFnApplication [] e
+    Pattern {} -> assert False undefined
+    Colon {}   -> assert False undefined
 
   where
     evalE = evalExpression s a
@@ -318,7 +318,7 @@ vMinS
 
 vMinS (VSet (toList -> x:xr)) = foldl vMin x xr
 vMinS (VSet (toList -> []))   = VError undefined "Minimum of empty set"
-vMinS _                      = assert False undefined
+vMinS _                       = assert False undefined
 
 -----------------------------------------------------------------------------
 
@@ -335,7 +335,7 @@ vMaxS
 
 vMaxS (VSet (toList -> x:xr)) = foldl vMax x xr
 vMaxS (VSet (toList -> []))   = VError undefined "Maximum of empty set"
-vMaxS _                      = assert False undefined
+vMaxS _                       = assert False undefined
 
 -----------------------------------------------------------------------------
 

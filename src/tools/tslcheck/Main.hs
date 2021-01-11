@@ -67,7 +67,7 @@ main = do
   Configuration{input} <- execParser configParserInfo
 
   valid <- case input of
-    Nothing -> checkInput Nothing
+    Nothing    -> checkInput Nothing
     Just files -> and <$> mapM checkFile files
 
   if valid

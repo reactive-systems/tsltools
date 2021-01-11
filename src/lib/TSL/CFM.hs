@@ -581,8 +581,8 @@ fromCircuit circuit = do
     -- | Extracts the arguments of a predicate term.
 
     ptArgs a = \case
-      PApplied p x       -> ptArgs (x:a) p
-      _                  -> reverse a
+      PApplied p x -> ptArgs (x:a) p
+      _            -> reverse a
 
     -- | Extracts the name of a function or predicate term wrapped
     -- into the 'SignalTerm' constructor.
@@ -644,8 +644,8 @@ fromCircuit circuit = do
       FApplied f x     -> subTermsF (subTerms a x) f
 
     subTermsP a = \case
-      PApplied f x      -> subTermsP (subTerms a x) f
-      _                 -> a
+      PApplied f x -> subTermsP (subTerms a x) f
+      _            -> a
 
     -- | Classifies function terms int pure signals and larger
     -- constructed terms.

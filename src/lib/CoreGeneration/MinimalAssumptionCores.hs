@@ -70,7 +70,7 @@ generateMinimalAssumptions context tsl =
     splitedAssumptions spec num =
       case split spec of
         [s] -> length (assumptions s) == num
-        _ -> False
+        _   -> False
 
 -------------------------------------------------------------------------------
 -- | 'AssumptionTree' is a binary tree which representing which assumptions are
@@ -106,11 +106,11 @@ liftAssumptions =
   where
     directSubAssumptions =
       \case
-        Leaf asmpt _ -> asmpt
+        Leaf asmpt _   -> asmpt
         Node asmpt _ _ -> asmpt
     removeDirectSubAssumption rmAsmpt =
       \case
-        Leaf asmpt g -> Leaf (difference asmpt rmAsmpt) g
+        Leaf asmpt g     -> Leaf (difference asmpt rmAsmpt) g
         Node asmpt t1 t2 -> Node (difference asmpt rmAsmpt) t1 t2
 
 -------------------------------------------------------------------------------
@@ -147,7 +147,7 @@ reduce = cleanAssumptions . liftAssumptions
 flatten :: AssumptionTree -> [Formula Int]
 flatten =
   \case
-    Leaf asmpt g -> [applyAssumptions asmpt g]
+    Leaf asmpt g     -> [applyAssumptions asmpt g]
     Node asmpt t1 t2 -> fmap (applyAssumptions asmpt) (flatten t1 ++ flatten t2)
   where
     applyAssumptions asmpt formula =
@@ -188,9 +188,9 @@ searchTree =
       let (a, b) = splitAt (length xs `div` 2) xs
        in case (searchTree a, searchTree b) of
             (Nothing, Nothing) -> Nothing
-            (Just s, Nothing) -> Just s
-            (Nothing, Just s) -> Just s
-            (Just s, Just t) -> Just (STNode s t)
+            (Just s, Nothing)  -> Just s
+            (Nothing, Just s)  -> Just s
+            (Just s, Just t)   -> Just (STNode s t)
 
 -----------------------------------------------------------------------------
 -- | 'minimalAssumptionTree' searches for an 'AssuptionTree' with a minimal
@@ -214,7 +214,7 @@ minimalAssumptionTree context asmpt sym =
              {symboltable = sym, guarantees = [g], assumptions = asmpt})
       logNormal context "Finished searching leaf"
       case potSpec of
-        Nothing -> return Nothing
+        Nothing   -> return Nothing
         Just spec -> return $ Just $ Leaf (fromList $ assumptions spec) g
     STNode t1 t2 -> do
       a1p <- minimalAssumptionTree context asmpt sym t1
