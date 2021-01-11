@@ -154,6 +154,7 @@ import System.Directory
 
 import System.FilePath.Posix
   ( combine
+  , isAbsolute
   , takeDirectory
   )
 
@@ -269,8 +270,11 @@ resolveImports specPath ls str = case parse str of
     resolvePath path = do
       let combinedPath = case specPath of
             Nothing -> path
-            Just specPath -> combine (takeDirectory specPath) path
-      exists <- doesPathExist combinedPath 
+            Just specPath ->
+              if isAbsolute specPath
+              then specPath
+              else combine (takeDirectory specPath) path
+      exists <- doesPathExist combinedPath
       if exists
       then do
         canonicalizePath combinedPath
