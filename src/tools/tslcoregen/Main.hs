@@ -10,7 +10,6 @@
 {-# LANGUAGE
 
     LambdaCase
-  , RecordWildCards
   , NamedFieldPuns
 
   #-}
@@ -109,7 +108,7 @@ main = do
   initEncoding
   Configuration{poolSize, verbosity, realizableCommand, input} <- execParser configParserInfo
 
-  verbosity' <- convertVerbosity $ verbosity
+  verbosity' <- convertVerbosity verbosity
   spec <- loadTSL input
   generateCore (createContext poolSize verbosity' realizableCommand) spec
   >>= \case

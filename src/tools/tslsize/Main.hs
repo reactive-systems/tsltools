@@ -69,6 +69,6 @@ main = do
     Nothing -> return ()
 
   cPutOutLn Vivid White $
-    "size:     " ++ (show $ size $ toFormula assumptions guarantees)
+    "size:     " ++ show (size $ toFormula assumptions guarantees)
 
 -----------------------------------------------------------------------------

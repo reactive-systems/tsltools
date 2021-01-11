@@ -59,7 +59,7 @@ import System.Exit
 
 -----------------------------------------------------------------------------
 
-data Configuration = Configuration
+newtype Configuration = Configuration
   { input :: Maybe [FilePath]
   } deriving (Eq, Ord)
 
@@ -85,9 +85,7 @@ main = do
 
   valid <- case input of
     Nothing -> checkInput Nothing
-    Just files ->
-      mapM checkFile files
-      >>= return . and
+    Just files -> and <$> mapM checkFile files
 
   if valid
   then exitSuccess

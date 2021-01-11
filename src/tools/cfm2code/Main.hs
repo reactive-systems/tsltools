@@ -9,8 +9,7 @@
 
 {-# LANGUAGE
 
-    RecordWildCards
-  , NamedFieldPuns
+    NamedFieldPuns
 
   #-}
 
