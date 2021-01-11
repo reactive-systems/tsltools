@@ -13,14 +13,6 @@
 module PrintUtils
   ( Color(..)
   , ColorIntensity(..)
-  , printOut
-  , printOutLn
-  , printErr
-  , printErrLn
-  , cPrintOut
-  , cPrintOutLn
-  , cPrintErr
-  , cPrintErrLn
   , putOut
   , putOutLn
   , putErr
@@ -30,7 +22,17 @@ module PrintUtils
   , cPutErr
   , cPutErrLn
   , cPutMessageInput
+  , printOut
+  , printOutLn
+  , printErr
+  , printErrLn
+  , cPrintOut
+  , cPrintOutLn
+  , cPrintErr
+  , cPrintErrLn
   ) where
+
+-----------------------------------------------------------------------------
 
 import System.Console.ANSI
   ( Color(..)
@@ -50,94 +52,39 @@ import System.IO
 
 
 -----------------------------------------------------------------------------
--- | 'printOut' outputs a value of any printable type to stdout
-printOut :: Show a => a -> IO ()
-printOut = hPutStr stdout . show
-
------------------------------------------------------------------------------
--- | 'printOut' outputs a value of any printable type to stdout and
--- adds a newline at the end
-printOutLn :: Show a => a -> IO ()
-printOutLn = hPutStrLn stdout . show
-
------------------------------------------------------------------------------
--- | 'printErr' outputs a value of any printable type to stderr
-printErr :: Show a => a -> IO ()
-printErr = hPutStr stderr . show
-
------------------------------------------------------------------------------
--- | 'printErr' outputs a value of any printable type to stderr and
--- adds a newline at the end
-printErrLn :: Show a => a -> IO ()
-printErrLn = hPutStrLn stderr . show
-
-
------------------------------------------------------------------------------
--- | 'hSetColor' defines the color of the given handle for upcoming writes
-hSetColor :: Handle -> ColorIntensity -> Color-> IO ()
-hSetColor h i c = hSetSGR h [ SetColor Foreground i c ]
-
------------------------------------------------------------------------------
--- | 'hResetColor' resets the color of the given handle
-hResetColor :: Handle -> IO ()
-hResetColor h = hSetSGR h [Reset]
-
------------------------------------------------------------------------------
--- | 'cHPrintFunc' wraps the call of hPutStr(Ln) . show to color the message
-cHPrintFunc :: Show a => (Handle -> String -> IO ()) -> Handle -> ColorIntensity -> Color -> a -> IO ()
-
-cHPrintFunc hPutStr h i c s = do
-  hSetColor h i c
-  hPutStr h $ show s
-  hResetColor h
-
------------------------------------------------------------------------------
--- | same as 'printOut', but with colors
-cPrintOut :: Show a => ColorIntensity -> Color -> a -> IO ()
-cPrintOut = cHPrintFunc hPutStr stdout
-
------------------------------------------------------------------------------
--- | same as 'printOutLn', but with colors
-cPrintOutLn :: Show a => ColorIntensity -> Color -> a -> IO ()
-cPrintOutLn = cHPrintFunc hPutStrLn stdout
-
------------------------------------------------------------------------------
--- | same as 'printErr', but with colors
-cPrintErr :: Show a => ColorIntensity -> Color -> a -> IO ()
-cPrintErr = cHPrintFunc hPutStr stderr
-
------------------------------------------------------------------------------
--- | same as 'printErrLn', but with colors
-cPrintErrLn :: Show a => ColorIntensity -> Color -> a -> IO ()
-cPrintErrLn = cHPrintFunc hPutStrLn stderr
-
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
--- | 'putOut' writes a string to stdout
+-- | writes a string to stdout (= 'putStr')
 putOut :: String -> IO ()
 putOut = hPutStr stdout
 
 -----------------------------------------------------------------------------
--- | 'putOut' writes a string to stdout and adds a newline at the end
+-- | writes a string to stdout and adds a newline at the end (= 'putStrLn')
 putOutLn :: String -> IO ()
 putOutLn = hPutStrLn stdout
 
 -----------------------------------------------------------------------------
--- | 'putErr' writes a string to stderr
+-- | writes a string to stderr
 putErr :: String -> IO ()
 putErr = hPutStr stderr
 
 -----------------------------------------------------------------------------
--- | 'putErr' writes a string to stderr and adds a newline at the end
+-- | writes a string to stderr and adds a newline at the end
 putErrLn :: String -> IO ()
 putErrLn = hPutStrLn stderr
 
 
 -----------------------------------------------------------------------------
--- | 'cHPutFunc' wraps the call of hPutStr(Ln) to color the message
-cHPutFunc :: (Handle -> String -> IO ()) -> Handle -> ColorIntensity -> Color -> String -> IO ()
+-- | defines the color of the given handle for upcoming writes
+hSetColor :: Handle -> ColorIntensity -> Color-> IO ()
+hSetColor h i c = hSetSGR h [ SetColor Foreground i c ]
 
+-----------------------------------------------------------------------------
+-- | resets the color of the given handle
+hResetColor :: Handle -> IO ()
+hResetColor h = hSetSGR h [Reset]
+
+-----------------------------------------------------------------------------
+-- | wraps the call of hPutStr(Ln) to color the message
+cHPutFunc :: (Handle -> String -> IO ()) -> Handle -> ColorIntensity -> Color -> String -> IO ()
 cHPutFunc hPutStr h i c s = do
   hSetColor h i c
   hPutStr h s
@@ -167,12 +114,58 @@ cPutErrLn = cHPutFunc hPutStrLn stderr
 -----------------------------------------------------------------------------
 -- | writes a colored message + possible input description on STDOUT
 cPutMessageInput :: Color -> String -> Maybe FilePath -> IO ()
-cPutMessageInput c message input = do
+cPutMessageInput c message input =
   case input of
-    Nothing -> do
+    Nothing ->
       cPutOutLn Vivid c message
     Just file -> do
       cPutOut Vivid c $ message ++ ": "
       cPutOutLn Vivid White file
+
+
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-- | outputs a value of any printable type to stdout
+printOut :: Show a => a -> IO ()
+printOut = putOut . show
+
+-----------------------------------------------------------------------------
+-- | outputs a value of any printable type to stdout and
+-- adds a newline at the end
+printOutLn :: Show a => a -> IO ()
+printOutLn = putOutLn . show
+
+-----------------------------------------------------------------------------
+-- | outputs a value of any printable type to stderr
+printErr :: Show a => a -> IO ()
+printErr = putErr . show
+
+-----------------------------------------------------------------------------
+-- | outputs a value of any printable type to stderr and
+-- adds a newline at the end
+printErrLn :: Show a => a -> IO ()
+printErrLn = putErrLn . show
+
+
+-----------------------------------------------------------------------------
+-- | same as 'printOut', but with colors
+cPrintOut :: Show a => ColorIntensity -> Color -> a -> IO ()
+cPrintOut i c = cPutOut i c . show
+
+-----------------------------------------------------------------------------
+-- | same as 'printOutLn', but with colors
+cPrintOutLn :: Show a => ColorIntensity -> Color -> a -> IO ()
+cPrintOutLn i c = cPutOutLn i c . show
+
+-----------------------------------------------------------------------------
+-- | same as 'printErr', but with colors
+cPrintErr :: Show a => ColorIntensity -> Color -> a -> IO ()
+cPrintErr i c = cPutErr i c . show
+
+-----------------------------------------------------------------------------
+-- | same as 'printErrLn', but with colors
+cPrintErrLn :: Show a => ColorIntensity -> Color -> a -> IO ()
+cPrintErrLn i c = cPutErrLn i c . show
 
 -----------------------------------------------------------------------------
