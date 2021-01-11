@@ -60,7 +60,7 @@ import System.Exit
 -- | Checks if given FilePath belongs to an existing file.
 -- If the file does not exists, function exits with an error mesage.
 checkFile :: FilePath -> IO ()
-checkFile file = do
+checkFile file =
   (>>=) (doesFileExist file) $ flip unless $ do
     cPutErr Vivid Red "Not found: "
     cPutErrLn Vivid White file
@@ -111,7 +111,7 @@ rightOrInvalidInput input = \case
 -- if this is not possible outputs a respective error on the command line
 -- and exits
 loadTSL :: Maybe FilePath -> IO Specification
-loadTSL input = do
+loadTSL input =
   tryReadContent input
   >>= fromTSL input
   >>= rightOrInvalidInput input

@@ -7,7 +7,7 @@
 -- different core genearation tools
 --
 -----------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase, ImplicitParams #-}
+{-# LANGUAGE LambdaCase #-}
 
 -----------------------------------------------------------------------------
 module Utils where
@@ -24,6 +24,8 @@ import TSL
   )
 
 import TSLCoreGenerator (Context(..), Verbosity(..))
+
+import Control.Monad (when)
 
 import System.Exit (exitFailure)
 import System.Process (readProcessWithExitCode)
@@ -91,11 +93,9 @@ printHelpAndExit helpMessages = do
 -- outputs an adequate error message on stderr and exists the program
 checkPoolSize :: Int -> IO ()
 checkPoolSize n =
-  if n <= 0
-    then do
-      cPutErrLn Vivid Red "The thread pool size has to be at least one"
-      exitFailure
-    else return ()
+  when (n <= 0) $ do
+    cPutErrLn Vivid Red "The thread pool size has to be at least one"
+    exitFailure
 
 -----------------------------------------------------------------------------
 -- | 'parsePoolSize' tries to parse the pool size and if this is not

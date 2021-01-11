@@ -10,9 +10,7 @@
 
 {-# LANGUAGE
 
-    LambdaCase
-  , RecordWildCards
-  , NamedFieldPuns
+    NamedFieldPuns
 
   #-}
 
