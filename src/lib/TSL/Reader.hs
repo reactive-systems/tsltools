@@ -133,7 +133,7 @@ import qualified Data.IntMap as IM
   )
 
 import Control.Arrow
-  ( (***)
+  ( second
   )
 
 import Control.Monad
@@ -262,7 +262,7 @@ resolveImports specPath ls str = case parse str of
                           ++ PD.definitions spec
                       , sections =
                           map
-                            (id *** (upd path' . fmap ((name ++ ".") ++)))
+                            (second (upd path' . fmap ((name ++ ".") ++)))
                             (PD.sections spec')
                           ++ PD.sections spec
                       }
@@ -276,14 +276,10 @@ resolveImports specPath ls str = case parse str of
               else combine (takeDirectory specPath) path
       exists <- doesPathExist combinedPath
       if exists
-      then do
-        canonicalizePath combinedPath
-        >>= return . Just
+      then Just <$> canonicalizePath combinedPath
       else return Nothing
 
-    importer = case specPath of
-      Just specPath -> specPath
-      Nothing -> "STDIN"
+    importer = fromMaybe "STDIN" specPath
 
     updE path = \case
       GuardedBinding xs    -> GuardedBinding $ map (upd path) xs
@@ -294,7 +290,7 @@ resolveImports specPath ls str = case parse str of
     updB path Binding{..} =
       Binding
         { bIdent = bIdent
-        , bArgs = map (id *** (\x -> x { srcPath = Just path })) bArgs
+        , bArgs = map (second (\x -> x { srcPath = Just path })) bArgs
         , bPos = bPos { srcPath = Just path }
         , bVal = updE path bVal
         }
