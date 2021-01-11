@@ -22,8 +22,6 @@ module Main
 
 -----------------------------------------------------------------------------
 
-import Utils
-
 import EncodingUtils
   ( initEncoding
   )
@@ -40,6 +38,12 @@ import PrintUtils
 
 import FileUtils
   ( loadTSL
+  )
+
+import Utils
+  ( checkPoolSize
+  , convertVerbosity
+  , createContext
   )
 
 import TSL

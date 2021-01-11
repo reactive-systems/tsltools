@@ -40,11 +40,15 @@ import FileUtils
   ( loadTSL
   )
 
+import Utils
+  ( checkPoolSize
+  , convertVerbosity
+  , createContext
+  )
+
 import TSL (toTSL)
 
 import TSLCoreGenerator (generateCore)
-
-import Utils
 
 -----------------------------------------------------------------------------
 
@@ -107,7 +111,7 @@ main :: IO ()
 main = do
   initEncoding
   Configuration{poolSize, verbosity, realizableCommand, input} <- execParser configParserInfo
-
+  checkPoolSize poolSize
   verbosity' <- convertVerbosity verbosity
   spec <- loadTSL input
   generateCore (createContext poolSize verbosity' realizableCommand) spec
