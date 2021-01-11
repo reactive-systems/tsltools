@@ -149,7 +149,7 @@ import qualified Data.Array.IArray as A
 import System.Directory
   ( doesFileExist
   , doesPathExist
-  , makeAbsolute
+  , canonicalizePath
   )
 
 import System.FilePath.Posix
@@ -273,7 +273,7 @@ resolveImports specPath ls str = case parse str of
       exists <- doesPathExist combinedPath 
       if exists
       then do
-        makeAbsolute combinedPath
+        canonicalizePath combinedPath
         >>= return . Just
       else return Nothing
 
