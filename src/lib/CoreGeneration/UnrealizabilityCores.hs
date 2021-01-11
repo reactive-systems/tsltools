@@ -1,12 +1,12 @@
 -------------------------------------------------------------------------------
 -- |
 -- Module      : UnrealizabilityCores
--- Description : Computes TSL unrealizablility cores 
+-- Description : Computes TSL unrealizablility cores
 -- Maintainer  : Philippe Heim
 --
 -- This module provides functions to compute TSL unrealizability core. This is
--- a sub-specification of a given specification (with a subset of guarantees) 
--- that is already unrealizable. 
+-- a sub-specification of a given specification (with a subset of guarantees)
+-- that is already unrealizable.
 --
 -------------------------------------------------------------------------------
 {-# LANGUAGE ViewPatterns, LambdaCase, RecordWildCards #-}
@@ -58,7 +58,7 @@ type Query = Specification
 
 -------------------------------------------------------------------------------
 -- | 'getCores' computes a list of possible queries that can be used to find
--- a unrealizability core. Note that the queries are sorted in such a way 
+-- a unrealizability core. Note that the queries are sorted in such a way
 -- that the first unrealizable one is a core with a minimal amount of
 -- guarantees.
 
@@ -99,8 +99,8 @@ getCores tsl@Specification {guarantees = g} =
 -------------------------------------------------------------------------------
 -- | 'testCoreQuery' checks whether some potential unrealizable core is
 -- actually one. To make this more efficient, assumption searching is used
--- to find realizable (hence non-core) specifications faster. 'testCoreQuery' 
--- is provided a set of assumptions that is known to be needed for 
+-- to find realizable (hence non-core) specifications faster. 'testCoreQuery'
+-- is provided a set of assumptions that is known to be needed for
 -- realizability (known from the previous queries).
 
 testCoreQuery ::
@@ -141,8 +141,8 @@ testCoreQuery context minimalAssumptions tsl =
         else return Nothing
 
 -------------------------------------------------------------------------------
--- | 'generateCore' computes for a 'Specification' a minimal 
--- sub-specification with a subset of guarantees that is unrealizable 
+-- | 'generateCore' computes for a 'Specification' a minimal
+-- sub-specification with a subset of guarantees that is unrealizable
 -- (if it exists). This is called a unrealizable core. The computation is
 -- done using synthesis calls, and therefore a 'Context' is needed.
 

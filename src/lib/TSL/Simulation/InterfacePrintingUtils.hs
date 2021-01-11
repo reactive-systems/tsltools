@@ -78,7 +78,7 @@ updateListToString = \case
   x:xr -> updateToString x ++ " " ++ updateListToString xr
 
 -------------------------------------------------------------------------------
--- | 'predicateEvaluationToString' prints a predicate term evaluation as a 
+-- | 'predicateEvaluationToString' prints a predicate term evaluation as a
 -- string in a easily understandable manner.
 
 predicateEvaluationToString :: (PredicateTerm String, Bool) -> String

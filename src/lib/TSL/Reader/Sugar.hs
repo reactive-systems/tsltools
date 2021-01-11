@@ -2,7 +2,7 @@
 -- |
 -- Module      :  TSL.Reader.Sugar
 -- License     :  MIT (see the LICENSE file)
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --
 -- Removes syntactic sugar elements from the specification.
 --

@@ -1,11 +1,11 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --                Philippe Heim
 --                Gideon Geier
 --                Marvin Stenger
---               
+--
 --
 -- TSL tools library interface.
 --

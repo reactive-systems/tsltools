@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Parser.Data
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --
 -- Common data used by the parser module.
 --

@@ -41,13 +41,13 @@ import Control.Exception (assert)
 -----------------------------------------------------------------------------
 -- | 'NormCircuit' defines an intermediate tree-shaped representation of the
 -- AIGER circuit, that can be evaluated in an recursive manner. Hereby a
--- 'CircuitTree' is the evaluation-tree (of an output or latch input). The 
+-- 'CircuitTree' is the evaluation-tree (of an output or latch input). The
 -- leafs of such an evaluation-tree are consequently latches or inputs of the
 -- circuit.
 
 data NormCircuit i o =
   NormCircuit
-    { 
+    {
     -- | The inputs of the circuit
       inputs :: [Input]
     -- | The outputs of the circuit
@@ -96,7 +96,7 @@ normalize renameInput renameOutput aig =
         { inputs = Aiger.inputs aig
         , outputs = Aiger.outputs aig
         , latches = Aiger.latches aig
-        , outputCir = iwire2ct . Aiger.outputWire aig 
+        , outputCir = iwire2ct . Aiger.outputWire aig
         , latchCir = iwire2ct . Aiger.latchInput aig
         , inputName = lookup $ rights renamedInputs
         , outputName = lookup $ rights renamedOutputs
@@ -145,7 +145,7 @@ normalize renameInput renameOutput aig =
     --
     isGateOutput :: Wire -> Maybe Gate
     isGateOutput w = find (\g -> w == Aiger.gateOutput aig g) (Aiger.gates aig)
-    -- 
+    --
     isLatchOutput :: Wire -> Maybe Latch
     isLatchOutput w =
       find (\l -> w == Aiger.latchOutput aig l) (Aiger.latches aig)
@@ -160,7 +160,7 @@ type Inputs = Input -> Bool
 type Outputs = Output -> Bool
 
 -------------------------------------------------------------------------------
--- | 'simStep' computes given a state and an input, the next state and the 
+-- | 'simStep' computes given a state and an input, the next state and the
 -- output of a 'NormCircuit'
 
 simStep :: NormCircuit i o -> State -> Inputs -> (State, Outputs)
@@ -169,7 +169,7 @@ simStep NormCircuit {..} state inpt =
       outputMap = functionToMap outputs $ \o -> eval (outputCir o) state inpt
    in (strictLookup latchMap, strictLookup outputMap)
   where
-    -- The following is needed to avoid that the mapping functions are 
+    -- The following is needed to avoid that the mapping functions are
     -- evaluated in a lazy manner each step
     strictLookup m elem =
       case Map.lookup elem m of

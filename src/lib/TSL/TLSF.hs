@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.TLSF
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --
 -- TLSF writer, which transforms a TSL formula into TLSF.
 --

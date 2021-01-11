@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Binding
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --
 -- A data type to store an identifier bound to an expression.
 --

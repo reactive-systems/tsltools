@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Specification
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --
 -- Internal data structure of a specification.
 --

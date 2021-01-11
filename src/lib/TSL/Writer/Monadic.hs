@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Writer.Monadic
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --
 -- Code generation for Monadic FRP.
 --
@@ -78,7 +78,7 @@ implement
 
 implement mName fName cfm@CFM{..} =
   let ?bounds = cfm in
-  let    
+  let
     directInputs =
       filter (not . loopedInput) inputs
 
@@ -398,7 +398,7 @@ prCircuitImpl Circuit{..} =
       Positive (Circuit.wire -> 0) ->
         (if b then "(pure True)" else "pure True", [])
       Negative (Circuit.wire -> 0) ->
-        (if b then "(pure False)" else "pure False", [])      
+        (if b then "(pure False)" else "pure False", [])
       Positive w ->
         ( prWire' w, [])
       Negative w ->

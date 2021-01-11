@@ -4,7 +4,7 @@
 -- Description :  Violation finder in finite TSL traces
 -- Maintainer  :  Philippe Heim
 --
--- This module tries to check whether some finite TSL trace (consisting of 
+-- This module tries to check whether some finite TSL trace (consisting of
 -- update an predicate evaluation) violates some TSL 'Formula'.
 --
 -------------------------------------------------------------------------------
@@ -33,10 +33,10 @@ import Data.Map as Map (Map, empty, insert, lookup, union)
 
 data FiniteTrace c =
   FiniteTrace
-    { 
+    {
     -- | The trace (anti-chronological) of the update and predicate evaluations
       trace :: [(c -> SignalTerm c, PredicateTerm c -> Bool)]
-    -- | The anti-chronological trace of 'Obligation's that have to be 
+    -- | The anti-chronological trace of 'Obligation's that have to be
     -- fulfilled
     , obligations :: [[Obligation c]]
     }
@@ -46,8 +46,8 @@ data FiniteTrace c =
 
 data Obligation c =
   Obligation
-    { 
-    -- | The guarantee the obligations represents 
+    {
+    -- | The guarantee the obligations represents
     -- (this should not be modified over time)
       guarantee :: Formula c
     -- | The guarantee evolved over time (i.e. after some evaluation steps)
@@ -80,7 +80,7 @@ append ft@FiniteTrace {..} updates predicates =
    in ft {trace = newTrace, obligations = newOb : obligations}
 
 -------------------------------------------------------------------------------
--- | 'rewind' undoes the last extensions by 'append'. 
+-- | 'rewind' undoes the last extensions by 'append'.
 
 rewind :: Ord c => FiniteTrace c -> FiniteTrace c
 rewind ft@FiniteTrace {..} =
@@ -92,7 +92,7 @@ rewind ft@FiniteTrace {..} =
     _ -> assert False undefined
 
 -------------------------------------------------------------------------------
--- | 'emptyTrace' initializes a 'FiniteTrace'. To compute the initial 
+-- | 'emptyTrace' initializes a 'FiniteTrace'. To compute the initial
 -- obligation the initial specification has to be passed in form of a list
 -- of assumptions and guarantees.
 
@@ -132,7 +132,7 @@ nextObligations FiniteTrace {..} =
 -- | 'checkNext' expands a 'Formula' by a single evaluation step by applying
 -- and simplifying temporal operations. E.g. if the 'Formula' has the form
 -- "F [x <- t]" and the last evaluation contained "[x <- t]" the formula should
--- be simplified to "true". 
+-- be simplified to "true".
 checkNext ::
      Ord c
   => [(c -> SignalTerm c, PredicateTerm c -> Bool)]
@@ -140,7 +140,7 @@ checkNext ::
   -> Formula c
 checkNext trace form = fst $ checkNextC trace empty form
 
--- To improve performance, the computation is enhanced with caching for 
+-- To improve performance, the computation is enhanced with caching for
 -- intermediate results.
 checkNextC ::
      Ord c
@@ -209,7 +209,7 @@ checkNextC ts@(t:tr) cache form =
                     checkNextC ts cache $
                     And
                       [f2, Or [f1, fst $ checkNextC tr empty (Triggered f1 f2)]]
-                  -- The following operators are expanded using either an 
+                  -- The following operators are expanded using either an
                   -- equivalent already defined form or the standard temporal
                   -- expansion rules. The necessary operators have already been
                   -- handled.
@@ -232,7 +232,7 @@ checkNextC ts@(t:tr) cache form =
 
 -------------------------------------------------------------------------------
 -- | 'simplify' simplifies a TSL 'formula' by applying some easy syntactic
--- conversion on the boolean level. 
+-- conversion on the boolean level.
 
 simplify :: Eq c => Formula c -> Formula c
 simplify =
@@ -293,7 +293,7 @@ simplify =
     --
     isTrue TTrue = True
     isTrue _ = False
-    -- 
+    --
     removeDoubles :: Eq a => [a] -> [a]
     removeDoubles [] = []
     removeDoubles (x:xr) =

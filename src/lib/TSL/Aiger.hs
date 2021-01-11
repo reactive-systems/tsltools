@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Aiger
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --
 -- Aiger Circuit Representation.
 --

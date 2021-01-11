@@ -141,7 +141,7 @@ parseArguments = do
             Nothing   -> "cfm"
           x  -> x
       }
-  
+
   where
     pprefs = prefs disambiguate
 

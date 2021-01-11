@@ -50,7 +50,7 @@ command cmd result tlsf = do
       exitFailure
 
 -----------------------------------------------------------------------------
--- | Executes a given command with an input given to stdin and return 
+-- | Executes a given command with an input given to stdin and return
 -- stdout and stderr
 --
 execCMD :: String -> String -> IO (String, String)
@@ -59,7 +59,7 @@ execCMD cmd stdIn = do
   return (sout, serr)
 
 -----------------------------------------------------------------------------
--- | Creates out of the CMD interface an encapuled tool call interface. 
+-- | Creates out of the CMD interface an encapuled tool call interface.
 -- Therefore TSL to string methods are used
 --
 createContext :: Int -> Verbosity -> String -> Context

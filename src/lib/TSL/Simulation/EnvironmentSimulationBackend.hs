@@ -4,7 +4,7 @@
 -- Description :  Backend of the environment simulation
 -- Maintainer  :  Philippe Heim
 --
--- This module is the backend of the environment simulation when playing 
+-- This module is the backend of the environment simulation when playing
 -- against a system strategy.
 --
 -------------------------------------------------------------------------------
@@ -106,13 +106,13 @@ type EnvironmentOption =
 -- to explain why some option is forbidden.
 type Witness = [Formula String]
 
------------------------------------------------------------------------------- 
--- | 'EnvironmentSimulation' is an instance of a game against some system 
+------------------------------------------------------------------------------
+-- | 'EnvironmentSimulation' is an instance of a game against some system
 -- strategy for some specification.
 
 data EnvironmentSimulation =
   EnvironmentSimulation
-    { 
+    {
     -- | The strategy of the system played against
       strategy :: SystemStrategy
     -- | The considered specification
@@ -120,7 +120,7 @@ data EnvironmentSimulation =
     -- | The history of states that have been passed through as stack, the
     -- topmost element is the current state.
     , stateStack :: [State]
-    -- | The trace of updates and predicate evaluation (this trace is the 
+    -- | The trace of updates and predicate evaluation (this trace is the
     -- "trace" that is usually meant in a model checking context)
     , trace :: FiniteTrace String
     -- | The trace of all played actions from the system and the environment
@@ -128,9 +128,9 @@ data EnvironmentSimulation =
     }
 
 -------------------------------------------------------------------------------
--- | 'options' computes all options that are potentially playable by the 
--- environment. Additionally it also computes a 'Witness' of violated TSL 
--- 'Formula's and the respective answer of the system. Note that an option 
+-- | 'options' computes all options that are potentially playable by the
+-- environment. Additionally it also computes a 'Witness' of violated TSL
+-- 'Formula's and the respective answer of the system. Note that an option
 -- is only 'allowed' if the 'Witness' is empty.
 
 options
@@ -161,8 +161,8 @@ options sim@EnvironmentSimulation{strategy = ct} =
 -- an 'EnvironmentOption' played by the environment. It also returns the answer
 -- of the system to the environment`s move.
 --
--- ASSUMPTION: The option should be complete, i.e. for every cell in the 
--- specification, the circuit of the system updates one of these cells. This 
+-- ASSUMPTION: The option should be complete, i.e. for every cell in the
+-- specification, the circuit of the system updates one of these cells. This
 -- can be check using 'sanitize'. If this is not the case 'step' might fire
 -- an assertion error.
 
@@ -230,11 +230,11 @@ rewind sim@EnvironmentSimulation{..} =
     }
 
 -------------------------------------------------------------------------------
--- | 'sanitize' checks that an 'EnvironmentSimulation' is consistent. This 
+-- | 'sanitize' checks that an 'EnvironmentSimulation' is consistent. This
 -- means that the available predicates and updates in the system circuit and
--- the specification match each other. 
+-- the specification match each other.
 --
--- TODO: It does not check for the existence of an initial state; maybe it 
+-- TODO: It does not check for the existence of an initial state; maybe it
 -- should.
 
 sanitize
@@ -277,7 +277,7 @@ sanitize EnvironmentSimulation{strategy = cst, specification = spec} =
     guaranteesStr = fmap (fmap (stName $ symboltable spec)) . guarantees
 
 -------------------------------------------------------------------------------
--- | 'getLog' returns the trace of chosen 'EnvironmentOption's and updates 
+-- | 'getLog' returns the trace of chosen 'EnvironmentOption's and updates
 -- (chosen by the system) in the chronological order.
 
 getLog

@@ -40,5 +40,5 @@ main = do
   parseMaybeFilePath "tslresolve"
   >>= loadTSL
   >>= (putStrLn . toTSL)
-    
+
 -----------------------------------------------------------------------------

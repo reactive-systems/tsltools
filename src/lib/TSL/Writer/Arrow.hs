@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Writer.Arrow
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --
 -- Code generation for Arrowized FRP.
 --
@@ -50,7 +50,7 @@ import Data.Maybe
 import Data.Set
   ( toList
   , fromList
-  )  
+  )
 
 import TSL.Aiger
   ( Circuit(..)
@@ -201,7 +201,7 @@ implement mName fName cfm@CFM{..} =
           prPTypes (map (wireType . fst . head . outputSwitch) outputs)
       , "  -> signal"
       , "       (Input" ++
-        if null directInputs then ")" else 
+        if null directInputs then ")" else
           " " ++
           prPTypes (map (wireType . inputWire) directInputs) ++
           ")"
@@ -210,7 +210,7 @@ implement mName fName cfm@CFM{..} =
           " " ++
           prPTypes (map (wireType . fst . head . outputSwitch) outputs) ++
           ")"
-      , ""      
+      , ""
       , fName ++ " cell Functions{..} InitialState{..}" ++
         " = proc Input{..} -> do"
       , "  rec"
@@ -236,7 +236,7 @@ implement mName fName cfm@CFM{..} =
             (\x -> "      , " ++ outputName x ++
                   " = " ++ outputName x ++ "Out\n")
             (tail outputs) ++
-          "      }\n"        
+          "      }\n"
       , replicate 77 '-'
       , concatMap (prSwitchImpl cfm) outputs
       ]
@@ -264,7 +264,7 @@ implement mName fName cfm@CFM{..} =
 
     stateDecl o =
       outputName o ++ " :: "
-      ++ prT (wireType $ fst $ head $ outputSwitch o)      
+      ++ prT (wireType $ fst $ head $ outputSwitch o)
 
     prChain = \case
       []   -> assert False undefined
@@ -272,7 +272,7 @@ implement mName fName cfm@CFM{..} =
       t:tr -> prT t ++ concatMap ((" -> " ++) . prT) tr
 
     prPTypes =
-      unwords . map prT . toList . fromList . mapMaybe filterP      
+      unwords . map prT . toList . fromList . mapMaybe filterP
 
     prT = \case
       Boolean -> "Bool"
@@ -281,7 +281,7 @@ implement mName fName cfm@CFM{..} =
 
     filterP = \case
       Boolean -> Nothing
-      t  -> Just t      
+      t  -> Just t
 
     prSwitch o =
       indent 4 (outputName o) ++ "Out <-\n" ++
@@ -341,8 +341,8 @@ prCircuitImpl
 
 prCircuitImpl Circuit{..} =
   let
-    (os, xs) = unzip $ map (\o -> polarized o 'o' $ outputWire o) outputs    
-  in  
+    (os, xs) = unzip $ map (\o -> polarized o 'o' $ outputWire o) outputs
+  in
     unlines
       [ "controlCircuit"
       , "  :: (Arrow signal, ArrowLoop signal)"
@@ -360,12 +360,12 @@ prCircuitImpl Circuit{..} =
           concatMap
             (\(i,x) -> "\n      , controlOut" ++ show i ++
                       " = " ++ x) (zip [1 :: Int,2..] $ tail os) ++
-          "\n      }"      
+          "\n      }"
       , let
           hasLatches   = not $ null latches
           hasInverters =
-              any (isNeg . outputWire) outputs 
-            || any (isNeg . latchInput) latches 
+              any (isNeg . outputWire) outputs
+            || any (isNeg . latchInput) latches
             || any (isNeg . gateInputA) gates
             || any (isNeg . gateInputB) gates
         in
@@ -419,7 +419,7 @@ prCircuitImpl Circuit{..} =
       Positive w -> prWire' w
       Negative w -> "not " ++ prWire' w
 
-    polarized i c = \case      
+    polarized i c = \case
       Positive (Circuit.wire -> 0) ->
         ( "True", "")
       Negative (Circuit.wire -> 0) ->

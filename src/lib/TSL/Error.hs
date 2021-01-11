@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Error
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --
 -- Data structures to wrap all contents, that are needed to print nice
 -- error messages.

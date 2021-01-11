@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Writer.Applicative
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --
 -- Code generation for Applicative FRP.
 --
@@ -351,8 +351,8 @@ prCircuitImpl Circuit{..} =
           hasGates     = not $ null gates
           hasInverters =
               any (isNeg . outputWire) outputs
-            || any (isNeg . latchInput) latches 
-            || any (isNeg . gateInputA) gates 
+            || any (isNeg . latchInput) latches
+            || any (isNeg . gateInputA) gates
             || any (isNeg . gateInputB) gates
         in
           if hasLatches || hasGates || hasInverters

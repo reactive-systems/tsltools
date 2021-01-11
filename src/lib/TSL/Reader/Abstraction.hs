@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Reader.Abstraction
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --
 -- Abstracts from identifier names to integer IDs.
 --

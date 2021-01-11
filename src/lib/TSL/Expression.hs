@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Expression
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --
 -- Data types to store expressions and some helper functions.
 --

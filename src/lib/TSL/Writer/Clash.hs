@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Writer.Clash
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --
 -- Clash code generation.
 --
@@ -375,8 +375,8 @@ prCircuitImpl Circuit{..} =
           hasLatches   = not $ null latches
           hasGates     = not $ null gates
           hasInverters =
-              any (isNeg . outputWire) outputs 
-            || any (isNeg . latchInput) latches 
+              any (isNeg . outputWire) outputs
+            || any (isNeg . latchInput) latches
             || any (isNeg . gateInputA) gates
             || any (isNeg . gateInputB) gates
         in

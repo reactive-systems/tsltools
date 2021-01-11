@@ -4,7 +4,7 @@
 -- Description :  Backend of the system simulation
 -- Maintainer  :  Philippe Heim
 --
--- This module is the backend of the system simulation when playing 
+-- This module is the backend of the system simulation when playing
 -- against an environment counter-strategy.
 --
 -------------------------------------------------------------------------------
@@ -115,15 +115,15 @@ type Witness = [Formula String]
 
 data SystemSimulation =
   SystemSimulation
-    { 
+    {
     -- | The counter-strategy of the environment played against
       counterStrategy :: EnvironmentCounterStrategy
     -- | The considered specification
     , specification :: Specification
-    -- | The history of states that have been passed through as stack, the 
+    -- | The history of states that have been passed through as stack, the
     -- topmost element is the current state.
     , stateStack :: [State]
-    -- | The trace of updates and predicate evaluation (this trace is the 
+    -- | The trace of updates and predicate evaluation (this trace is the
     -- "trace" that is usually meant in a model checking context)
     , trace :: FiniteTrace String
     -- | The trace of all played actions from the system and the environment
@@ -131,9 +131,9 @@ data SystemSimulation =
     }
 
 -------------------------------------------------------------------------------
--- | 'options' computes all options that are potentially playable by the 
--- system. Additionally it also computes a 'Witness' of violated TSL 
--- 'Formula's and the respective answer of the environment. Note that an 
+-- | 'options' computes all options that are potentially playable by the
+-- system. Additionally it also computes a 'Witness' of violated TSL
+-- 'Formula's and the respective answer of the environment. Note that an
 -- option is only 'allowed' if the 'Witness' is empty.
 
 options
@@ -188,8 +188,8 @@ options sim@SystemSimulation {counterStrategy = ct} =
 -- 'SystemOption' played by the system. It also returns the answer
 -- of the environment to the system`s move.
 --
--- ASSUMPTION: The option should be complete, i.e. for every cell in the 
--- specification, the circuit of the system updates one of these cells. This 
+-- ASSUMPTION: The option should be complete, i.e. for every cell in the
+-- specification, the circuit of the system updates one of these cells. This
 -- can be check using 'sanitize'. If this is not the case 'step' might fire
 -- an assertion error.
 
@@ -260,11 +260,11 @@ rewind sim@SystemSimulation{..} =
     }
 
 -------------------------------------------------------------------------------
--- | 'sanitize' checks that a 'SystemSimulation' is consistent. This means that 
+-- | 'sanitize' checks that a 'SystemSimulation' is consistent. This means that
 -- the available predicates and updates in the counter-strategy circuit and
--- the specification match each other. 
+-- the specification match each other.
 --
--- TODO: It does not check for the existence of an initial state; maybe it 
+-- TODO: It does not check for the existence of an initial state; maybe it
 -- should.
 
 sanitize
@@ -306,7 +306,7 @@ sanitize SystemSimulation{counterStrategy = cst, specification = spec} =
     guaranteesStr = fmap (fmap (stName $ symboltable spec)) . guarantees
 
 -------------------------------------------------------------------------------
--- | 'getLog' returns the trace of chosen 'SystemOption's and predicate 
+-- | 'getLog' returns the trace of chosen 'SystemOption's and predicate
 -- evaluations (chosen by the environment) in the chronological order.
 
 getLog

@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.CFM
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --
 -- Control flow model representation.
 --

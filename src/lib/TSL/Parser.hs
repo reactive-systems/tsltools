@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Parser
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --
 -- Parsing module containing all neccessary parsers.
 --

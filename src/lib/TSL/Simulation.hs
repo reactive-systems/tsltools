@@ -161,7 +161,7 @@ simulate specPath tsl' aag' =
       Right aag -> case createSimulation aag tsl of
         Left err          -> Left err
         Right (Left sim)  -> Right $ SysSymInt.runSimulation sim
-        Right (Right sim) -> Right $ EnvSymInt.runSimulation sim) 
-    <$> fromTSL specPath tsl' 
+        Right (Right sim) -> Right $ EnvSymInt.runSimulation sim)
+    <$> fromTSL specPath tsl'
 
 -------------------------------------------------------------------------------

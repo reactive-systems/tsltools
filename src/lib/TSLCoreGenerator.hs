@@ -1,11 +1,11 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : TSLCoreGenerator
--- Description : TSL unrealizable-core and minimal-assumptions finder 
+-- Description : TSL unrealizable-core and minimal-assumptions finder
 -- Maintainer  : Philippe Heim
 --
 -- Provides methods to generate unrealizability cores and to search
--- for a minimal amount of assumptions needed to realize a 
+-- for a minimal amount of assumptions needed to realize a
 -- specification.
 --
 -----------------------------------------------------------------------------

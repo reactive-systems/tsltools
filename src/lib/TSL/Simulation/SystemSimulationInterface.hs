@@ -72,8 +72,8 @@ data Action
   | ShowWhyOthersNot
 
 -------------------------------------------------------------------------------
--- | 'getUserInput' retrieves the action chosen by the user. Therefore a 
--- overview over the possible actions is printed and how they are performed. 
+-- | 'getUserInput' retrieves the action chosen by the user. Therefore a
+-- overview over the possible actions is printed and how they are performed.
 -- Also the input is sanitized and re-queried if invalid.
 
 getUserInput :: [SystemOption] -> IO Action
@@ -151,14 +151,14 @@ runSimulation sim = do
           let (sim', _) = step sim opt
           resetAndPrint sim'
           execSimulation sim'
-   
-    resetAndPrint 
+
+    resetAndPrint
       :: SystemSimulation -> IO()
     resetAndPrint sim = do
       resetInterface
       printTrace sim
       putStrLn ""
- 
+
     printTrace
       :: SystemSimulation -> IO ()
 

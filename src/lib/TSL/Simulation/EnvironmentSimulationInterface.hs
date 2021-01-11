@@ -67,8 +67,8 @@ data Action
   | ShowWhyOthersNot
 
 -------------------------------------------------------------------------------
--- | 'getUserInput' retrieves the action chosen by the user. Therefore a 
--- overview over the possible actions is printed and how they are performed. 
+-- | 'getUserInput' retrieves the action chosen by the user. Therefore a
+-- overview over the possible actions is printed and how they are performed.
 -- Also the input is sanitized and re-queried if invalid.
 
 getUserInput :: [EnvironmentOption] -> IO Action
@@ -110,7 +110,7 @@ runSimulation sim = do
         imposOpts = filter (\(_, xs, _) -> not $ null xs) opts
 
       cPutStrLn Magenta "Your options are:"
-      cPutStrLn White 
+      cPutStrLn White
         (snd $
          foldl
            (\(n, xs) e ->
@@ -147,13 +147,13 @@ runSimulation sim = do
           resetAndPrint sim'
           execSimulation sim'
 
-    resetAndPrint 
+    resetAndPrint
       :: EnvironmentSimulation -> IO()
     resetAndPrint sim = do
       resetInterface
       printTrace sim
       putStrLn ""
- 
+
     printTrace
       :: EnvironmentSimulation -> IO ()
     printTrace sim = do

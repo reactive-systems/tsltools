@@ -3,7 +3,7 @@
 -- Module      :  Main
 -- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
 --
--- Generates the specification that is realizable with a minimal amount of 
+-- Generates the specification that is realizable with a minimal amount of
 -- assumptions
 --
 -----------------------------------------------------------------------------

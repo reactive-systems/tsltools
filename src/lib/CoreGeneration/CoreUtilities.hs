@@ -29,17 +29,17 @@ import TSL (Formula(..), Specification(..))
 import Control.Monad (when)
 
 -------------------------------------------------------------------------------
--- | 'Context' holds the necessary informations that are used for the 
+-- | 'Context' holds the necessary informations that are used for the
 -- synthesis calls and the program logging
 data Context =
   Context
-    { tslSpecRealizable :: Specification -> IO Bool -- ^ 'tslSpecRealizable' 
-                                                 -- checks whether some 
-                                                 -- 'Specification' is 
+    { tslSpecRealizable :: Specification -> IO Bool -- ^ 'tslSpecRealizable'
+                                                 -- checks whether some
+                                                 -- 'Specification' is
                                                  -- realizable
-    , verbosityLevel :: Verbosity -- ^ 'verbosityLevel' defines which output 
+    , verbosityLevel :: Verbosity -- ^ 'verbosityLevel' defines which output
                                   -- logging verbosity should be applied
-    , threadPoolSize :: Int -- ^ 'threadPoolSize' defines how many worker 
+    , threadPoolSize :: Int -- ^ 'threadPoolSize' defines how many worker
                             -- threads should be executed at once
     }
 
@@ -64,7 +64,7 @@ logOn verbosities context logMessage =
   when (verbosityLevel context `elem` verbosities) (putStrLn logMessage)
 
 -------------------------------------------------------------------------------
--- | 'logNormal' writes a log message if the 'Verbosity' is at least 
+-- | 'logNormal' writes a log message if the 'Verbosity' is at least
 -- 'STEPWISE'.
 logNormal :: Context -> String -> IO ()
 logNormal = logOn [STEPWISE, DETAILED]
@@ -76,7 +76,7 @@ logHigh = logOn [DETAILED]
 
 -------------------------------------------------------------------------------
 -- | 'sortedPowerSet' computes the powerset as list of sets such that the
--- list is sorted with ascending size.  Note that this is not done by 
+-- list is sorted with ascending size.  Note that this is not done by
 -- using 'powerset' and then sorting but in an on-the-fly manner.
 
 sortedPowerSet :: Int -> [Set Int]
@@ -97,7 +97,7 @@ sortedPowerSet n = powerSetB n n
 
 -------------------------------------------------------------------------------
 -- | 'optimizeSpec' might do some preprocessing to make a specification more
--- suitable for synthesis. 
+-- suitable for synthesis.
 
 optimizeSpec :: Specification -> Specification
 optimizeSpec Specification {..} =

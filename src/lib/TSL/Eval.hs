@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Eval
--- Maintainer  :  Felix Klein 
+-- Maintainer  :  Felix Klein
 --
 -- Evaluation function for internal variables.
 --
@@ -685,7 +685,7 @@ vPreviousN (VInt n) (VSTerm (Signal x))
   | n < 0                            = VError undefined $
                                      "Negative next-operator chain: [" ++
                                      show n ++ "]"
-  | otherwise                        = VTSL $ (!! n) $ iterate Previous $ cb x  
+  | otherwise                        = VTSL $ (!! n) $ iterate Previous $ cb x
 vPreviousN _        _                = assert False undefined
 
 -----------------------------------------------------------------------------
@@ -728,7 +728,7 @@ vGloballyR (VInt n) (VInt m) (VSTerm (Signal x))
       VTSL $ (!! n) $ iterate Next $
         foldl (\a _ -> And [cb x, Next a]) (cb x) [0, 1 .. m - n - 1]
   | otherwise                                 =
-      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"      
+      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vGloballyR _        _        _                = assert False undefined
 
 -----------------------------------------------------------------------------
@@ -770,7 +770,7 @@ vFinallyR (VInt n) (VInt m) (VSTerm (Signal x))
       VTSL $ (!! n) $ iterate Next $
         foldl (\a _ -> Or [cb x, Next a]) (cb x) [0, 1 .. m - n - 1]
   | otherwise                                =
-      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"      
+      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vFinallyR _        _        _                = assert False undefined
 
 -----------------------------------------------------------------------------
@@ -812,7 +812,7 @@ vHistoricallyR (VInt n) (VInt m) (VSTerm (Signal x))
       VTSL $ (!! n) $ iterate Previous $
         foldl (\a _ -> Or [cb x, Previous a]) (cb x) [0, 1 .. m - n - 1]
   | otherwise                                =
-      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"      
+      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vHistoricallyR _        _        _                = assert False undefined
 
 -----------------------------------------------------------------------------
@@ -854,7 +854,7 @@ vOnceR (VInt n) (VInt m) (VSTerm (Signal x))
       VTSL $ (!! n) $ iterate Previous $
         foldl (\a _ -> Or [cb x, Previous a]) (cb x) [0, 1 .. m - n - 1]
   | otherwise                                =
-      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"      
+      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vOnceR _        _        _                = assert False undefined
 
 -----------------------------------------------------------------------------
@@ -1011,4 +1011,4 @@ cb
 cb =
   Check . BooleanInput
 
------------------------------------------------------------------------------  
+-----------------------------------------------------------------------------
