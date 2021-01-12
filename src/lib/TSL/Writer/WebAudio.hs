@@ -110,42 +110,61 @@ implement _ _ cfm@CFM{..} =
 -- TODO: make datatype more structured & intuitive.
 data JSElem = NullElem
             | Cell {varName :: String}
+            | Select {varName :: String}
+            | Signal {varName :: String}
             | Button {varName :: String}
             | Note {varName :: String}
-            deriving (Eq)
+            deriving (Show, Eq)
 
 actionName :: JSElem -> String
+actionName (Select _) = "change"
+actionName (Button _) = "click"
 actionName (Note _) = "click"
 actionName _ = ""
 
 strToJSElem :: String -> JSElem
 strToJSElem = \case
   -- Cells
-  "amFreq"      -> Cell "amFreq"
-  "fmFreq"      -> Cell "fmFreq"
-  "amSynthesis" -> Cell "amSynthesis"
-  "fmSynthesis" -> Cell "fmSynthesis"
-  "lfo"         -> Cell "lfo"
-  "lfoFreq"     -> Cell "lfoFreq"
-  "lfoDepth"    -> Cell "lfoDepth"
-  "waveform"    -> Cell "waveform"
+  "amFreq"           -> Cell "amFreq"
+  "fmFreq"           -> Cell "fmFreq"
+  "amSynthesis"      -> Cell "amSynthesis"
+  "fmSynthesis"      -> Cell "fmSynthesis"
+  "filterOn"         -> Cell "filterOn"
+  "harmonizerOn"     -> Cell "harmonizerOn"
+  "arpeggiatorOn"    -> Cell "arpeggiatorOn"
+  "lfo"              -> Cell "lfo"
+  "lfoFreq"          -> Cell "lfoFreq"
+  "lfoDepth"         -> Cell "lfoDepth"
+  "waveform"         -> Cell "waveform"
+  "arpeggiatorStyle" -> Cell "arpeggiatorStyle"
   -- Buttons
-  "amOnBtn"     -> Button "amOnBtn"
-  "amOffBtn"    -> Button "amOffBtn"
-  "fmOnBtn"     -> Button "fmOnBtn"
-  "fmOffBtn"     -> Button "fmOffBtn"
-  "lfoOnBtn"    -> Button "lfoOnBtn"
-  "lfoOffBtn"   -> Button "lfoOffBtn"
+  "amOnBtn"          -> Button "amOnBtn"
+  "amOffBtn"         -> Button "amOffBtn"
+  "fmOnBtn"          -> Button "fmOnBtn"
+  "fmOffBtn"         -> Button "fmOffBtn"
+  "lfoOnBtn"         -> Button "lfoOnBtn"
+  "lfoOffBtn"        -> Button "lfoOffBtn"
+  "filterOnBtn"     -> Button "filterOnBtn"
+  "filterOffBtn"     -> Button "filterOffBtn"
+  "harmonizerOnBtn"  -> Button "harmonizerOnBtn"
+  "harmonizerOffBtn" -> Button "harmonizerOffBtn"
+  "arpeggiatorOnBtn" -> Button "arpeggiatorOnBtn"
+  "arpeggiatorOffBtn"-> Button "arpeggiatorOffBtn"
+  -- Signals
+  "noteVelocity"     -> Signal "noteVelocity"
+  -- Select
+  "waveformControl"  -> Select "waveformControl"
   -- Notes
-  note          -> Note note
+  note               -> Note note
 
 implementWebAudio :: [String] -> [String] -> String 
 implementWebAudio inputs outputs = 
   unlines [ "// Implemented Functions"
           , functionImpl
           , ""
-          , "// Event listeners"
+          , "// Notes"
           , concatMap defineNotes reactiveNotes
+          , "// Reactive Updates"
           , concat $ intersperse "\n\n" $
             map signalUpdateCode (NullElem:eventableInputs)
           , ""
@@ -159,21 +178,29 @@ implementWebAudio inputs outputs =
       functionImpl = unlines
         ["function p_play(input){return input;}"
         ,"function p_press(input){return input;}"
+        ,"function p_change(input){return input;}"
+        ,"function p_veloBelow50(velocity){return velocity<=50}"
+        ,"function p_veloAbove50(velocity){return velocity>50}"
         ,"function f_True(){return true;}"
         ,"function f_False(){return false;}"
         ,"function f_sawtooth(){return \"sawtooth\";}"
         ,"function f_sine(){return \"sine\";}"
         ,"function f_square(){return \"square\";}"
         ,"function f_triangle(){return \"triangle\";}"
+        ,"function f_upStyle(){return \"up\";}"
+        ,"function f_downStyle(){return \"down\";}"
+        ,"function f_upDownStyle(){return \"up-down\";}"
+        ,"function f_downUpStyle(){return \"down-up\";}"
         ,"function f_inc10(arg){return arg+10;}"
         ,"function f_dec10(arg){return Math.max(arg-10,0);}"
+        ,"function f_inc1(arg){return arg+1;}"
+        ,"function f_dec1(arg){return Math.max(arg-1,0);}"
+        ,"function f_getWaveformVal(node){return waveformControl.value}"
+        ,"function f_getArpType(node){return arpeggiatorStyleControl.value}"
         ]
 
       inputSignals :: [JSElem]
       inputSignals = map strToJSElem inputs
-
-      outputSignals :: [JSElem]
-      outputSignals = map strToJSElem outputs
 
       eventableInputs :: [JSElem]
       eventableInputs = filter eventable inputSignals
@@ -187,6 +214,7 @@ implementWebAudio inputs outputs =
 
       eventable :: JSElem -> Bool
       eventable (Button _)  = True
+      eventable (Select _)  = True
       eventable (Note _)    = True
       eventable _           = False
 
@@ -229,6 +257,8 @@ implementWebAudio inputs outputs =
         where
           pipeSignal :: JSElem -> String
           pipeSignal (NullElem) = ""
+          -- XXX
+          pipeSignal (Signal _) = "s_noteVelocity : 50,\n"
           pipeSignal x = case eventable x of
             False -> signalShown ++ varName x ++ nl
             True -> case x == var of
@@ -248,22 +278,25 @@ implementWebAudio inputs outputs =
       makeMidiTriggers notes =
         triggerNoteSetInit ++ 
         fxnHeader ++
-        indent 4 "const noteSignal = 's_' + note;\n" ++
+        indent 4 "const noteSignal = 's_note' + note;\n" ++
         indent 4 inputTemplate ++ 
         indent 4 "inputTemplate[noteSignal] = true;\n" ++
+        indent 4 "inputTemplate[\"s_noteVelocity\"] = velocity;\n" ++
         indent 4 "if(triggerNotes.has(noteSignal)){\n" ++ 
         indent 8 (outputStr ++ " = control(inputTemplate);\n") ++
         indent 4 "}\n" ++ 
         "}"
         where 
-          triggerNoteSetInit = "const triggerNotes = new Set(" ++
-                               prList (map varName notes) ++ 
+          triggerNoteSetInit = "var triggerNotes = new Set(" ++
+                               prList (map (surroundQuotes . varName) notes) ++ 
                                ");\n"
+            where surroundQuotes str = "\"s_" ++ str ++ "\""
           fxnHeader = "function reactiveUpdateOnMIDI" ++
                       "(note, velocity){\n"
+          -- TODO
           inputTemplate = 
             "const inputTemplate = " ++
-            prDictFormatted 8 (map inSigInit notes) ++
+            prDictFormatted 8 (map inSigInit inputSignals) ++
             ";\n"
             where 
               inSigInit :: JSElem -> String
