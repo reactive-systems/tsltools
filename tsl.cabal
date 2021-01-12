@@ -558,9 +558,13 @@ test-suite default
 
   other-modules:
     SplitTests
+    DependencyTests
+    FileUtils
+    PrintUtils
 
   hs-source-dirs:
     src/test
+    src/tool-utilities
 
   build-depends:
       tsl
@@ -568,6 +572,10 @@ test-suite default
     , containers >=0.5 && <0.7
     , QuickCheck
     , Cabal >=2.4
+    , filepath >= 1.4
+    , directory >= 1.3
+    , ansi-terminal >= 0.6
+
 
   default-language:
     Haskell2010
