@@ -86,8 +86,6 @@ implement _ _ cfm@CFM{..} =
     , prCircuitImpl control
     , replicate 77 '/'
     , ""
-    , "// IMPLEMENTED FUNCTIONS"
-    , ""
     , implementWebAudio inputVars outputVars
     ]
 
@@ -111,8 +109,8 @@ implement _ _ cfm@CFM{..} =
 
 -- TODO: make datatype more structured & intuitive.
 data JSElem = NullElem
-            | Change {varName :: String}
             | Cell {varName :: String}
+            | Button {varName :: String}
             | Note {varName :: String}
             deriving (Eq)
 
@@ -122,30 +120,45 @@ actionName _ = ""
 
 strToJSElem :: String -> JSElem
 strToJSElem = \case
-  "amFreq"          -> Cell "amFreq"
-  "fmFreq"          -> Cell "fmFreq"
-  "amSynthesis"     -> Cell "amSynthesis"
-  "fmSynthesis"     -> Cell "fmSynthesis"
-  "lfo"             -> Cell "lfo"
-  "lfoFreq"         -> Cell "lfoFreq"
-  "lfoDepth"        -> Cell "lfoDepth"
-  "waveform"        -> Cell "waveform"
-  note              -> Note note
+  -- Cells
+  "amFreq"      -> Cell "amFreq"
+  "fmFreq"      -> Cell "fmFreq"
+  "amSynthesis" -> Cell "amSynthesis"
+  "fmSynthesis" -> Cell "fmSynthesis"
+  "lfo"         -> Cell "lfo"
+  "lfoFreq"     -> Cell "lfoFreq"
+  "lfoDepth"    -> Cell "lfoDepth"
+  "waveform"    -> Cell "waveform"
+  -- Buttons
+  "amOnBtn"     -> Button "amOnBtn"
+  "amOffBtn"    -> Button "amOffBtn"
+  "fmOnBtn"     -> Button "fmOnBtn"
+  "fmOffBtn"     -> Button "fmOffBtn"
+  "lfoOnBtn"    -> Button "lfoOnBtn"
+  "lfoOffBtn"   -> Button "lfoOffBtn"
+  -- Notes
+  note          -> Note note
 
 implementWebAudio :: [String] -> [String] -> String 
 implementWebAudio inputs outputs = 
-  unlines [ functionImpl
+  unlines [ "// Implemented Functions"
+          , functionImpl
+          , ""
+          , "// Event listeners"
           , concatMap defineNotes reactiveNotes
           , concat $ intersperse "\n\n" $
             map signalUpdateCode (NullElem:eventableInputs)
-          , concatMap buttonEventListeners outputSignals
+          , ""
           , makeMidiTriggers reactiveNotes
+          , ""
+          , postlude
           ]
     where 
       -- TODO: add constant additions
       functionImpl :: String
       functionImpl = unlines
         ["function p_play(input){return input;}"
+        ,"function p_press(input){return input;}"
         ,"function f_True(){return true;}"
         ,"function f_False(){return false;}"
         ,"function f_sawtooth(){return \"sawtooth\";}"
@@ -153,6 +166,7 @@ implementWebAudio inputs outputs =
         ,"function f_square(){return \"square\";}"
         ,"function f_triangle(){return \"triangle\";}"
         ,"function f_inc10(arg){return arg+10;}"
+        ,"function f_dec10(arg){return Math.max(arg-10,0);}"
         ]
 
       inputSignals :: [JSElem]
@@ -172,7 +186,7 @@ implementWebAudio inputs outputs =
       updateVarsToUI = "updateVarsToUI();"
 
       eventable :: JSElem -> Bool
-      eventable (Change _)  = True
+      eventable (Button _)  = True
       eventable (Note _)    = True
       eventable _           = False
 
@@ -228,7 +242,7 @@ implementWebAudio inputs outputs =
       
           dropLastTwo :: String -> String
           dropLastTwo str = take (length str - 2) str
-      
+
       makeMidiTriggers :: [JSElem] -> String
       makeMidiTriggers [] = ""
       makeMidiTriggers notes =
@@ -259,34 +273,12 @@ implementWebAudio inputs outputs =
                 True  -> signalShown ++ "false"
                 where signalShown = "s_" ++ varName x ++ " : "
 
-      -- TODO: handle case when you press on btn when it's already on
-      buttonEventListeners :: JSElem -> String
-      buttonEventListeners = \case
-        Cell "amSynthesis" -> 
-          unlines [ "amOnBtn.addEventListener(\"click\", _ => {"
-                  , saveOutput 4 NullElem
-                  , "});\n"
-                  , "amOffBtn.addEventListener(\"click\", _ => {"
-                  , saveOutput 4 NullElem
-                  , "});"
-                  ]
-        Cell "fmSynthesis" -> 
-          unlines [ "fmOnBtn.addEventListener(\"click\", _ => {"
-                  , saveOutput 4 NullElem
-                  , "});\n"
-                  , "fmOffBtn.addEventListener(\"click\", _ => {"
-                  , saveOutput 4 NullElem
-                  , "});"
-                  ]
-        Cell "lfo" -> 
-          unlines [ "lfoOnBtn.addEventListener(\"click\", _ => {"
-                  , saveOutput 4 NullElem
-                  , "});\n"
-                  , "lfoOffBtn.addEventListener(\"click\", _ => {"
-                  , saveOutput 4 NullElem
-                  , "});"
-                  ]
-        _ -> ""
+      postlude :: String
+      postlude = unlines
+        ["amOffBtn.click();"
+        ,"fmOffBtn.click();"
+        ,"lfoOffBtn.click();"]
+
   -----------------------------------------------------------------------------
 
 prSwitchImpl
