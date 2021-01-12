@@ -33,6 +33,7 @@ module TSL
   , decodeOutputAP
   , size
     -- * TSL Utilities
+  , DependencyRepresentation(..)
   , Specification(..)
   , fromTSL
   , tslFormula
@@ -41,6 +42,7 @@ module TSL
   , toTLSF
   , toTOML
   , split
+  , specifications2dependencies
     -- * CFM Utilities
   , CodeTarget(..)
   , CFM
@@ -96,6 +98,11 @@ import TSL.Reader (fromTSL)
 import TSL.TLSF (toTLSF)
 
 import TSL.Splitter (split)
+
+import TSL.Dependency
+  ( DependencyRepresentation(..)
+  , specifications2dependencies
+  )
 
 import TSL.Simulation (simulate)
 

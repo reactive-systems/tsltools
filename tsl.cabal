@@ -49,6 +49,7 @@ library
 
   other-modules:
     TSL.Binding
+    TSL.Dependency
     TSL.Error
     TSL.Expression
     TSL.Specification
