@@ -103,9 +103,12 @@ test:
 doc:
 	${BLDTOOL} haddock --open
 
+format:
+	stylish-haskell  -c .stylish-haskell.yaml  -i  -r src/
+
 clean:
 	${BLDTOOL} clean
 	@for i in ${TOOLS}; do rm -f $${i}; done
 
-.PHONY: clean test ${TOOLS}
+.PHONY: install test doc format clean ${TOOLS}
 .SILENT:
