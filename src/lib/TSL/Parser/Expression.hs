@@ -7,6 +7,14 @@
 --
 -----------------------------------------------------------------------------
 
+{-# LANGUAGE
+
+    LambdaCase
+
+  #-}
+
+-----------------------------------------------------------------------------
+
 module TSL.Parser.Expression
   ( exprParser
   ) where
@@ -35,17 +43,27 @@ import Control.Monad
   ( void
   )
 
+import Data.Char
+  ( isAlpha
+  , toLower
+  )
+
+import Data.List
+  ( sort
+  )
+
 import Text.Parsec
   ( (<|>)
+  , (<?>)
   , try
   , oneOf
   , many
   , many1
   , digit
+  , choice
   , lookAhead
   , notFollowedBy
-  , alphaNum
-  , string
+  , unexpected
   )
 
 import Text.Parsec.Expr
@@ -139,7 +157,7 @@ exprParser = (~~) >> buildExpressionParser table term
         , Infix  (binOp "OR"       BlnOr)        AssocLeft
         ]
       , [ Infix  (binOp "->"       BlnImpl)      AssocRight
-        , Infix  (binOp "IMPIES"   BlnImpl)      AssocRight
+        , Infix  (binOp "IMPLIES"  BlnImpl)      AssocRight
         , Infix  (binOp "<->"      BlnEquiv)     AssocRight
         , Infix  (binOp "EQUIV"    BlnEquiv)     AssocRight
         ]
@@ -163,21 +181,14 @@ exprParser = (~~) >> buildExpressionParser table term
     tokenDef =
       globalDef
       { opStart = oneOf "!&|-<=/+*%(:~,.["
-      , opLetter = oneOf "!&|<->=/\\[+*%():~,.]"
-      , reservedOpNames =
-          ["!","&&","||","->","<->","==","/=","<",">","<=",">=",
-           "<-","&&[","||[","NOT","AND","OR","IMPLIES","EQUIV","EQ",
-           "NEQ", "LE", "GE", "LEQ", "GEQ", "ELEM","AND[","OR[",
-           "+","-","*","/","%","PLUS","MINUS","MUL","DIV","MOD",
-           "SIZE","MIN","MAX","(-)","(\\)","(+)","(*)","SETMINUS",
-           "CAP","CUP",":","~","W","A","U","R","X","Y","G","F","H",
-           "O","S","T",",","X[","Y[","G[","F[","H[","O[","AND[",
-           "OR[","SUM","PROD","IN"]
+      , opLetter = oneOf "!&|<->=/\\[+*%():~,]"
       , reservedNames =
-          ["NOT","AND","OR","IMPLIES","EQUIV","true","false","F",
-           "PLUS","MINUS","MUL","DIV","MOD","SIZE","MIN","MAX","_",
-           "SETMINUS","CAP","CUP","otherwise","W","A","U","R","X",
-           "G","SUM","PROD","IN","Y","H","O","S","T"]
+          [ "A","AND","CAP","CUP","DIV","ELEM","EQ","EQUIV","F","G"
+          , "GE","GEQ","H","IMPLIES","IN","LE","LEQ","MAX","MIN"
+          , "MINUS","MOD","MUL","NEQ","NOT","O","OR","PLUS","PROD"
+          , "R","S","SETMINUS","SIZE","SUM","T","U","W","X","Y","_"
+          , "false","otherwise","true"
+          ]
       }
 
     tokenparser = makeTokenParser tokenDef
@@ -317,7 +328,10 @@ exprParser = (~~) >> buildExpressionParser table term
     closeSet = do { ch '}'; e <- getPos; (~~); return e }
 
     binOp x c = do
-      reservedOp tokenparser x
+      if all isAlpha x
+      then reserved tokenparser x
+      else reservedOp tokenparser x
+
       return $ \a b ->
         Expr
           { expr = c a b
@@ -418,14 +432,17 @@ exprParser = (~~) >> buildExpressionParser table term
       return (BaseUpd e i)
 
     ident = do
-      (i,pos) <- do
-        a <- getPos
-        x <- identStart tokenDef
-        xr <- many $ identLetter tokenDef
-        b <- getPos
-        return (x:xr, ExprPos a b Nothing)
+      (i,pos) <- iparse <?> "identifier"
+      if isReservedName i
+      then unexpected ("keyword " ++ show i)
+      else constantFunctionParser pos i <|> ident' pos i
 
-      constantFunctionParser pos i <|> ident' pos i
+    iparse = do
+      a <- getPos
+      x <- identStart tokenDef
+      xr <- many $ identLetter tokenDef
+      b <- getPos
+      return (x:xr, ExprPos a b Nothing)
 
     ident' p i =
       (~~) >> return Expr
@@ -433,6 +450,24 @@ exprParser = (~~) >> buildExpressionParser table term
         , exprId = -1
         , srcPos = p
         }
+
+    isReservedName name =
+      flip scan sortedReservedNames $
+      if caseSensitive tokenDef
+      then name
+      else map toLower name
+
+    scan str = \case
+      []   -> False
+      r:rs -> case compare r str of
+        LT  -> scan str rs
+        EQ  -> True
+        GT  -> False
+
+    sortedReservedNames =
+      if caseSensitive tokenDef
+      then sort $ reservedNames tokenDef
+      else sort . map (map toLower) $ reservedNames tokenDef
 
     constantFunctionParser (ExprPos s (SrcPos l c) _) i =
       try $ ch '(' >> ch ')' >> (~~) >> return Expr
@@ -443,7 +478,10 @@ exprParser = (~~) >> buildExpressionParser table term
 
     applyFn = do
       notFollowedBy
-        (reservedOpLiteral >> notFollowedBy alphaNum)
+        $ choice
+        $ map (reserved tokenparser)
+        $ reservedNames tokenDef
+
       return $ \a b ->
         Expr
           { expr = BaseFn a b
@@ -455,34 +493,6 @@ exprParser = (~~) >> buildExpressionParser table term
                 , srcPath = Nothing
                 }
           }
-
-    reservedOpLiteral =
-          string "W"
-      <|> string "A"
-      <|> string "U"
-      <|> string "R"
-      <|> string "T"
-      <|> string "S"
-      <|> string "OR"
-      <|> string "AND"
-      <|> string "IMPLIES"
-      <|> string "EQUIV"
-      <|> string "IN"
-      <|> string "ELEM"
-      <|> string "LEQ"
-      <|> string "LE"
-      <|> string "GEQ"
-      <|> string "GE"
-      <|> string "NEQ"
-      <|> string "EQ"
-      <|> string "CUP"
-      <|> string "CAP"
-      <|> string "SETMINUS"
-      <|> string "MUL"
-      <|> string "DIV"
-      <|> string "MOD"
-      <|> string "PLUS"
-      <|> string "MINUS"
 
     manyExprParser = commaSep tokenparser exprParser
 
