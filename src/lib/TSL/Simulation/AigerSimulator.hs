@@ -4,7 +4,7 @@
 -- Description :  A simple AIGER simulator
 -- Maintainer  :  Philippe Heim
 --
--- This module provides functionalities to evaluate AIGER circuits on 
+-- This module provides functionalities to evaluate AIGER circuits on
 -- sequences of inputs, i.e. functionalities to simulate AIGER circuits.
 --
 -------------------------------------------------------------------------------
@@ -47,27 +47,39 @@ import Control.Exception (assert)
 
 data NormCircuit i o =
   NormCircuit
+    -- | The inputs of the circuit
     { inputs :: [Input]
+    -- | The outputs of the circuit
     , outputs :: [Output]
+    -- | The latches of the circuit
     , latches :: [Latch]
+    -- | Assigns each output its evaluation tree
     , outputCir :: Output -> CircuitTree
+    -- | Assigns each latch its evaluation tree
     , latchCir :: Latch -> CircuitTree
+    -- | A labeling for the inputs
     , inputName :: Input -> i
+    -- | A labeling for the outputs
     , outputName :: Output -> o
     }
 
 data CircuitTree
+  -- | Input (leaf) of the evaluation-tree in form of an input
   = Inp Input
+  -- | Input (leaf) of the evaluation-tree in form of a latch
   | InpL Latch
+  -- | AND-Gate of the evaluation-tree
   | AG CircuitTree CircuitTree
+  -- | NOT-Gate of the evaluation-tree
   | NG CircuitTree
+  -- | Constant-TRUE value
   | CT
 
 -------------------------------------------------------------------------------
--- | 'normalize' transforms a 'Circuit' into a normalized 'NormCircuit'. 
--- ASSUMPTIONS: 
+-- | 'normalize' transforms a 'Circuit' into a normalized 'NormCircuit'.
+-- ASSUMPTIONS:
 -- - The aiger circuit contains no logic loops
---
+
 normalize ::
      (String -> Either err i)
   -> (String -> Either err o)
@@ -137,23 +149,27 @@ normalize renameInput renameOutput aig =
     isLatchOutput w =
       find (\l -> w == Aiger.latchOutput aig l) (Aiger.latches aig)
 
------------------------------------------------------------------------------
--- | Defines the (intermediate) state of an aiger circuit. Note that the 
--- assigment function may return undefined
+-------------------------------------------------------------------------------
+-- | Aliases for intermediate states and in- and output assignments
+
 type State = Latch -> Bool
 
 type Inputs = Input -> Bool
 
 type Outputs = Output -> Bool
 
----------------------------------------------------------------------------
--- | Evaluat on and simulation step of an normalized circuit
+-------------------------------------------------------------------------------
+-- | 'simStep' computes given a state and an input, the next state and the 
+-- output of a 'NormCircuit'
+
 simStep :: NormCircuit i o -> State -> Inputs -> (State, Outputs)
 simStep NormCircuit {..} state inpt =
   let latchMap = functionToMap latches $ \l -> eval (latchCir l) state inpt
       outputMap = functionToMap outputs $ \o -> eval (outputCir o) state inpt
    in (strictLookup latchMap, strictLookup outputMap)
   where
+    -- The following is needed to avoid that the mapping functions are 
+    -- evaluated in a lazy manner each step
     strictLookup m elem =
       case Map.lookup elem m of
         Just a -> a
@@ -162,6 +178,9 @@ simStep NormCircuit {..} state inpt =
     functionToMap :: Ord a => [a] -> (a -> b) -> Map a b
     functionToMap keys f = fromList $ fmap (\k -> (k, f k)) keys
 
+-------------------------------------------------------------------------------
+-- | 'eval' computes the result of a 'CircuitTree' when evaluated on some
+-- latch and input assignment
 eval :: CircuitTree -> State -> Inputs -> Bool
 eval ct state inpt =
   case ct of

@@ -1,12 +1,12 @@
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Simulation.SystemSimulationInterface
+-- Description :  TUI for the system simulation
 -- Maintainer  :  Philippe Heim
 --
--- The (command line) interface of the system simulation when playing
--- againts a counter strategy
+-- This module provides an interactive TUI for the system simulation.
 --
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 {-# LANGUAGE
 
@@ -16,13 +16,13 @@
 
   #-}
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 module TSL.Simulation.SystemSimulationInterface
   ( runSimulation
   ) where
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 import Text.Read
   ( readMaybe
@@ -58,23 +58,25 @@ import TSL.Simulation.InterfacePrintingUtils
   , updateListToString
   )
 
----------------------------------------------------------------------------
-
--- | The possible actions a user can take
+-------------------------------------------------------------------------------
+-- | 'Action' describes the possible actions a user can take.
 
 data Action
+  -- | Stop the simulation
   = Stop
+  -- | Undo one step
   | Rewind
+  -- | Chose a system output
   | Opt SystemOption
+  -- | Show why other system outputs are not possible (i.e. what they violate)
   | ShowWhyOthersNot
 
----------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- | 'getUserInput' retrieves the action chosen by the user. Therefore a 
+-- overview over the possible actions is printed and how they are performed. 
+-- Also the input is sanitized and re-queried if invalid.
 
--- | Gets the action a user may take (includes input sanitizing)
-
-getUserInput
-  :: [SystemOption] -> IO Action
-
+getUserInput :: [SystemOption] -> IO Action
 getUserInput possibleOptions = do
   cPutStrLn Red "Choose: "
   getLine >>= \case
@@ -85,7 +87,7 @@ getUserInput possibleOptions = do
       case readMaybe inp of
         Just num ->
           if num >= 0 && num < length possibleOptions
-          then return $ Opt $ (possibleOptions !! num)
+          then return $ Opt (possibleOptions !! num)
           else do
             cPutStrLn Red "Not a valid option\n"
             getUserInput possibleOptions
@@ -93,13 +95,10 @@ getUserInput possibleOptions = do
           cPutStrLn Red "Not a valid command\n"
           getUserInput possibleOptions
 
----------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- | 'runSimulation' preforms an interactive system simulation
 
--- | Runs a simulation
-
-runSimulation
-  :: SystemSimulation -> IO ()
-
+runSimulation :: SystemSimulation -> IO ()
 runSimulation sim = do
   initInterface
   resetInterface
@@ -114,12 +113,11 @@ runSimulation sim = do
     execSimulation sim = do
       let
         opts = options sim
-        posOpts = fmap (\(v, _, _) -> v)
-                    $ filter (\(_, xs, _) -> null xs) opts
+        posOpts = (\(v, _, _) -> v) <$> filter (\(_, xs, _) -> null xs) opts
         imposOpts = filter (\(_, xs, _) -> not $ null xs) opts
 
       cPutStrLn Magenta "Your options are:"
-      cPutStrLn White $
+      cPutStrLn White
         (snd $
          foldl
            (\(n, xs) e ->
@@ -142,31 +140,31 @@ runSimulation sim = do
           return ()
         Rewind -> do
           let sim' = rewind sim
-          resetInterface
-          printTrace sim'
-          putStrLn ""
+          resetAndPrint sim'
           cPutStrLn Red "You stepped one step back.\n"
           execSimulation sim'
         ShowWhyOthersNot -> do
-          resetInterface
-          printTrace sim
-          putStrLn ""
-          _ <- sequence $ map printImpossibleOptions imposOpts
+          resetAndPrint sim
+          mapM_ printImpossibleOptions imposOpts
           execSimulation sim
         Opt opt -> do
           let (sim', _) = step sim opt
-          resetInterface
-          printTrace sim'
-          putStrLn ""
+          resetAndPrint sim'
           execSimulation sim'
-
+   
+    resetAndPrint 
+      :: SystemSimulation -> IO()
+    resetAndPrint sim = do
+      resetInterface
+      printTrace sim
+      putStrLn ""
+ 
     printTrace
       :: SystemSimulation -> IO ()
 
     printTrace sim = do
       let log = getLog sim
-      sequence_ $
-        map
+      mapM_
           (\(opt, preds) -> do
              cPutStr Cyan "You (System): "
              cPutStrLn White (updateListToString opt)
@@ -175,12 +173,10 @@ runSimulation sim = do
           log
       cPutStrLn White ""
       cPutStrLn Magenta "Your obligations are:"
-      sequence_ $
-        map
+      mapM_
           (\o -> cPutStrLn White
                   ("> " ++ tslFormula id (expGuarantee o)))
           (nextObligations (trace sim))
-      return ()
 
     printImpossibleOptions
       :: (SystemOption, [Formula String], [(PredicateTerm String, Bool)])
@@ -195,4 +191,4 @@ runSimulation sim = do
       cPutStrLn White $
         concatMap (\f -> "> " ++ tslFormula id f ++ "\n") fs ++ " \n"
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------

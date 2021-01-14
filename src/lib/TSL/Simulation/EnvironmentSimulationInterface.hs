@@ -1,12 +1,12 @@
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Simulation.EnvironmentSimulationInterface
+-- Description :  TUI for the environment simulation
 -- Maintainer  :  Philippe Heim
 --
--- The (command line) interface of the environment simulation when
--- playing againts a strategy
+-- This module provides an interactive TUI for the environment simulation.
 --
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 {-# LANGUAGE
 
@@ -16,13 +16,13 @@
 
   #-}
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 module TSL.Simulation.EnvironmentSimulationInterface
   ( runSimulation
   ) where
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 import Text.Read
   ( readMaybe
@@ -53,23 +53,25 @@ import TSL.Simulation.InterfacePrintingUtils
   , updateListToString
   )
 
----------------------------------------------------------------------------
-
--- | The possible actions a user can take
+-------------------------------------------------------------------------------
+-- | 'Action' describes the possible actions a user can take.
 
 data Action
+  -- | Stop the simulation
   = Stop
+  -- | Undo one step
   | Rewind
+  -- | Choose a system input
   | Opt EnvironmentOption
+  -- | Show why other system outputs are not possible (i.e. what they violate)
   | ShowWhyOthersNot
 
----------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- | 'getUserInput' retrieves the action chosen by the user. Therefore a 
+-- overview over the possible actions is printed and how they are performed. 
+-- Also the input is sanitized and re-queried if invalid.
 
--- | Gets the action a user may take (includes input sanitizing)
-
-getUserInput
-  :: [EnvironmentOption] -> IO Action
-
+getUserInput :: [EnvironmentOption] -> IO Action
 getUserInput possibleOptions = do
   cPutStrLn Red "Choose: "
   getLine >>= \case
@@ -80,7 +82,7 @@ getUserInput possibleOptions = do
       case readMaybe inp of
         Just num ->
           if num >= 0 && num < length possibleOptions
-          then return $ Opt $ (possibleOptions !! num)
+          then return $ Opt (possibleOptions !! num)
           else do
             cPutStrLn Red "Not a valid option\n"
             getUserInput possibleOptions
@@ -88,13 +90,10 @@ getUserInput possibleOptions = do
           cPutStrLn Red "Not a valid command\n"
           getUserInput possibleOptions
 
----------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- | 'runSimulation' preforms an interactive system simulation
 
--- | Runs a simulation
-
-runSimulation
-  :: EnvironmentSimulation -> IO ()
-
+runSimulation :: EnvironmentSimulation -> IO ()
 runSimulation sim = do
   initInterface
   resetInterface
@@ -107,12 +106,11 @@ runSimulation sim = do
     execSimulation sim = do
       let
         opts = options sim
-        posOpts = fmap (\(v, _, _) -> v)
-                    $ filter (\(_, xs, _) -> null xs) opts
+        posOpts = (\(v, _, _) -> v) <$> filter (\(_, xs, _) -> null xs) opts
         imposOpts = filter (\(_, xs, _) -> not $ null xs) opts
 
       cPutStrLn Magenta "Your options are:"
-      cPutStrLn White $
+      cPutStrLn White 
         (snd $
          foldl
            (\(n, xs) e ->
@@ -137,39 +135,36 @@ runSimulation sim = do
           return ()
         Rewind -> do
           let sim' = rewind sim
-          resetInterface
-          printTrace sim'
-          putStrLn ""
+          resetAndPrint sim'
           cPutStrLn Red "You stepped one step back.\n"
           execSimulation sim'
         ShowWhyOthersNot -> do
-          resetInterface
-          printTrace sim
-          putStrLn ""
-          _ <- sequence $ map printImpossibleOptions imposOpts
+          resetAndPrint sim
+          mapM_ printImpossibleOptions imposOpts
           execSimulation sim
         Opt opt -> do
           let (sim', _) = step sim opt
-          resetInterface
-          printTrace sim'
-          putStrLn ""
+          resetAndPrint sim'
           execSimulation sim'
 
+    resetAndPrint 
+      :: EnvironmentSimulation -> IO()
+    resetAndPrint sim = do
+      resetInterface
+      printTrace sim
+      putStrLn ""
+ 
     printTrace
       :: EnvironmentSimulation -> IO ()
-
     printTrace sim = do
       let log = getLog sim
-      _ <-
-        sequence $
-        map
+      mapM_
           (\(opt, updates) -> do
              cPutStr Cyan "You (Environment): "
              cPutStrLn White (mappedPredicateEvaluationToString opt)
              cPutStr Cyan "System:            "
              cPutStrLn White (updateListToString updates))
           log
-      return ()
 
     printImpossibleOptions
       :: ( EnvironmentOption
@@ -186,4 +181,4 @@ runSimulation sim = do
       cPutStrLn White $
         concatMap (\f -> "> " ++ tslFormula id f ++ "\n") fs ++ " \n"
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------

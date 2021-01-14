@@ -1,11 +1,13 @@
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Simulation.InterfacePrintingUtils.hs
+-- Description :  Utilities for the simulation interfaces
 -- Maintainer  :  Philippe Heim
 --
--- Utilities to print different things for the simulation interfaces
+-- This module provides utilities for different printing operation that are
+-- commonly used by the simulation interfaces.
 --
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 {-# LANGUAGE
 
@@ -15,7 +17,7 @@
 
   #-}
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 module TSL.Simulation.InterfacePrintingUtils
   ( updateToString
@@ -30,7 +32,7 @@ module TSL.Simulation.InterfacePrintingUtils
   , Color(..)
   ) where
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 import TSL.Logic
   ( Formula(..)
@@ -60,107 +62,86 @@ import System.Console.ANSI
   , setSGR
   )
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- | 'updateToString' prints an update as a string.
 
--- | Transforms an update to a string
-
-updateToString
-  :: (String, SignalTerm String) -> String
-
+updateToString :: (String, SignalTerm String) -> String
 updateToString =
   tslFormula id . uncurry Update
 
------------------------------------------------------------------------------
--- | Transforms an update list to a string
-updateListToString
-  :: [(String, SignalTerm String)] -> String
-
+-------------------------------------------------------------------------------
+-- | 'updateListToString' prints a list of updates as a single string
+updateListToString :: [(String, SignalTerm String)] -> String
 updateListToString = \case
   []   -> ""
   [x]  -> updateToString x
   x:xr -> updateToString x ++ " " ++ updateListToString xr
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- | 'predicateEvaluationToString' prints a predicate term evaluation as a 
+-- string in a easily understandable manner.
 
--- | Transforms a predicate evalutation to a string
-
-predicateEvaluationToString
-  :: (PredicateTerm String, Bool) -> String
-
+predicateEvaluationToString :: (PredicateTerm String, Bool) -> String
 predicateEvaluationToString (p, v)
   | v         = tslFormula id $ Check p
   | otherwise = "¬ " ++ tslFormula id (Check p)
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- | 'predicateEvaluationListToString' prints a predicate term evaluation list
+-- nicely as a string.
 
--- | Transforms predicate evalutations (as list) to a string
-
-predicateEvaluationListToString
-  :: [(PredicateTerm String, Bool)] -> String
-
+predicateEvaluationListToString :: [(PredicateTerm String, Bool)] -> String
 predicateEvaluationListToString = \case
   []     -> ""
   [x]    -> predicateEvaluationToString x
   (x:xr) -> predicateEvaluationToString x ++ ", " ++
            predicateEvaluationListToString xr
 
------------------------------------------------------------------------------
-
--- | Transforms predicate evalutations (as mapping) to a string
-
+-------------------------------------------------------------------------------
+-- | 'mappedPredicateEvaluationToString' prints the evaluation of a set of
+-- predicates as a nice string.
 mappedPredicateEvaluationToString
   :: (Set (PredicateTerm String), PredicateTerm String -> Bool) -> String
-
 mappedPredicateEvaluationToString (terms, mapping) =
   predicateEvaluationListToString
-    $ fmap (\p -> (p, mapping p)) $ toList terms
+    $ (\p -> (p, mapping p)) <$> toList terms
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- | 'initInterface' initializes the simulation interface by setting an
+-- appropriate encoding.
 
--- | Inits the (colored) interface by setting the encoding
-
-initInterface
-  :: IO ()
-
+initInterface :: IO ()
 initInterface = do
   setLocaleEncoding utf8
   setFileSystemEncoding utf8
   setForeignEncoding utf8
   return ()
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- | 'resetInterface' resets the simulation interface and clears the screen.
 
--- | Resets the (colored) interface by clearing the scree
-
-resetInterface
-  :: IO ()
-
+resetInterface :: IO ()
 resetInterface = do
   clearScreen
   putStrLn ""
 
------------------------------------------------------------------------------
-
--- | Puts a colored string to stdin (with a newline at the end)
-
-cPutStrLn
-  :: Color -> String -> IO ()
+-------------------------------------------------------------------------------
+-- | 'cPutStrLn' prints a colored line to STDOUT.
+cPutStrLn :: Color -> String -> IO ()
 
 cPutStrLn c str = do
   setSGR [SetColor Foreground Vivid c]
   putStrLn str
   setSGR []
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- | 'cPutStrLn' prints a colored string to STDOUT.
 
--- | Puts a colored string to stdin
-
-cPutStr
-  :: Color -> String -> IO ()
+cPutStr :: Color -> String -> IO ()
 
 cPutStr c str = do
   setSGR [SetColor Foreground Vivid c]
   putStr str
   setSGR []
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------

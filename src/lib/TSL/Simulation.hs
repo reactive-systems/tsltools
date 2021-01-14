@@ -1,11 +1,19 @@
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Simulator
+-- Description :  A (counter)strategy simulator
 -- Maintainer  :  Philippe Heim
 --
--- A simple counterstrategy simulator
+-- This module a simulation backend and TUI-frontend for simulating winning TSL
+-- synthesis strategies and counter strategies. Given a specification and a
+-- environment-strategy (system-strategy) the user can play the as the
+-- system (environment) against the (counter)strategy by choosing outputs. The
+-- simulator evaluates the played trace and tries to detect violations of the
+-- specification and computes the open obligations. This allows the user to
+-- see why some specification is unsatisfiable (satisfiable) by trying out why
+-- a system in not implementable (what the system does on some inputs).
 --
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 {-# LANGUAGE
 
@@ -15,7 +23,7 @@
 
   #-}
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 module TSL.Simulation
   ( SystemSimulation
@@ -28,7 +36,7 @@ module TSL.Simulation
   , simulate
   ) where
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 import TSL.Reader
   ( fromTSL
@@ -88,10 +96,10 @@ import TSL.Simulation.FiniteTraceChecker as FTC
   ( emptyTrace
   )
 
------------------------------------------------------------------------------
-
--- | Generates a simulation out of a given an AIGER counterstrategy
--- and a correspoding TSL specification.
+-------------------------------------------------------------------------------
+-- | 'createSimulation' generates a  simulation of a AIGER circuit/strategy and
+-- a corresponirng TSL specification. Note that if these do not match an error
+-- will be returned.
 
 createSimulation
   :: Circuit
@@ -138,22 +146,22 @@ createSimulation aag spec =
     assumptionsStr = fmap (fmap (stName $ symboltable spec)) . assumptions
     guaranteesStr = fmap (fmap (stName $ symboltable spec)) . guarantees
 
----------------------------------------------------------------------------
-
--- | Given the filepaths of the tsl file and the agg file, load and
--- run the simulation
+-------------------------------------------------------------------------------
+-- | 'simulate' takes the filepaths of the TSL file and the AIGER file, load
+-- them, and runs an interactive simulation as TUI.
 
 simulate
   :: Maybe FilePath -> String -> String -> IO (Either Error (IO ()))
 
 simulate specPath tsl' aag' =
-  fromTSL specPath tsl' >>= return . \case
+  (\case
     Left err  -> Left err
     Right tsl -> case  parseAag aag' of
       Left err  -> Left err
       Right aag -> case createSimulation aag tsl of
         Left err          -> Left err
         Right (Left sim)  -> Right $ SysSymInt.runSimulation sim
-        Right (Right sim) -> Right $ EnvSymInt.runSimulation sim
+        Right (Right sim) -> Right $ EnvSymInt.runSimulation sim) 
+    <$> fromTSL specPath tsl' 
 
----------------------------------------------------------------------------
+-------------------------------------------------------------------------------
