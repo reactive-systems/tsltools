@@ -93,8 +93,6 @@ split spec =
     splitGuars = splitFormulas (guarantees spec) parts
 
     splitInOutputs = zipWith union (map (unions . map getInOutputs) splitGuars) (parts ++ repeat Set.empty)
-      --map (uncurry union)
-      --  $ zip (map (unions . (map getInOutputs)) splitGuars) (parts ++ cycle [Set.empty])
 
     splitAssmpts = distributeAssumptions (assumptions spec) splitInOutputs
   in
