@@ -38,12 +38,11 @@ sure, whether something might be useful or is in the scope of this project
 (or should be a separate project instead) feel free to submit an issue labeled
 with `discussion` or to contact us directly. If you want to get fully involved
 with `tsltools` or add a more complex extension, feel free to contact us 
-directly, per e-mail. 
+directly, per e-mail. You can also contact us if you have any further question
+concerning this project and how to contribute.
 
-''TODO'': Write
-
-* Ask for assistance
-* Note: everything under MIT
+Please note that all you contributions will be licensed together with this 
+project. The licence can be found in the LICENCE file.
 
 ### Before getting started
 
@@ -89,4 +88,7 @@ directly, per e-mail.
 * ''TODO'' For more complicated stuff we might want to have a "doc"-folder, 
   maybe even for the not so complicates stuff (a more detailed project 
   overview might be elsewhere or the haddock should be generated differently)
+* META: General stuff, that should be obvious, but cannot be stated often 
+  enough
+
 
