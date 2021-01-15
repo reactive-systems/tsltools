@@ -125,37 +125,42 @@ actionName _ = ""
 strToJSElem :: String -> JSElem
 strToJSElem = \case
   -- Cells
-  "amFreq"           -> Cell "amFreq"
-  "fmFreq"           -> Cell "fmFreq"
-  "amSynthesis"      -> Cell "amSynthesis"
-  "fmSynthesis"      -> Cell "fmSynthesis"
-  "filterOn"         -> Cell "filterOn"
-  "harmonizerOn"     -> Cell "harmonizerOn"
-  "arpeggiatorOn"    -> Cell "arpeggiatorOn"
-  "lfo"              -> Cell "lfo"
-  "lfoFreq"          -> Cell "lfoFreq"
-  "lfoDepth"         -> Cell "lfoDepth"
-  "waveform"         -> Cell "waveform"
-  "arpeggiatorStyle" -> Cell "arpeggiatorStyle"
+  "amFreq"             -> Cell "amFreq"
+  "fmFreq"             -> Cell "fmFreq"
+  "amSynthesis"        -> Cell "amSynthesis"
+  "fmSynthesis"        -> Cell "fmSynthesis"
+  "filterOn"           -> Cell "filterOn"
+  "harmonizerOn"       -> Cell "harmonizerOn"
+  "arpeggiatorOn"      -> Cell "arpeggiatorOn"
+  "lfo"                -> Cell "lfo"
+  "lfoFreq"            -> Cell "lfoFreq"
+  "lfoDepth"           -> Cell "lfoDepth"
+  "waveform"           -> Cell "waveform"
+  "harmonizerInterval" -> Cell "harmonizerInterval"
+  "filterType"         -> Cell "filterType"
+  "filterCutoff"       -> Cell "filterCutoff"
+  "filterQ"            -> Cell "filterQ"
+  "arpeggiatorStyle"   -> Cell "arpeggiatorStyle"
+  "arpeggiatorRate"    -> Cell "arpeggiatorRate"
   -- Buttons
-  "amOnBtn"          -> Button "amOnBtn"
-  "amOffBtn"         -> Button "amOffBtn"
-  "fmOnBtn"          -> Button "fmOnBtn"
-  "fmOffBtn"         -> Button "fmOffBtn"
-  "lfoOnBtn"         -> Button "lfoOnBtn"
-  "lfoOffBtn"        -> Button "lfoOffBtn"
-  "filterOnBtn"     -> Button "filterOnBtn"
-  "filterOffBtn"     -> Button "filterOffBtn"
-  "harmonizerOnBtn"  -> Button "harmonizerOnBtn"
-  "harmonizerOffBtn" -> Button "harmonizerOffBtn"
-  "arpeggiatorOnBtn" -> Button "arpeggiatorOnBtn"
-  "arpeggiatorOffBtn"-> Button "arpeggiatorOffBtn"
+  "amOnBtn"            -> Button "amOnBtn"
+  "amOffBtn"           -> Button "amOffBtn"
+  "fmOnBtn"            -> Button "fmOnBtn"
+  "fmOffBtn"           -> Button "fmOffBtn"
+  "lfoOnBtn"           -> Button "lfoOnBtn"
+  "lfoOffBtn"          -> Button "lfoOffBtn"
+  "filterOnBtn"        -> Button "filterOnBtn"
+  "filterOffBtn"       -> Button "filterOffBtn"
+  "harmonizerOnBtn"    -> Button "harmonizerOnBtn"
+  "harmonizerOffBtn"   -> Button "harmonizerOffBtn"
+  "arpeggiatorOnBtn"   -> Button "arpeggiatorOnBtn"
+  "arpeggiatorOffBtn"  -> Button "arpeggiatorOffBtn"
   -- Signals
-  "noteVelocity"     -> Signal "noteVelocity"
+  "noteVelocity"       -> Signal "noteVelocity"
   -- Select
-  "waveformControl"  -> Select "waveformControl"
+  "waveformControl"    -> Select "waveformControl"
   -- Notes
-  note               -> Note note
+  note                 -> Note note
 
 implementWebAudio :: [String] -> [String] -> String 
 implementWebAudio inputs outputs = 
@@ -189,11 +194,21 @@ implementWebAudio inputs outputs =
         ,"function f_upStyle(){return \"up\";}"
         ,"function f_downStyle(){return \"down\";}"
         ,"function f_upDownStyle(){return \"up-down\";}"
+        ,"function f_randomStyle(){return \"random\";}"
+        ,"function f_lowpass(){return \"lowpass\";}"
+        ,"function f_highpass(){return \"highpass\";}"
+        ,"function f_bandpass(){return \"bandpass\";}"
         ,"function f_toggle(input){return !input};"
+        ,"function f_inc1000(arg){return arg+1000;}"
+        ,"function f_dec1000(arg){return Math.max(arg-1000,0);}"
+        ,"function f_inc100(arg){return Math.min(arg+100,10000);}"
+        ,"function f_dec100(arg){return Math.max(arg-100,20);}"
         ,"function f_inc10(arg){return arg+10;}"
         ,"function f_dec10(arg){return Math.max(arg-10,0);}"
         ,"function f_inc1(arg){return arg+1;}"
         ,"function f_dec1(arg){return Math.max(arg-1,0);}"
+        ,"function f_inc1max12(arg){return Math.min(arg+1,12);}"
+        ,"function f_dec1min12(arg){return Math.max(arg-1,-12);}"
         ,"function f_getWaveformVal(node){return waveformControl.value}"
         ,"function f_getArpType(node){return arpeggiatorStyleControl.value}"
         ]
@@ -278,12 +293,13 @@ implementWebAudio inputs outputs =
         triggerNoteSetInit ++ 
         fxnHeader ++
         indent 4 "const noteSignal = 's_note' + note;\n" ++
+        indent 4 "const noteVelocity = velocity;\n" ++
         indent 4 inputTemplate ++ 
         indent 4 "inputTemplate[noteSignal] = true;\n" ++
-        indent 4 "inputTemplate[\"s_noteVelocity\"] = velocity;\n" ++
         indent 4 "if(triggerNotes.has(noteSignal)){\n" ++ 
         indent 8 (outputStr ++ " = control(inputTemplate);\n") ++
-        indent 4 "}\n" ++ 
+        indent 8 "updateVarsToUI();\n" ++
+        indent 4 "}\n" ++
         "}"
         where 
           triggerNoteSetInit = "var triggerNotes = new Set(" ++
