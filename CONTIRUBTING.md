@@ -1,41 +1,51 @@
-#Contribution Guidelines
+# Contribution Guidelines
 
 1. [Reporting a bug / Requesting a feature](#reproting-a-bug-requesting-a-feature)
 2. [Getting involved](#getting-involved)    
     * [Before getting started](#before-getting-started)
     * [Project structure](#project-structure)
     * [Code Style and Documentation](#code-style-and-documentation)
-3. []
 
-##Reporting a bug / Requesting a feature
+## Reporting a bug / Requesting a feature
+
+If you have found a bug, you can report it to use by opening a new issue 
+labeled with the 'bug' tag. In your problem description please include the 
+following, such that we can reproduce the bug:
+* the tool(s) or library parts which you used
+* the input you provided to the tool(s) or library function(s)
+* the error message / output you got (if present)
+* the expected behavior and output
+
+
+If there is a feature that you would like to feel free to
+[get involved](#getting-involved). You can also open an issue tagged with 
+'feature request'. Please include the following in your feature request:
+* the kind of feature, like is is an API-extension, a library extension, a tool
+* why you need this feature and maybe what you intend to to with it
+* a precise description of the feature (what do you want to be included, what 
+  behavior do you expect)
+
+Please keep in mind that we are not full-time maintaining this project and 
+probably will not have the time for unreasonable complex extensions.
+If you are not sure, whether something should/can be added to `tsltools`, feel
+free to contact us or open an issue with the tag `discussion`.
+
+## Getting involved
+
+We are always happy for contributions, be it documentation, code improvements 
+and new features. You can do this my submitting a pull request. If you are not
+sure, whether something might be useful or is in the scope of this project 
+(or should be a separate project instead) feel free to submit an issue labeled
+with `discussion` or to contact us directly. If you want to get fully involved
+with `tsltools` or add a more complex extension, feel free to contact us 
+directly, per e-mail. 
 
 ''TODO'': Write
 
-* Bug: Open an issue, describe problem: 
-* (which tools) or library did you used 
-* the input you provided
-* the error message and output you got (if present) 
-* the expected behavior (or expected output) 
-
-* Feature: Feel free to get involved (next section); open an issue
-* What is the feature: API-extension, library extension, tool
-* Why do you need this feature
-* Precise description, what exactly 
-* (do not expect magic?)
-
-##Getting involved
-
-''TODO'': Write
-
-* Always happy for contribution (documentation, improvements and new features)
-* Feel free to submit a pull request
-* If not sure simply open an issues or contact us directly (LINK to emails, 
-  maybe reactive systems website)
 * Ask for assistance
-* Latter might be good for bigger projects
 * Note: everything under MIT
 
-###Before getting started
+### Before getting started
 
 ''TODO'': Write
 
@@ -44,7 +54,7 @@
 * Get stylish-haskell (VERSION), build from source
 * Recommended: hlint
 
-###Project Structure
+### Project Structure
 
 ''TODO'': Write
 
@@ -63,7 +73,7 @@
     'TODO' do we really want a full description here? (see below)
 
 
-###Code Style and Documentation
+### Code Style and Documentation
 
 ''TODO'': Write
 
