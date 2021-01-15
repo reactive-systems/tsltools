@@ -173,7 +173,6 @@ implementWebAudio inputs outputs =
           , postlude
           ]
     where 
-      -- TODO: add constant additions
       functionImpl :: String
       functionImpl = unlines
         ["function p_play(input){return input;}"
@@ -190,7 +189,7 @@ implementWebAudio inputs outputs =
         ,"function f_upStyle(){return \"up\";}"
         ,"function f_downStyle(){return \"down\";}"
         ,"function f_upDownStyle(){return \"up-down\";}"
-        ,"function f_downUpStyle(){return \"down-up\";}"
+        ,"function f_toggle(input){return !input};"
         ,"function f_inc10(arg){return arg+10;}"
         ,"function f_dec10(arg){return Math.max(arg-10,0);}"
         ,"function f_inc1(arg){return arg+1;}"
@@ -293,7 +292,6 @@ implementWebAudio inputs outputs =
             where surroundQuotes str = "\"s_" ++ str ++ "\""
           fxnHeader = "function reactiveUpdateOnMIDI" ++
                       "(note, velocity){\n"
-          -- TODO
           inputTemplate = 
             "const inputTemplate = " ++
             prDictFormatted 8 (map inSigInit inputSignals) ++
@@ -353,7 +351,9 @@ prCircuitImpl Circuit{..} =
         (map (("cin" ++) . show) inputs) ++ 
     "{"
     , ""
-    , concatMap prLatchJS latches
+    , indent 4 "// Latches"
+    -- I have no idea why commenting this works
+    -- , concatMap prLatchJS latches
     , indent 4 "// Gates"
     , concatMap prGate gates
     , indent 4 "// Outputs"
@@ -369,8 +369,8 @@ prCircuitImpl Circuit{..} =
         in
           case minusedOne >= 0 of
             True  -> "cin" ++ show minusedOne
-            False -> "cin0"
-            -- False -> "cinNeg" ++ (show $ abs $ minusedOne)
+            -- False -> "cin0"
+            False -> "cinNeg" ++ (show $ abs $ minusedOne)
       | otherwise                      = 'w' : show x
     
     latchVarInit :: Latch -> String
@@ -395,7 +395,7 @@ prCircuitImpl Circuit{..} =
           Positive w -> w
         
         initVar :: Circuit.Wire -> String
-        initVar wire = "var " ++ prWire' wire ++ ";\n"
+        initVar wire = "var " ++ prWire' wire ++ " = false;\n"
       in initVar unwrapped ++ initVar ow
 
     globalGateVar :: Gate -> String
@@ -403,7 +403,7 @@ prCircuitImpl Circuit{..} =
       let
         ow = gateOutput g :: Circuit.Wire
       in
-        "var " ++ (prWire' ow) ++ ";\n"
+        "var " ++ (prWire' ow) ++ " = false;\n"
 
     prLatchJS :: Latch -> String
     prLatchJS l =
