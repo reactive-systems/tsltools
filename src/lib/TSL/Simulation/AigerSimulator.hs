@@ -47,8 +47,9 @@ import Control.Exception (assert)
 
 data NormCircuit i o =
   NormCircuit
+    { 
     -- | The inputs of the circuit
-    { inputs :: [Input]
+      inputs :: [Input]
     -- | The outputs of the circuit
     , outputs :: [Output]
     -- | The latches of the circuit

@@ -33,8 +33,9 @@ import Data.Map as Map (Map, empty, insert, lookup, union)
 
 data FiniteTrace c =
   FiniteTrace
+    { 
     -- | The trace (anti-chronological) of the update and predicate evaluations
-    { trace :: [(c -> SignalTerm c, PredicateTerm c -> Bool)]
+      trace :: [(c -> SignalTerm c, PredicateTerm c -> Bool)]
     -- | The anti-chronological trace of 'Obligation's that have to be 
     -- fulfilled
     , obligations :: [[Obligation c]]
@@ -45,9 +46,10 @@ data FiniteTrace c =
 
 data Obligation c =
   Obligation
+    { 
     -- | The guarantee the obligations represents 
     -- (this should not be modified over time)
-    { guarantee :: Formula c
+      guarantee :: Formula c
     -- | The guarantee evolved over time (i.e. after some evaluation steps)
     -- with additional assumptions
     , expTotalFormula :: Formula c

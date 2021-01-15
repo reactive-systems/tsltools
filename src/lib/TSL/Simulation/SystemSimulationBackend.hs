@@ -115,8 +115,9 @@ type Witness = [Formula String]
 
 data SystemSimulation =
   SystemSimulation
+    { 
     -- | The counter-strategy of the environment played against
-    { counterStrategy :: EnvironmentCounterStrategy
+      counterStrategy :: EnvironmentCounterStrategy
     -- | The considered specification
     , specification :: Specification
     -- | The history of states that have been passed through as stack, the 

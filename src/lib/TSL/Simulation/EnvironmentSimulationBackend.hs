@@ -112,8 +112,9 @@ type Witness = [Formula String]
 
 data EnvironmentSimulation =
   EnvironmentSimulation
+    { 
     -- | The strategy of the system played against
-    { strategy :: SystemStrategy
+      strategy :: SystemStrategy
     -- | The considered specification
     , specification :: Specification
     -- | The history of states that have been passed through as stack, the
