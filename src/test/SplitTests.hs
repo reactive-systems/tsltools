@@ -44,6 +44,7 @@ splitTests =
       , unlines
           [ "assume {"
           , "  (G (F a));"
+          , "  (G (! (a && c)));"
           , "}"
           , ""
           , "guarantee {"
@@ -336,8 +337,8 @@ splitTests =
         ]
     , [ unlines
           [ " assume {"
-          , "  (G ([c <- val3()] -> (X in2)));"
           , "  (G (F (! in3)));"
+          , "  (G ([c <- val3()] -> (X in2)));"
           , "}"
           , ""
           , "guarantee {"
@@ -347,8 +348,8 @@ splitTests =
           ]
       , unlines
           [ " assume {"
-          , "  (G (([a <- val1()] && [b <- val2()]) -> (X in1)));"
           , "  (G (F (! in3)));"
+          , "  (G (([a <- val1()] && [b <- val2()]) -> (X in1)));"
           , "}"
           , ""
           , "guarantee {"
@@ -359,7 +360,7 @@ splitTests =
       ]
     )
   , ( unlines
-        [ " // should be split in two parts: out, a and c, out2"
+        [ " // should be split in two parts: out and out2"
         , "always assume {"
         , "    !(a && c)"
         , "}"
@@ -380,6 +381,7 @@ splitTests =
           ]
       , unlines
           [ " assume {"
+          , "  (G (! (a && c)));"
           , "}"
           , ""
           , "guarantee {"
@@ -402,14 +404,14 @@ splitTests =
         ]
     , [ unlines
         [ "assume {"
-        , "    (G in1 -> in2);"
-        , "    ((! G in1) -> in3);"
-        , "    (in2 <-> in4);"
-        , "    (in3 <-> !in4)"
+        , "  ((G in1) -> in2);"
+        , "  ((! (G in1)) -> in3);"
+        , "  (in2 <-> in4);"
+        , "  (in3 <-> (! in4));"
         , "}"
         , ""
         , "guarantee {"
-        , "    (G in1) <-> [out <- top()];"
+        , "  ((G in1) <-> [out <- top()]);"
         , "}"
         ]
       ]
