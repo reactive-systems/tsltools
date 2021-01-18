@@ -5,7 +5,7 @@
 --
 -- Prints encoded information about inputs, outputs, and terms from a
 -- given CFM represented as an AIGER circuit that has been created
--- from  aTSL specification.
+-- from a TSL specification.
 --
 -----------------------------------------------------------------------------
 
