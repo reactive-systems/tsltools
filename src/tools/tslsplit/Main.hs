@@ -24,7 +24,7 @@ import Options.Applicative
 
 import FileUtils (loadTSL)
 
-import TSL (split, splitIgnoreAssumptions, toTSL)
+import TSL (split, toTSL)
 
 import System.Directory (getCurrentDirectory)
 
@@ -51,7 +51,7 @@ configParser = Configuration
       <> help "input file"
       )
   <*> switch
-      (  long "ignore"
+      (  long "ignore (deprecated)"
       <> short 'i'
       <> help "ignore assumptions in splitting process"
       )
@@ -80,12 +80,12 @@ main = do
 
   let
     specs
-      | ignore    = splitIgnoreAssumptions spec
+      | ignore    = split spec
       | otherwise = split spec
 
     filepathN n =
-      path </> (takeBaseName inputFile) ++
-      "_" ++ (show n) <.> "tsl"
+      path </> takeBaseName inputFile ++
+      "_" ++ show n <.> "tsl"
 
   mapM_
     (\(s,n) -> writeFile (filepathN n) (toTSL s))
