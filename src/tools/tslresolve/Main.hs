@@ -3,7 +3,7 @@
 -- Module      :  Main
 -- Maintainer  :  Marvin Stenger (Stenger@ProjectJARVIS.de)
 --
--- Transforms TSL specifications into TLSF specifications.
+-- Resolves TSL specifications with imports into plain TSL specifications.
 --
 -----------------------------------------------------------------------------
 
