@@ -3,7 +3,7 @@
 -- Module      :  Main
 -- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
 --
--- Transforms TSL specifications into TLSF specifications.
+-- Transforms TSL specifications into TOML format.
 --
 -----------------------------------------------------------------------------
 
@@ -31,7 +31,7 @@ main
 main = do
   initEncoding
 
-  input <- parseMaybeFilePath "tsl2tlsf"
+  input <- parseMaybeFilePath "tsl2toml"
 
   spec <- loadTSL input
 
