@@ -3,8 +3,8 @@
 -- Module      :  Splitter
 -- Maintainer  :  Gideon Geier
 --
--- Splitter which outputs specifications for independant parts of an input
--- specification
+-- 'Splitter' implements algorithms to split TSL specifications into
+-- independent subspecifications.
 --
 -----------------------------------------------------------------------------
 
@@ -15,7 +15,6 @@
 
 module TSL.Splitter
   ( split
-  , splitIgnoreAssumptions
   ) where
 
 -----------------------------------------------------------------------------
@@ -36,7 +35,6 @@ import Data.Set as Set
   , fromList
   , insert
   , intersection
-  , isSubsetOf
   , toAscList
   , union
   )
@@ -45,7 +43,6 @@ import Data.List (partition)
 
 import Data.Array as Ar (listArray, (!))
 
-
 import Data.Ix (range)
 
 import Data.Graph.Inductive.Graph (LEdge, Node, mkGraph)
@@ -53,42 +50,6 @@ import Data.Graph.Inductive.Graph (LEdge, Node, mkGraph)
 import Data.Graph.Inductive.PatriciaTree
 
 import Data.Graph.Inductive.Query.DFS
-
------------------------------------------------------------------------------
-
--- | Creates separate specifications for independent specification parts
-
-splitIgnoreAssumptions
-  :: Specification -> [Specification]
-splitIgnoreAssumptions spec =
-  let
-    guarParts = splitFormulas (guarantees spec) parts
-    graph = buildGraph out preEdges
-    parts = map fromList $ components graph
-    preEdges = map (elems . outputs) (guarantees spec)
-    out = filter (\x -> stKind table x == Output) $ range $ stBounds table
-    table = symboltable spec
-  in
-    filterAssumptions . cleanSymboltable <$> buildSpecs guarParts
-  where
-    buildSpecs = foldl (\ xs x -> spec {guarantees = x} : xs) []
-
-
------------------------------------------------------------------------------
-
--- TODO replace folding over tree by getting (foldr Set.insert Set.empty x) -> (union (inputs x) (outputs x))
-
--- | Filter Assumptions according to guarantees
-
-filterAssumptions
- :: Specification -> Specification
-filterAssumptions spec@Specification{..} =
-  let
-    filteredAssumptions =
-                    filter (\x -> Set.isSubsetOf (foldr Set.insert Set.empty x) vars) assumptions
-    vars = foldl (foldr Set.insert) Set.empty guarantees
-  in
-    spec { assumptions = filteredAssumptions }
 
 -----------------------------------------------------------------------------
 
@@ -147,8 +108,13 @@ getInOutputs
   :: Formula Int -> Set Int
 getInOutputs fml = inputs fml `union` outputs fml
 
+-----------------------------------------------------------------------------
 
--- | Splits including input dependencies
+-- | 'split' implements an optimized decomposition algorithm which analyses
+-- assumptions and guarantees. This algorithm preserves equisynthesizeability
+-- as long as for a given specification [assumptions] -> [guarantees]
+-- [assumptions] -> bot is unrealizable.
+
 split :: Specification -> [Specification]
 split spec =
   let
@@ -166,6 +132,13 @@ split spec =
   where
     buildSpecs  = foldl (\ xs (a,g) -> spec{assumptions = a, guarantees = g}:xs) []
 
+
+-----------------------------------------------------------------------------
+
+-- | 'addFreeAssumptions' requires a list of input-only assumptions and a list
+-- of assumption - guarantee specification pairs. It then adds the assumptions
+-- such that [not added] and [added], [assumptions], [guarantees] do not share
+-- any propositions.
 
 addFreeAssumptions :: [Formula Int] -> [([Formula Int], [Formula Int])] -> [([Formula Int], [Formula Int])]
 addFreeAssumptions freeAss specs =
@@ -186,6 +159,12 @@ addFreeAssumptions freeAss specs =
       in
         (matchAssmpt ++ assmpts, guars)
 
+-----------------------------------------------------------------------------
+
+-- | 'decompRelProps' implements an algorithm to find propositions relevant for
+-- decomposition. Those are all outputs and all inputs that can be influenced
+-- by outputs.
+
 decompRelProps :: Specification -> Set Int
 decompRelProps spec =
   let
@@ -196,6 +175,14 @@ decompRelProps spec =
 
   in
     Set.fromList $ udfs out graph
+
+-----------------------------------------------------------------------------
+
+-- | 'buildGraph' builds a graph with all elements of intNodes as nodes and
+-- guarantees nodes in the same list in intOutputs to be in the same connected
+-- component. E.g. buildGraph [1,2,3,4,5,6] [[1,2,3],[3,5],[4,6]]
+-- will result in a graph that has six nodes and the connected components
+-- [1,2,3,5] and [4,6].
 
 buildGraph :: [Int] -> [[Int]] -> Gr () ()
 buildGraph intNodes intOutputs =
