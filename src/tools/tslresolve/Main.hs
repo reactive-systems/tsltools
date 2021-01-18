@@ -29,7 +29,8 @@ main
 main = do
   initEncoding
 
-  parseMaybeFilePath "tslresolve"
+  parseMaybeFilePath
+    ("tslresolve", "Resolves TSL specifications with imports into plain TSL specifications.")
   >>= loadTSL
   >>= (putStrLn . toTSL)
 

@@ -8,7 +8,7 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE LambdaCase #-}
 
 -----------------------------------------------------------------------------
 
@@ -18,31 +18,43 @@ module ArgParseUtils
 
 -----------------------------------------------------------------------------
 
+import Data.Semigroup ((<>))
+import Options.Applicative
+import Options.Applicative.Help.Pretty
+
 import FileUtils (checkFile)
-
-import System.Environment (getArgs)
-
-import System.Exit (exitFailure)
-
-import PrintUtils (Color(..), ColorIntensity(..), cPutErrLn, putErrLn)
 
 -----------------------------------------------------------------------------
 
-parseMaybeFilePath :: String -> IO (Maybe FilePath)
-parseMaybeFilePath toolName = do
-  args <- getArgs
-  case args of
-    [] -> return Nothing
-    [path] -> do
+maybeFileParser :: Parser (Maybe FilePath)
+maybeFileParser =
+  optional (strArgument
+    (  metavar "FILE"
+    <> help "input file (STDIN, if not set)"
+    )
+  )
+
+maybeFileParserInfo :: (String, String) -> ParserInfo (Maybe FilePath)
+maybeFileParserInfo (name, description) =
+  let header = unlines
+                [ name
+                , ""
+                , description
+                ]
+  in
+  info
+    (maybeFileParser <**> helper)
+    (  fullDesc
+    <> headerDoc (Just $ string header)
+    )
+
+parseMaybeFilePath :: (String, String) -> IO (Maybe FilePath)
+parseMaybeFilePath tool =
+  let info = maybeFileParserInfo tool
+  in
+  execParser info
+  >>= \case
+    Nothing -> return Nothing
+    Just path -> do
       checkFile path
       return $ Just path
-    _ -> do
-      cPutErrLn Vivid Red "Invalid argument given"
-      putErrLn ""
-      putErrLn $ unlines
-        [ "Usage:"
-        , "  " ++ toolName ++ " [FILE]"
-        , ""
-        , "  STDIN is used, if no FILE given"
-        ]
-      exitFailure

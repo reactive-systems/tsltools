@@ -37,7 +37,8 @@ main
 main = do
   initEncoding
 
-  input <- parseMaybeFilePath "tslsize"
+  input <- parseMaybeFilePath
+            ("tslsize", "Returns the size of a TSL formula induced by a TSL specification.")
 
   Specification{..} <- loadTSL input
 

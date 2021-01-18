@@ -31,7 +31,8 @@ main
 main = do
   initEncoding
 
-  input <- parseMaybeFilePath "tsl2toml"
+  input <- parseMaybeFilePath
+            ("tsl2toml", "Transforms TSL specifications into TOML format.")
 
   spec <- loadTSL input
 

@@ -33,7 +33,8 @@ main
 main = do
   initEncoding
 
-  input <- parseMaybeFilePath "cfmsym"
+  input <- parseMaybeFilePath
+            ("cfmsym", "Prints encoded information about inputs, outputs, and terms from a given CFM represented as an AIGER circuit that has been created from a TSL specification.")
 
   m <- loadCFM input
 

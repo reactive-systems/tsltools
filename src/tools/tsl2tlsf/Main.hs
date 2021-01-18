@@ -31,7 +31,8 @@ main
 main = do
   initEncoding
 
-  input <- parseMaybeFilePath "tsl2tlsf"
+  input <- parseMaybeFilePath
+            ("tsl2tlsf", "Transforms TSL specifications into TLSF specifications.")
 
   spec <- loadTSL input
 

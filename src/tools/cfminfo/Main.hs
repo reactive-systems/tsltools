@@ -37,7 +37,8 @@ main
 main = do
   initEncoding
 
-  input <- parseMaybeFilePath "cfminfo"
+  input <- parseMaybeFilePath
+             ("cfminfo", "Returns some statistical numbers of a CFM.")
 
   cfm <- loadCFM input
 
