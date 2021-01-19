@@ -119,8 +119,6 @@ main = do
     cPutStr Vivid Blue     "  clash"
     cPutStrLn Dull White   "                          generates code for the hardware desciption"
     cPutStrLn Dull White   "                                 language 'ClaSH'"
-    cPutStr Vivid Blue     "  RxKotlin"
-    cPutStrLn Dull White   "                       generates code for RxKotlin Android apps"
     cPutStr Vivid Blue     "  JavaScript"
     cPutStrLn Dull White   "                       generates code for JavaScript"
     cPutStr Vivid Blue     "  WebAudio"

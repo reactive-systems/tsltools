@@ -88,10 +88,6 @@ import qualified TSL.Writer.Monadic as Monadic
   ( implement
   )
 
-import qualified TSL.Writer.RxKotlin as RxKotlin
-  ( implement
-  )
-
 import qualified TSL.Writer.JavaScript as JavaScript
   ( implement
   )
@@ -107,7 +103,6 @@ data CodeTarget =
   | Monadic
   | Arrow
   | Clash
-  | RxKotlin
   | JavaScript
   | WebAudio
   deriving (Show, Ord, Eq)
@@ -131,7 +126,6 @@ implement = \case
   Arrow       -> Arrow.implement
   Clash       -> Clash.implement
   Monadic     -> Monadic.implement
-  RxKotlin    -> RxKotlin.implement
   JavaScript  -> JavaScript.implement
   WebAudio    -> WebAudio.implement
 

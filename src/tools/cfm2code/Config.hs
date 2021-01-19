@@ -215,14 +215,6 @@ parseArguments args = do
             ("clash vs. " ++ prTarget t)
             "The specified target must be unique."
 
-
-      "RxKotlin" -> case codeTarget c of
-        Nothing -> simple $ c { codeTarget = Just RxKotlin }
-        Just t  ->
-          argsError
-            ("RxKotlin vs. " ++ prTarget t)
-            "The specified target must be unique."
-
       "JavaScript" -> case codeTarget c of
         Nothing -> simple $ c { codeTarget = Just JavaScript }
         Just t  ->
@@ -247,7 +239,6 @@ parseArguments args = do
       Arrow       -> "arrow"
       Clash       -> "clash"
       Monadic     -> "monadic"
-      RxKotlin    -> "RxKotlin"
       JavaScript  -> "JavaScript"
       WebAudio    -> "WebAudio"
 
