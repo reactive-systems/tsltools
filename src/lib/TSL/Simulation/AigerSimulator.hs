@@ -35,7 +35,7 @@ import TSL.Aiger as Aiger
 import Data.Either (lefts, rights)
 import Data.List (find)
 
-import Data.Map as Map (Map, fromList, lookup)
+import Data.Map.Strict as Map (Map, fromList, (!))
 
 import Control.Exception (assert)
 
@@ -91,8 +91,7 @@ normalize renameInput renameOutput aig =
   case (lefts renamedInputs, lefts renamedOutputs) of
     (e:_, _) -> Left e
     ([], e:_) -> Left e
-    ([], []) ->
-      Right $
+    ([], []) -> Right
       NormCircuit
         { inputs = Aiger.inputs aig
         , outputs = Aiger.outputs aig
@@ -166,19 +165,14 @@ type Outputs = Output -> Bool
 
 simStep :: NormCircuit i o -> State -> Inputs -> (State, Outputs)
 simStep NormCircuit {..} state inpt =
+  -- The following is needed to avoid that the mapping functions are
+  -- evaluated in a lazy manner each step
   let latchMap = functionToMap latches $ \l -> eval (latchCir l) state inpt
       outputMap = functionToMap outputs $ \o -> eval (outputCir o) state inpt
-   in (strictLookup latchMap, strictLookup outputMap)
+  in ((!) latchMap, (!) outputMap)
   where
-    -- The following is needed to avoid that the mapping functions are
-    -- evaluated in a lazy manner each step
-    strictLookup m elem =
-      case Map.lookup elem m of
-        Just a  -> a
-        Nothing -> assert False undefined
-    --
     functionToMap :: Ord a => [a] -> (a -> b) -> Map a b
-    functionToMap keys f = fromList $ fmap (\k -> (k, f k)) keys
+    functionToMap keys f = Map.fromList $ fmap (\k -> (k, f k)) keys
 
 -------------------------------------------------------------------------------
 -- | 'eval' computes the result of a 'CircuitTree' when evaluated on some

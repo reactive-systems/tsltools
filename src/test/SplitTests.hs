@@ -42,7 +42,7 @@ genSplitTest i (spec, splits) =
   let
     x =
       TestInstance
-        { run = do
+        { run =
             fromTSL Nothing spec
             >>= \case
               Left _ -> do

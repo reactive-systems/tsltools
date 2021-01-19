@@ -70,8 +70,7 @@ instance Show DependencyRepresentation where
       ++
       ["dependencies:"]
       ++
-      flip map
-        (zip [0..] guarantees)
+      map
         (\(i,g) ->
           show (i::Int)
           ++
@@ -79,12 +78,13 @@ instance Show DependencyRepresentation where
           ++
           show (map aIdx (g2as g))
         )
+        (zip [0..] guarantees)
 
     where
       showFormulas formulas =
-        flip map
-          (zip [0..] formulas)
+        map
           (\(i,f) -> (show (i::Int)) ++ ": \"" ++ (tslFormula id f) ++ "\"")
+          (zip [0..] formulas)
 
       aIdx a = fromJust $ List.elemIndex a assumptions
 

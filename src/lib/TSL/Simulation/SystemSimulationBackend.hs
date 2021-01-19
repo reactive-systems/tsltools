@@ -33,9 +33,19 @@ import TSL.Specification (Specification(..))
 
 import TSL.SymbolTable (stName)
 
-import qualified Data.Set as Set (filter)
+import Data.Maybe (fromJust)
 
-import Data.Set as Set (difference, fromList, isSubsetOf, map, powerSet, toList)
+import Data.List (lookup)
+
+import Data.Set as Set
+  ( difference
+  , filter
+  , fromList
+  , isSubsetOf
+  , map
+  , powerSet
+  , toList
+  )
 
 import TSL.Simulation.AigerSimulator
   ( NormCircuit
@@ -171,7 +181,7 @@ step
 
 step sim@SystemSimulation {..} updates =
   let
-    input = \i -> inputName counterStrategy i `elem` updates
+    input i = inputName counterStrategy i `elem` updates
 
     (q, output) = simStep counterStrategy (head stateStack) input
 
@@ -183,8 +193,8 @@ step sim@SystemSimulation {..} updates =
     newTrace =
       append
         trace
-        (\c -> findFirst (== c) updates)
-        (\p -> findFirst (== p) eval)
+        (\c -> fromJust $ lookup c updates)
+        (\p -> fromJust $ lookup p eval)
 
     newLog = (updates, eval) : logTrace
   in
@@ -196,17 +206,6 @@ step sim@SystemSimulation {..} updates =
     , eval
     )
 
-  where
-    findFirst
-      :: (a -> Bool) -> [(a, b)] -> b
-
-    findFirst p = \case
-      -- cannot happen if the simulation is sanitized
-      []       -> assert False undefined
-      -- otherwise
-      (a,b):xr
-        | p a       -> b
-        | otherwise -> findFirst p xr
 
 -------------------------------------------------------------------------------
 -- | 'rewind' undoes the last step of applied to a 'SystemSimulation'
@@ -250,7 +249,7 @@ sanitize SystemSimulation{counterStrategy = cst, specification = spec} =
 
     strategyUpdatedCells =
       fromList $ fmap fst [inputName cst o | o <- inputs cst]
-    strategyPredicates = fromList $ [outputName cst o | o <- outputs cst]
+    strategyPredicates = fromList [outputName cst o | o <- outputs cst]
 
     errorMsgCells =
       "Simulator: Specification does not match the " ++

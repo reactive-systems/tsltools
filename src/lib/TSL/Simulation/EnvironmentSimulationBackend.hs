@@ -229,7 +229,7 @@ sanitize EnvironmentSimulation{strategy = cst, specification = spec} =
 
     strategyUpdatedCells =
       fromList $ fmap fst [outputName cst o | o <- outputs cst]
-    strategyPredicates = fromList $ [inputName cst o | o <- inputs cst]
+    strategyPredicates = fromList [inputName cst o | o <- inputs cst]
 
     errorMsgCells =
       "Simulator: Specification does not match the " ++

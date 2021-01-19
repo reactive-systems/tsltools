@@ -154,7 +154,7 @@ assignmentParser = do
       rOp "="
       es <- many1 exprParser
       rOp ";"
-      return $ Assignment $
+      return $ Assignment
         Binding
           { bIdent = x
           , bArgs = args

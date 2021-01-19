@@ -29,8 +29,6 @@ import System.Directory (getCurrentDirectory)
 
 import System.FilePath (takeBaseName, (<.>), (</>))
 
-import Data.Maybe (fromMaybe)
-
 -----------------------------------------------------------------------------
 
 main
@@ -50,7 +48,7 @@ main = do
     specs = split spec
 
     filepathN n =
-      path </> (fromMaybe "SPLIT" $ takeBaseName <$> input) ++
+      path </> (maybe "SPLIT" takeBaseName input) ++
       "_" ++ show n <.> "tsl"
 
   mapM_

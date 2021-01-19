@@ -210,27 +210,25 @@ minimalAssumptionTree context asmpt sym =
       logNormal context "Start searching leaf"
       potSpec <-
         subGeneration
-          (Specification
-             {symboltable = sym, guarantees = [g], assumptions = asmpt})
+          Specification
+            {symboltable = sym, guarantees = [g], assumptions = asmpt}
       logNormal context "Finished searching leaf"
       case potSpec of
         Nothing   -> return Nothing
         Just spec -> return $ Just $ Leaf (fromList $ assumptions spec) g
     STNode t1 t2 -> do
-      a1p <- minimalAssumptionTree context asmpt sym t1
-      a2p <- minimalAssumptionTree context asmpt sym t2
-      case (a1p, a2p) of
-        (Just a1, Just a2) -> do
-          let spec1 = assumptionTreeToSpec sym [] a1
-          let spec2 = assumptionTreeToSpec sym [] a2
+      aTrees <- mapM (minimalAssumptionTree context asmpt sym) [t1, t2]
+      case aTrees of
+        [Just a1, Just a2] -> do
+          let specs = map (assumptionTreeToSpec sym []) [a1, a2]
           logNormal context "Start searching inner node"
           potSpec <-
             subGeneration
-              (Specification
-                 { symboltable = sym
-                 , guarantees = guarantees spec1 ++ guarantees spec2
-                 , assumptions = asmpt
-                 })
+              Specification
+                { symboltable = sym
+                , guarantees = concatMap guarantees specs
+                , assumptions = asmpt
+                }
           logNormal context "Finished searching inner node"
           case potSpec of
             Nothing -> return Nothing

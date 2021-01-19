@@ -15,8 +15,8 @@
 --
 -------------------------------------------------------------------------------
 
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE LambdaCase               #-}
 
 -------------------------------------------------------------------------------
 

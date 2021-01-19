@@ -6,10 +6,6 @@
 -- Dependency test cases.
 --
 -----------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE RecordWildCards #-}
-
------------------------------------------------------------------------------
 
 module DependencyTests
   ( tests
