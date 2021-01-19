@@ -8,6 +8,7 @@
 --
 -----------------------------------------------------------------------------
 
+{-# LANGUAGE NamedFieldPuns  #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections   #-}
 
@@ -25,7 +26,7 @@ import TSL.Specification (Specification(..))
 
 import TSL.Logic (Formula(..), inputs, outputs)
 
-import Data.Map.Strict as Map (fromDescList, (!))
+import Data.Maybe (fromJust)
 
 import Data.Set as Set
   ( Set
@@ -35,13 +36,13 @@ import Data.Set as Set
   , fromList
   , insert
   , intersection
-  , toAscList
   , union
+  , unions
   )
 
-import Data.List (partition)
+import Data.List (elemIndex, partition)
 
-import Data.Array as Ar (listArray, (!))
+import Data.Array as Array (listArray, (!))
 
 import Data.Ix (range)
 
@@ -53,48 +54,52 @@ import Data.Graph.Inductive.Query.DFS
 
 -----------------------------------------------------------------------------
 
--- | Create symboltable for specification part
 
-cleanSymboltable
-  :: Specification -> Specification
+getInOutputs :: Formula Int -> Set Int
+getInOutputs fml = inputs fml `union` outputs fml
+
+-----------------------------------------------------------------------------
+-- | Create symboltable for specification part
+cleanSymboltable :: Specification -> Specification
 cleanSymboltable spec@Specification{..} =
   let
     assVars = foldl (foldr Set.insert) Set.empty assumptions
     vars = toAscList $ foldl (foldr Set.insert) assVars guarantees
 
-    newSymbols  = fromDescList mapping
-    mapping = snd $ foldl (\ (i, xs) x -> (i+1,(x,i):xs)) (1,[]) vars
+    -- mapping from old to new variables ((index in vars) + 1)
+    old2new :: Int -> Int
+    old2new = (+1) . fromJust . (`elemIndex` vars)
 
-    oldNewArr = listArray (1,fst $ head mapping) $ reverse $ fmap fst mapping
-    table = fmap (\x -> updateRec (newSymbols Map.!) (symtable symboltable Ar.! x)) oldNewArr
+    records = map (\x -> updateRec old2new (symtable symboltable ! x)) vars
+    table = list2array records
   in
     spec
-      { assumptions = fmap (fmap (newSymbols Map.!)) assumptions
-      , guarantees  = fmap (fmap (newSymbols Map.!)) guarantees
+      { assumptions = map (fmap old2new) assumptions
+      , guarantees  = map (fmap old2new) guarantees
       , symboltable = symbolTable table
       }
+  where
+    list2array l = Array.listArray (1, length l) l
 
 -----------------------------------------------------------------------------
 
 -- | Update the identifiers in one symboltable record
 -- TODO update Bindings
-updateRec
-  :: (Int -> Int) -> IdRec -> IdRec
-updateRec dict rec = rec {idArgs = dict <$> idArgs rec, idDeps = dict <$> idDeps rec}
+updateRec :: (Int -> Int) -> IdRec -> IdRec
+updateRec dict rec@IdRec{idArgs, idDeps} =
+  rec {idArgs = dict <$> idArgs, idDeps = dict <$> idDeps}
 
 -----------------------------------------------------------------------------
 
 -- | Splits a list of formulas by disjoint sets of variables
-
-splitFormulas
-  :: [Formula Int] -> [Set Int] -> [[Formula Int]]
+splitFormulas :: [Formula Int] -> [Set Int] -> [[Formula Int]]
 splitFormulas guars parts = map fst guarParts
   where
     guarParts = foldr insertFormula zippedParts guars
     zippedParts = map ([],) parts
 
-insertFormula
- :: Formula Int -> [([Formula Int], Set Int)] -> [([Formula Int], Set Int)]
+
+insertFormula :: Formula Int -> [([Formula Int], Set Int)] -> [([Formula Int], Set Int)]
 insertFormula fml   []        = [([fml], empty)]
 insertFormula fml ((fs,s):xr) = if not $ disjoint (getInOutputs fml) s
                                 -- since s only contains outputs and impressionable inputs,
@@ -102,11 +107,6 @@ insertFormula fml ((fs,s):xr) = if not $ disjoint (getInOutputs fml) s
                                 then (fml:fs,s):xr
                                 else (fs,s):insertFormula fml xr
 
-
-
-getInOutputs
-  :: Formula Int -> Set Int
-getInOutputs fml = inputs fml `union` outputs fml
 
 -----------------------------------------------------------------------------
 
@@ -116,21 +116,19 @@ getInOutputs fml = inputs fml `union` outputs fml
 -- [assumptions] -> bot is unrealizable.
 
 split :: Specification -> [Specification]
-split spec =
+split spec@Specification{assumptions, guarantees} =
   let
-    ass = assumptions spec
-    guar = guarantees spec
     decRelProps = decompRelProps spec
     graph = buildGraph (elems decRelProps) preEdges
-    preEdges = map (elems . (intersection decRelProps . getInOutputs)) (ass ++ guar)
-    connComp = map fromList $ components graph
-    (freeAss, boundAss) = partition (null . (intersection decRelProps . getInOutputs)) ass
-    splitGuars = splitFormulas guar connComp
+    preEdges = map (elems . (intersection decRelProps) . getInOutputs) (assumptions ++ guarantees)
+    connComp = map Set.fromList $ components graph
+    (freeAss, boundAss) = partition (null . (intersection decRelProps) . getInOutputs) assumptions
+    splitGuars = splitFormulas guarantees connComp
     splitAss  = splitFormulas boundAss connComp
   in
     fmap cleanSymboltable $ buildSpecs $ addFreeAssumptions freeAss $ zip splitAss splitGuars
   where
-    buildSpecs  = foldl (\ xs (a,g) -> spec{assumptions = a, guarantees = g}:xs) []
+    buildSpecs  = map (\(a,g) -> spec{assumptions = a, guarantees = g})
 
 
 -----------------------------------------------------------------------------
@@ -143,10 +141,10 @@ split spec =
 addFreeAssumptions :: [Formula Int] -> [([Formula Int], [Formula Int])] -> [([Formula Int], [Formula Int])]
 addFreeAssumptions freeAss specs =
   let
-    graph = buildGraph (elems (foldr union empty inpAss)) preEdges
-    preEdges = map elems inpAss
     inpAss = map inputs freeAss
-    assParts = map fromList $ components graph
+    preEdges = map elems inpAss
+    graph = buildGraph (elems (Set.unions inpAss)) preEdges
+    assParts = Set.fromList <$> components graph
     splitFreeAss = splitFormulas freeAss assParts
   in
     map (addFreeAssumpt splitFreeAss) specs
@@ -154,8 +152,8 @@ addFreeAssumptions freeAss specs =
     addFreeAssumpt :: [[Formula Int]] -> ([Formula Int], [Formula Int]) -> ([Formula Int], [Formula Int])
     addFreeAssumpt freeAssParts (assmpts, guars) =
       let
-        props = foldr (union . getInOutputs) empty (assmpts ++ guars)
-        matchAssmpt = concat $ filter (not . disjoint props . foldr (union . getInOutputs) empty) freeAssParts
+        props = Set.unions $ map getInOutputs (assmpts ++ guars)
+        matchAssmpt = concat $ filter (not . disjoint props . Set.unions . (map getInOutputs)) freeAssParts
       in
         (matchAssmpt ++ assmpts, guars)
 
