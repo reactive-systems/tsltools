@@ -28,6 +28,8 @@ import TSL (Specification, fromTSL, split, toTSL)
 
 import Data.Char (isSpace)
 
+import Data.Set as Set (fromList, (\\))
+
 -----------------------------------------------------------------------------
 
 tests :: [Test]
@@ -63,18 +65,29 @@ genSplitTest i (spec, splits) =
 
   where
     splitTest' :: Specification -> [String] -> Either String ()
-    splitTest' spec splits =
-      let specs = split spec
-      in if (length specs == length splits)
-      then mapM_ check $ zip splits $ map toTSL specs
-      else Left $ "Expected " ++ show (length splits) ++
-                  " many splits, " ++ "but got " ++
-                  show (length specs) ++ "."
+    splitTest' spec splitsExpected =
+      let
+        setExpected = Set.fromList $ map trim splitsExpected
+        nExpected = length setExpected
 
-    check (exp, res)
-      | trim exp == trim res = return ()
-      | otherwise =
-          Left $ "Expected:\n\n" ++ exp ++ "\nbut Got:\n\n" ++ res ++ "\n"
+        splitsGot = split spec
+        setGot = Set.fromList $ map (trim . toTSL) splitsGot
+        nGot = length setGot
+      in
+      if nGot /= nExpected
+      then
+        Left $ "Expected " ++ show nExpected ++
+                " many splits, but got " ++
+                show nGot ++ "."
+      else
+        if setGot /= setExpected
+        then
+          let
+            expected = show $ setExpected \\ setGot
+            got = show $ setGot \\ setExpected
+          in
+          Left $ "Expected:\n\n" ++ expected ++ "\nbut Got:\n\n" ++ got ++ "\n"
+        else Right ()
 
     trim = f . f
     f = reverse . dropWhile isSpace
