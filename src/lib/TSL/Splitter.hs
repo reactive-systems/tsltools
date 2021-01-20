@@ -24,7 +24,7 @@ import TSL.SymbolTable (IdRec(..), Kind(..), SymbolTable(..), symbolTable)
 
 import TSL.Specification (Specification(..))
 
-import TSL.Logic (Formula(..), inputs, outputs)
+import TSL.Logic (Formula(..), inputs, outputs, symbols)
 
 import Data.Maybe (fromJust)
 
@@ -34,7 +34,6 @@ import Data.Set as Set
   , elems
   , empty
   , fromList
-  , insert
   , intersection
   , union
   , unions
@@ -63,8 +62,7 @@ getInOutputs fml = inputs fml `union` outputs fml
 cleanSymboltable :: Specification -> Specification
 cleanSymboltable spec@Specification{..} =
   let
-    assVars = foldl (foldr Set.insert) Set.empty assumptions
-    vars = toAscList $ foldl (foldr Set.insert) assVars guarantees
+    vars = elems . Set.unions $ map symbols (assumptions ++ guarantees)
 
     -- mapping from old to new variables ((index in vars) + 1)
     old2new :: Int -> Int
