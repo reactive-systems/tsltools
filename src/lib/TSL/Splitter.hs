@@ -82,10 +82,13 @@ cleanSymboltable spec@Specification{..} =
 -----------------------------------------------------------------------------
 
 -- | Update the identifiers in one symboltable record
--- TODO update Bindings
 updateRec :: (Int -> Int) -> IdRec -> IdRec
-updateRec dict rec@IdRec{idArgs, idDeps} =
-  rec {idArgs = dict <$> idArgs, idDeps = dict <$> idDeps}
+updateRec dict rec@IdRec{idArgs, idDeps, idBindings} =
+  rec
+  { idArgs = dict <$> idArgs
+  , idDeps = dict <$> idDeps
+  , idBindings = (dict <$>) <$> idBindings
+  }
 
 -----------------------------------------------------------------------------
 
