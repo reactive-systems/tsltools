@@ -7,16 +7,83 @@
 --
 -----------------------------------------------------------------------------
 
+{-# LANGUAGE LambdaCase #-}
+
+-----------------------------------------------------------------------------
+
 module SplitTests
-  ( splitTests
+  ( tests
   ) where
 
 -----------------------------------------------------------------------------
 
-splitTests
+import Distribution.TestSuite
+  ( Progress(..)
+  , Result(..)
+  , Test(..)
+  , TestInstance(..)
+  )
+
+import TSL (Specification, fromTSL, split, toTSL)
+
+import Data.Char (isSpace)
+
+-----------------------------------------------------------------------------
+
+tests :: [Test]
+tests =
+  zipWith genSplitTest [1..] splitTestsRaw
+
+
+genSplitTest :: Int -> (String, [String]) -> Test
+genSplitTest i (spec, splits) =
+  let
+    x =
+      TestInstance
+        { run = do
+            fromTSL Nothing spec
+            >>= \case
+              Left _ -> do
+                putStrLn $ "Incorrect Specification:\n\n" ++ spec
+                return $ Finished $ Fail $
+                  "Split test " ++ show i ++ " failed."
+              Right s -> case splitTest' s splits of
+                Right () -> return $ Finished Pass
+                Left err -> do
+                  putStrLn err
+                  return $ Finished $ Fail $
+                    "Split test " ++ show i ++ " failed."
+        , name = "split" ++ show i
+        , tags = []
+        , options = []
+        , setOption = \_ _ -> Right x
+        }
+  in
+    Test x
+
+  where
+    splitTest' :: Specification -> [String] -> Either String ()
+    splitTest' spec splits =
+      let specs = split spec
+      in if (length specs == length splits)
+      then mapM_ check $ zip splits $ map toTSL specs
+      else Left $ "Expected " ++ show (length splits) ++
+                  " many splits, " ++ "but got " ++
+                  show (length specs) ++ "."
+
+    check (exp, res)
+      | trim exp == trim res = return ()
+      | otherwise =
+          Left $ "Expected:\n\n" ++ exp ++ "\nbut Got:\n\n" ++ res ++ "\n"
+
+    trim = f . f
+    f = reverse . dropWhile isSpace
+
+
+splitTestsRaw
   :: [(String, [String])]
 
-splitTests =
+splitTestsRaw =
   [ ( unlines
         [ "always assume {"
         , "    F a;"
