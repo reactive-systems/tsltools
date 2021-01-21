@@ -93,7 +93,7 @@ Folder structure:
   then has its own sub-folder.
 * `src/tools/` contains the code of the individual tools. Each tools has a
   separate folder which usually contains one or two source files. 
-* `src/t ol-utilities` contains common routines used by the individual tools. 
+* `src/tool-utilities/` contains common routines used by the individual tools. 
   Note that these allow that the different tools are accessed in a similar 
   manner. Hence, when writing a new tool you should take these into 
   consideration.
