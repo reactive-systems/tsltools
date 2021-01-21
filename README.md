@@ -149,25 +149,6 @@ Possible options are:
 <**TODO** Describe>
 
 
-# Core Generation
-
-<**TODO** This has to go in some kind of documentation>
-
-This library and respective tools generate different kinds cores (minimal 
-specification witnesses) for TSL. The following cores exist
-
-* Unrealizability cores: A unrealizability cores of a specification is a 
-  sub-specification with a minimal amount of guarantees and all assumptions 
-  such that this sub-specification is unrealizable. 
-  They can be computed by ``tslcoregen``.
-* Minimal assumption cores: A minimal assuption core of a specification is the 
-  sub-specification with all guarantees with a minimal amount of assumptions 
-  such that this sub-specification is realizable.
-  Note that this repersent then minimal amount of restriction one has to impose
-  on the enivronment such that a desired system can be constructed. 
-  The can be computed by ``tslminrealizable`` either in a plain or tree-like
-  manner.
-
 # Installation
 
 We recommend using the [Haskell Tool Stack](http://haskellstack.org/)
@@ -183,6 +164,8 @@ in the main directory to build TSL tools.
 # Research and Documentation
 
 <**TODO:** Documentation part that has to be decided> 
+The high-level documentation of this project, including some custom techniques,
+can be found in the [projects documentation](./doc/Documentation.md).
 
 Research:
 * [The original paper](https://www.react.uni-saarland.de/publications/FKPS19a.html)
