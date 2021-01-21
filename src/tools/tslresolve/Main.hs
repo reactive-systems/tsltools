@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Main
--- Maintainer  :  Marvin Stenger (Stenger@ProjectJARVIS.de)
+-- Maintainer  :  Marvin Stenger
 --
 -- Resolves TSL specifications with imports into plain TSL specifications.
 --

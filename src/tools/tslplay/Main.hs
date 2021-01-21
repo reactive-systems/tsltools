@@ -1,9 +1,9 @@
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Main
--- Maintainer  :  Philippe Heim (Heim@ProjectJARVIS.de)
+-- Maintainer  :  Philippe Heim
 --
--- Allows to play against a stategies.
+-- Allows to play against a strategies.
 --
 -----------------------------------------------------------------------------
 
