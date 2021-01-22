@@ -15,6 +15,7 @@
 
 module TSL.Dependency
   ( DependencyRepresentation(..)
+  , formulas2dependencies
   , specifications2dependencies
   ) where
 
@@ -79,29 +80,26 @@ instance Show DependencyRepresentation where
 
 
 
-specifications2dependencies
-  :: [Specification] -> DependencyRepresentation
+formulas2dependencies
+  :: [([Formula String], [Formula String])] -> DependencyRepresentation
 
-specifications2dependencies specs =
+formulas2dependencies formulas =
   let
-    extractAssumptions :: Specification -> [Formula String]
-    extractAssumptions Specification{..} = map (fmap (stName symboltable)) assumptions
-    extractGuarantees :: Specification -> [Formula String]
-    extractGuarantees Specification{..} = map (fmap (stName symboltable)) guarantees
+    (assumptionss, guaranteess) = unzip formulas
 
-    assumptions = elems . Set.fromList $ concatMap extractAssumptions specs
-    guarantees = elems . Set.fromList $ concatMap extractGuarantees specs
+    assumptions = elems $ Set.fromList $ concat assumptionss
+    guarantees = elems $ Set.fromList $ concat guaranteess
 
     aIdx a = fromJust $ List.elemIndex a assumptions
     gIdx g = fromJust $ List.elemIndex g guarantees
 
     gMap =
       IntMap.fromListWith Set.union $
-        concatMap (\spec ->
-            let aIdxSet = Set.fromList $ map aIdx $ extractAssumptions spec in
-            map (\g -> (gIdx g, aIdxSet)) $ extractGuarantees spec
+        concatMap (\(assumptions, guarantees) ->
+            let aIdxSet = Set.fromList $ map aIdx assumptions in
+            map (\g -> (gIdx g, aIdxSet)) guarantees
           )
-          specs
+          formulas
 
     g2as g = case IntMap.lookup (gIdx g) gMap of
       Nothing      -> []
@@ -109,3 +107,18 @@ specifications2dependencies specs =
 
   in
   DependencyRepresentation {..}
+
+
+specifications2dependencies
+  :: [Specification] -> DependencyRepresentation
+
+specifications2dependencies specs =
+  let
+    assumptionss = map (extract assumptions) specs
+    guaranteess = map (extract guarantees) specs
+  in
+  formulas2dependencies $ zip assumptionss guaranteess
+  where
+    extract :: (Specification -> [Formula Int]) -> Specification -> [Formula String]
+    extract getFormulas spec@Specification{symboltable} =
+      map (fmap (stName symboltable)) $ getFormulas spec
