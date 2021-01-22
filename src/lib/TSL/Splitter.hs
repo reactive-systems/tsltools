@@ -94,19 +94,18 @@ updateRec dict rec@IdRec{idArgs, idDeps, idBindings} =
 
 -- | Splits a list of formulas by disjoint sets of variables
 splitFormulas :: [Formula Int] -> [Set Int] -> [[Formula Int]]
-splitFormulas guars parts = map fst guarParts
+splitFormulas formulas parts = map fst formulaParts
   where
-    guarParts = foldr insertFormula zippedParts guars
+    formulaParts = foldr insertFormula zippedParts formulas
     zippedParts = map ([],) parts
 
 
 insertFormula :: Formula Int -> [([Formula Int], Set Int)] -> [([Formula Int], Set Int)]
-insertFormula fml   []        = [([fml], empty)]
-insertFormula fml ((fs,s):xr) = if not $ disjoint (getInOutputs fml) s
-                                -- since s only contains outputs and impressionable inputs,
-                                -- checking for disjunctness with all inputs suffices
-                                then (fml:fs,s):xr
-                                else (fs,s):insertFormula fml xr
+insertFormula formula   []                        = [([formula], empty)]
+insertFormula formula ((formulas,variableSet):xr)
+                          = if not $ disjoint (getInOutputs formula) variableSet
+                            then (formula:formulas,variableSet):xr
+                            else (formulas,variableSet):insertFormula formula xr
 
 
 -----------------------------------------------------------------------------
@@ -123,11 +122,11 @@ split spec@Specification{assumptions, guarantees} =
     graph = buildGraph (elems decRelProps) preEdges
     preEdges = map (elems . (intersection decRelProps) . getInOutputs) (assumptions ++ guarantees)
     connComp = map Set.fromList $ components graph
-    (freeAss, boundAss) = partition (null . (intersection decRelProps) . getInOutputs) assumptions
+    (freeAssumptions, boundAssumptions) = partition (null . (intersection decRelProps) . getInOutputs) assumptions
     splitGuars = splitFormulas guarantees connComp
-    splitAss  = splitFormulas boundAss connComp
+    splitAssumptions  = splitFormulas boundAssumptions connComp
   in
-    fmap cleanSymboltable $ buildSpecs $ addFreeAssumptions freeAss $ zip splitAss splitGuars
+    fmap cleanSymboltable $ buildSpecs $ addFreeAssumptions freeAssumptions $ zip splitAssumptions splitGuars
   where
     buildSpecs  = map (\(a,g) -> spec{assumptions = a, guarantees = g})
 
@@ -140,21 +139,21 @@ split spec@Specification{assumptions, guarantees} =
 -- any propositions.
 
 addFreeAssumptions :: [Formula Int] -> [([Formula Int], [Formula Int])] -> [([Formula Int], [Formula Int])]
-addFreeAssumptions freeAss specs =
+addFreeAssumptions freeAssumptions specs =
   let
-    inpAss = map inputs freeAss
-    preEdges = map elems inpAss
-    graph = buildGraph (elems (Set.unions inpAss)) preEdges
+    assumptionsInputs = map inputs freeAssumptions
+    preEdges = map elems assumptionsInputs
+    graph = buildGraph (elems (Set.unions assumptionsInputs)) preEdges
     assParts = Set.fromList <$> components graph
-    splitFreeAss = splitFormulas freeAss assParts
+    freeAssumptionsSplit = splitFormulas freeAssumptions assParts
   in
-    map (addFreeAssumpt splitFreeAss) specs
+    map (addFreeAssumpt freeAssumptionsSplit) specs
   where
     addFreeAssumpt :: [[Formula Int]] -> ([Formula Int], [Formula Int]) -> ([Formula Int], [Formula Int])
-    addFreeAssumpt freeAssParts (assmpts, guars) =
+    addFreeAssumpt freeAssumptionParts (assmpts, guars) =
       let
         props = Set.unions $ map getInOutputs (assmpts ++ guars)
-        matchAssmpt = concat $ filter (not . disjoint props . Set.unions . (map getInOutputs)) freeAssParts
+        matchAssmpt = concat $ filter (not . disjoint props . Set.unions . (map getInOutputs)) freeAssumptionParts
       in
         (matchAssmpt ++ assmpts, guars)
 
