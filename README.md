@@ -6,14 +6,14 @@ specifications and Control Flow Models (CFMs) that result from TSL
 synthesis. 
 
 1. [Tool Overview](#tool-overview)
-    1. [Analyzing TSL Specifications](Analyzing TSL Specifications)
-    2. [Processing TSL Specifications](Processing TSL Specifications)
-    3. [Generating Control Flow Models](Generating Control Flow Models)
-    4. [Debugging TSL Specifications](Debugging TSL Specifications)
+    1. [Analyzing TSL Specifications](#analyzing-tsl-specifications)
+    2. [Processing TSL Specifications](#processing-tsl-specifications)
+    3. [Generating Control Flow Models](#generating-control-flow-models)
+    4. [Debugging TSL Specifications](#debugging-tsl-Specifications)
 
 2. [Installation](#installation)
 3. [Research and Documentation](#research-and-documentation)
-4. [Contributing]()
+4. [Contributing](#contributing)
 
 # Tool Overview
 
@@ -60,12 +60,11 @@ from `STDIN` when they get no specific input.
   and vertices of the generated CFM.
 * `cfm2code` generates executable code from a valid CFM. To this end, a 
   specific code target must be selected. Supported targets are:
-    | Target | Description |
-    |:-|:-|
-    | `applicative` | generates code for Applicative FRP libraries |
-    | `monadic` | generates code for Monadic FRP libraries |
-    | `arrow` | generates code for Arrowized FRP libraries |
-    | `clash` | generates code for the hardware description language [CλaSH](https://clash-lang.org/) |
+    * `applicative`: generates code for Applicative FRP libraries 
+    * `monadic`: generates code for Monadic FRP libraries
+    * `arrow`: generates code for Arrowized FRP libraries
+    * `clash`: generates code for the hardware description language 
+      [CλaSH](https://clash-lang.org/)
 
 ## Debugging TSL Specifications
 
