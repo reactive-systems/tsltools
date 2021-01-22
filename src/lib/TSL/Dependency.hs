@@ -10,6 +10,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE TupleSections         #-}
 
 -----------------------------------------------------------------------------
 
@@ -27,7 +28,7 @@ import TSL.Specification (Specification(..))
 
 import TSL.SymbolTable (stName)
 
-import Data.IntMap as IntMap (fromListWith, lookup)
+import Data.Map.Strict as Map (fromListWith, keys, (!))
 
 import Data.List as List (elemIndex)
 
@@ -78,35 +79,39 @@ instance Show DependencyRepresentation where
 
       aIdx a = fromJust $ List.elemIndex a assumptions
 
+-----------------------------------------------------------------------------
 
 
+-- | Function to extract the dependency relation between
+-- a set of guarantees and their assumptions
+-- out of a list of 'Formula's (assumptions, guarantees)
 formulas2dependencies
   :: [([Formula String], [Formula String])] -> DependencyRepresentation
 
 formulas2dependencies formulas =
   let
-    (assumptionss, guaranteess) = unzip formulas
-
+    assumptionss = fst <$> formulas
     assumptions = elems $ Set.fromList $ concat assumptionss
-    guarantees = elems $ Set.fromList $ concat guaranteess
-
     aIdx a = fromJust $ List.elemIndex a assumptions
-    gIdx g = fromJust $ List.elemIndex g guarantees
 
     gMap =
-      IntMap.fromListWith Set.union $
+      Map.fromListWith Set.union $
         concatMap (\(assumptions, guarantees) ->
             let aIdxSet = Set.fromList $ map aIdx assumptions in
-            map (\g -> (gIdx g, aIdxSet)) guarantees
+            map (,aIdxSet) guarantees
           )
           formulas
 
-    g2as g = case IntMap.lookup (gIdx g) gMap of
-      Nothing      -> []
-      Just aIdxSet -> map (assumptions !!) $ elems aIdxSet
+    g2as g =
+      let aIdxSet = gMap ! g
+      in
+      map (assumptions !!) $ elems aIdxSet
 
   in
-  DependencyRepresentation {..}
+  DependencyRepresentation
+  { guarantees = keys gMap
+  , ..
+  }
 
 
 specifications2dependencies
