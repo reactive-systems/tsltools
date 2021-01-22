@@ -71,8 +71,13 @@ set of TSL benchmarks.
 
 ## tslsplit
 
-<**TODO** Describe>
+Applies a sound specification decomposition technique to the give specification.
+Assumes unrealizability of the negated assumptions (that the spec is not
+realizable by assumption violation). It saves the resulting specs as
+`<filename>_x.tsl` in the current path where `x` is the index of the respective
+subspecification.
 
+`Usage: tslsplit <file>`
 
 ## tsl2tlsf
 
