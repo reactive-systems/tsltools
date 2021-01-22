@@ -122,14 +122,11 @@ programming projects. Hence, our projects follows the following guidelines:
 * Please refrain form putting your e-mail inside the module. Put it –together
   with the name you used inside your modules– inside the `tsl.cabal` file 
   under the *author* field.
-* <**TODO** General documentation for the project overview and non modules 
-  ideas like algorithms>
+* When adding new modules they should be documented in the 
+  [overview documentation](./DOCUMENTATION.md).
 * The core functionalities (i.e. usually every part of the program logic that 
   is not user  interaction or IO) of a feature shall be part of the `tsltools` 
   library. Functionalities that are intended to be used by a human should be 
   wrapped inside a `tsltools` tool. For more details refer to the
   [project structure](#project-structure).
-
-A good example how your code might look like can be found in 
-<**TODO**: Find example>.
 

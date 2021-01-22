@@ -9,7 +9,11 @@ author:              Felix Klein <felix.klein@cispa.de>
                      Philippe Heim <philippe.heim@cispa.de>
                      Gideon Geier <gideon.geier@cispa.de>
                      Marvin Stenger <marvin.stenger@cispa.de>
-maintainer:          TODO
+
+maintainer:          Felix Klein <felix.klein@cispa.de>
+                     Philippe Heim <philippe.heim@cispa.de>
+                     Gideon Geier <gideon.geier@cispa.de>
+                     Marvin Stenger <marvin.stenger@cispa.de>
 category:            Synthesis
 build-type:          Simple
 cabal-version:       >=1.10

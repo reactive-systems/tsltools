@@ -6,20 +6,10 @@ specifications and Control Flow Models (CFMs) that result from TSL
 synthesis. 
 
 1. [Tool Overview](#tool-overview)
-    * [tslcheck](#tslcheck)
-    * [tslsym](#tslsym)
-    * [tslsize](#tslsize)
-    * [tslresolve](#tslresolve)
-    * [tslsplit](#tslsplit)
-    * [tsl2tlsf](#tsl2tlsf)
-    * [tsl2toml](#tsl2toml)
-    * [cfmcheck](#cfmcheck)
-    * [cfmsym](#cfmsym)
-    * [cfminfo](#cfminfo)
-    * [cfm2code](#cfm2code)
-    * [tslplay](#tslplay)
-    * [tslcoregen](#tslcoregen)
-    * [tslminrealizable](#tslminrealizable)
+    1. [Analyzing TSL Specifications](Analyzing TSL Specifications)
+    2. [Processing TSL Specifications](Processing TSL Specifications)
+    3. [Generating Control Flow Models](Generating Control Flow Models)
+    4. [Debugging TSL Specifications](Debugging TSL Specifications)
 
 2. [Installation](#installation)
 3. [Research and Documentation](#research-and-documentation)
@@ -27,132 +17,67 @@ synthesis.
 
 # Tool Overview
 
-<**TODO** Check if the interfacing is still valid>
+The precise usage and arguments for each tool are describe by 
+`<toolname> --help`. Note that most tools will try to read some file 
+from `STDIN` when they get no specific input.
 
-## tslcheck
+## Analyzing TSL Specifications
 
-Checks for a set of TSL specification files, whether they are valid or not.
+* `tslcheck` checks for a set of TSL specification files, whether they are 
+  valid or not.
+* `tslsym` prints the symbol table that is derived from a TSL specification. 
+  The table identifies all inputs, outputs, function, and predicate symbols, 
+  as well as their derived type signatures. Therefore, the tool provides a 
+  first overview of specified modules. It is, however, also useful to 
+  identify typos in the literals used, since they are automatically 
+  introduced by their usage and, thus, do not lead to an error if spelled 
+  incorrectly.
+* `tslsize` prints the size of the specification, i.e., the number of AST nodes
+  of the underlying TSL formula. It can be used for comparing a set of TSL 
+  benchmarks.
 
-`Usage: tslcheck <files>`
+## Processing TSL Specifications
 
-## tslsym
+* `tslresolve` resolves TSL specifications with imports into a plain TSL
+  specifications by inlining the imported specifications.
+* `tslsplit` applies a sound specification decomposition technique to the give 
+  specification. It assumes unrealizability of the negated assumptions (such
+  that the spec is not realizable by assumption violation). It saves the 
+  resulting specs as `<filename>_x.tsl` in the current path where `x` is the 
+  index of the respective subspecification.
+* `tsl2tlsf` under-approximates a TSL specification by a weaker LTL 
+  specification that is given in the [TLSF](https://arxiv.org/abs/1604.02284)
+  format.
+* `tsl2toml` transforms a TSL file into [TOML](https://toml.io/)
+  file of TSL formulas.
 
-The tool prints the symbol table that is derived from a TSL
-specification. The table identifies all inputs, outputs, function, and
-predicate symbols, as well as their derived type signatures. Therefore,
-the tool provides a first overview of specified modules. It is,
-however, also useful to identify typos in the literals used, since they
-are automatically introduced by their usage and, thus, do not lead to
-an error if spelled incorrectly.
+## Generating Control Flow Models
 
-`Usage: tslsym [OPTIONS] <file>`
+* `cfmcheck` checks for a set of CFM files, whether they are valid or not.
+* `cfmsym` prints the symbol table of a CFM, similar to `tslsym` printing the
+  symbol table for a TSL specification.
+* `cfminfo` prints the number of inputs, outputs, predicates, functions, cells,
+  and vertices of the generated CFM.
+* `cfm2code` generates executable code from a valid CFM. To this end, a 
+  specific code target must be selected. Supported targets are:
+    | Target | Description |
+    |:-|:-|
+    | `applicative` | generates code for Applicative FRP libraries |
+    | `monadic` | generates code for Monadic FRP libraries |
+    | `arrow` | generates code for Arrowized FRP libraries |
+    | `clash` | generates code for the hardware description language [CλaSH](https://clash-lang.org/) |
 
-If no input file is given, then it is read from `STDIN`. Possible
-options are:
+## Debugging TSL Specifications
 
-|Option|Description|
-|:-|:-|
-| `-f, --full` | prints the full table,including locally bound identifiers |
-| `-n, --no-positions` | removes the 'Position'-column from the table such that the resulting </br> table is identical to the one of `cfmsym` |
-
-
-## tslsize
-
-The tool prints the size of the specification, i.e., the number of AST
-nodes of the underlying TSL formula. It can be used for comparing a
-set of TSL benchmarks.
-
-`Usage: tslsize <file>`
-
-## tslresolve
-
-<**TODO** Describe>
-
-
-## tslsplit
-
-Applies a sound specification decomposition technique to the give specification.
-Assumes unrealizability of the negated assumptions (that the spec is not
-realizable by assumption violation). It saves the resulting specs as
-`<filename>_x.tsl` in the current path where `x` is the index of the respective
-subspecification.
-
-`Usage: tslsplit <file>`
-
-## tsl2tlsf
-
-The tool under-approximates a TSL specification by a weaker LTL
-specification that is given in the [TLSF](https://arxiv.org/abs/1604.02284)
-format. The resulting TLSF specification is printed to `STDOUT`.
-
-`Usage: tsl2tlsf <file>`
-
-
-## tsl2toml 
-
-<**TODO** Describe>
-
-
-## cfmcheck
-
-Checks for a set of CFM files, whether they are valid or not.
-
-`Usage: cfmcheck <files>`
-
-
-## cfmsym
-
-Prints the symbol table of a CFM, similar to `tslsym` printing the
-symbol table for a TSL specification.
-
-`Usage: cfmsym <file>`
-
-
-## cfminfo
-
-Prints the number of inputs, outputs, predicates, functions, cells,
-and vertices of the generated CFM.
-
-`Usage: cfminfo <file>`
-
-
-## cfm2code
-
-Generates executable code from a valid CFM. To this end, a specific
-code target must be selected. Supported targets are:
-
-| Target | Description |
-|:-|:-|
-| `applicative` | generates code for Applicative FRP libraries |
-| `monadic` | generates code for Monadic FRP libraries |
-| `arrow` | generates code for Arrowized FRP libraries |
-| `clash` | generates code for the hardware description language [CλaSH](https://clash-lang.org/) |
-
-`Usage: cfm2code [OPTIONS] <target> <file>`
-
-Possible options are:
-
-|Option|Description|
-|:-|:-|
-| `-o, --output <file>` | path of the output file (results are printed to `STDOUT` if not used |
-| `-m, --module-name <string>` | overwrites the name of the generated module |
-| `-f, --function-name <string>` | overwrites the name of the exported function |
-
-
-## tslplay
-
-<**TODO** Describe>
-
-
-## tslcoregen
-
-<**TODO** Describe>
-
-
-## tslminrealizable
-
-<**TODO** Describe>
-
+* `tslplay` allows to play against a environment strategy (system strategy) 
+  as the system (environment) interactively. `tslplay` shows why some options
+  are not available to the user according to the respective specification 
+  helping to understand why some specification are unrealizable. The strategies
+  are in the form of a CFM.
+* `tslcoregen` generate so called *TSL unrealizability cores*, i.e. the minimal
+  amount of guarantees of some specification that render it unrealizable.
+* `tslminrealizable` generate so called *minimal assumption cores*, i.e. the 
+  minimal amount of assumptions of some specification that render it realizable.
 
 # Installation
 
@@ -168,18 +93,12 @@ in the main directory to build TSL tools.
 
 # Research and Documentation
 
-<**TODO:** Documentation part that has to be decided> 
-The high-level documentation of this project, including some custom techniques,
-can be found in the [projects documentation](./doc/Documentation.md).
-
-Research:
 * [The original paper](https://www.react.uni-saarland.de/publications/FKPS19a.html)
   and its 
   [extended version](https://arxiv.org/abs/1712.00246)
 * A FPGA arcade game specified using TSL, 
   [syntroids](https://www.react.uni-saarland.de/casestudies/syntroids/)
-* <**TODO**: Gideon's stuff as soon it has been published>
-* <**TODO** Is their more stuff that is already public?>
+* **WIP**: A tool-paper describing the format and other features of `tsltools`.
 
 # Contributing
 
