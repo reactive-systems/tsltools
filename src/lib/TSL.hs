@@ -41,7 +41,6 @@ module TSL
   , toTLSF
   , toTOML
   , split
-  , splitIgnoreAssumptions
     -- * CFM Utilities
   , CodeTarget(..)
   , CFM
@@ -96,7 +95,7 @@ import TSL.Reader (fromTSL)
 
 import TSL.TLSF (toTLSF)
 
-import TSL.Splitter (split, splitIgnoreAssumptions)
+import TSL.Splitter (split)
 
 import TSL.Simulation (simulate)
 

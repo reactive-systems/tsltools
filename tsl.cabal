@@ -37,6 +37,7 @@ library
     , QuickCheck
     , process >= 1.6.3.0
     , ansi-terminal >= 0.6
+    , fgl >= 5.6.0.0
 
   exposed-modules:
     TSL
@@ -271,6 +272,7 @@ executable tslsplit
     PrintUtils
     EncodingUtils
     FileUtils
+    ArgParseUtils
 
   build-depends:
       tsl
@@ -558,6 +560,7 @@ test-suite default
   build-depends:
       tsl
     , base >=4.7 && <4.13
+    , containers >=0.5 && <0.7
     , QuickCheck
     , Cabal >=2.4
 

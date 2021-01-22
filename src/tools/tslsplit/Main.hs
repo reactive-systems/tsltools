@@ -19,51 +19,17 @@ module Main
 
 import EncodingUtils (initEncoding)
 
-import Data.Semigroup ((<>))
-import Options.Applicative
+import ArgParseUtils (parseMaybeFilePath)
 
 import FileUtils (loadTSL)
 
-import TSL (split, splitIgnoreAssumptions, toTSL)
+import TSL (split, toTSL)
 
 import System.Directory (getCurrentDirectory)
 
 import System.FilePath (takeBaseName, (<.>), (</>))
 
------------------------------------------------------------------------------
-
--- | The data type contains all flags and settings
--- that can be adjusted to influence the behavior of the library:
-data Configuration =
-  Configuration
-  { -- | The input file containing the synthesized control flow
-    -- model.
-    inputFile :: FilePath
-  , -- | A Boolean flag specifying whether to ignore assumptions
-    -- in splitting process or not.
-    ignore :: Bool
-  } deriving (Eq, Ord)
-
-configParser :: Parser Configuration
-configParser = Configuration
-  <$> argument str
-      (  metavar "FILE"
-      <> help "input file"
-      )
-  <*> switch
-      (  long "ignore"
-      <> short 'i'
-      <> help "ignore assumptions in splitting process"
-      )
-
-configParserInfo :: ParserInfo Configuration
-configParserInfo = info (configParser <**> helper)
-  (  fullDesc
-  <> header "tslsplit - splits TSL specifications into smaller independent TSL specifications"
-  )
-
-parseArguments :: IO Configuration
-parseArguments = execParser configParserInfo
+import Data.Maybe (fromMaybe)
 
 -----------------------------------------------------------------------------
 
@@ -73,19 +39,19 @@ main
 main = do
   initEncoding
 
-  Configuration{inputFile, ignore} <- parseArguments
+  input <- parseMaybeFilePath
+            ("tslsplit", "Splits TSL specifications into many TSL specifications (if possible).")
 
-  spec <- loadTSL $ Just inputFile
+  spec <- loadTSL input
+
   path <- getCurrentDirectory
 
   let
-    specs
-      | ignore    = splitIgnoreAssumptions spec
-      | otherwise = split spec
+    specs = split spec
 
     filepathN n =
-      path </> (takeBaseName inputFile) ++
-      "_" ++ (show n) <.> "tsl"
+      path </> (fromMaybe "SPLIT" $ takeBaseName <$> input) ++
+      "_" ++ show n <.> "tsl"
 
   mapM_
     (\(s,n) -> writeFile (filepathN n) (toTSL s))

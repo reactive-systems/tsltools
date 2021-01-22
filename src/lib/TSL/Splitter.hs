@@ -3,23 +3,19 @@
 -- Module      :  Splitter
 -- Maintainer  :  Gideon Geier
 --
--- Splitter which outputs specifications for independant parts of an input
--- specification
+-- 'Splitter' implements algorithms to split TSL specifications into
+-- independent subspecifications.
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE NamedFieldPuns  #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections   #-}
 
 -----------------------------------------------------------------------------
 
 module TSL.Splitter
-  ( splitIgnoreAssumptions
-  , split
-  , splitFormulas
-  , makeEdges
-  , connectedParts
-  , createDepGraph
+  ( split
   ) where
 
 -----------------------------------------------------------------------------
@@ -28,232 +24,172 @@ import TSL.SymbolTable (IdRec(..), Kind(..), SymbolTable(..), symbolTable)
 
 import TSL.Specification (Specification(..))
 
-import TSL.Logic (Formula(..), inputs, outputs)
+import TSL.Logic (Formula(..), inputs, outputs, symbols)
 
-import Data.Map.Strict as Map
-  ( Map
-  , delete
-  , fromDescList
-  , fromListWith
-  , keys
-  , (!)
-  , (!?)
-  )
+import Data.Maybe (fromJust)
 
 import Data.Set as Set
   ( Set
-  , delete
-  , difference
   , disjoint
+  , elems
   , empty
-  , insert
+  , fromList
   , intersection
-  , isSubsetOf
-  , size
-  , toAscList
-  , toList
   , union
   , unions
   )
 
-import Data.Array as Ar (listArray, (!))
+import Data.List (elemIndex, partition)
 
-import Data.Maybe (fromMaybe)
+import Data.Array as Array (listArray, (!))
 
 import Data.Ix (range)
 
------------------------------------------------------------------------------
+import Data.Graph.Inductive.Graph (LEdge, Node, mkGraph)
 
--- | Creates separate specifications for independent specification parts
+import Data.Graph.Inductive.PatriciaTree
 
-splitIgnoreAssumptions
-  :: Specification -> [Specification]
-splitIgnoreAssumptions spec =
-  let
-    guarParts = splitFormulas (guarantees spec) parts
-    parts = connectedParts graph
-    graph = fromListWith union $ concat outputEdges
-    outputEdges = foldl (\xs -> \x -> makeEdges (outputs x):xs) [] (guarantees spec)
-  in
-    fmap (filterAssumptions . cleanSymboltable) $ buildSpecs guarParts
-  where
-    buildSpecs = foldl (\xs -> \x -> spec {guarantees = x} : xs) []
-
-
--- | Splits including input dependencies
-
-split
- :: Specification -> [Specification]
-split spec =
-  let
-    graph = createDepGraph spec
-
-    parts = connectedParts graph
-
-    splitGuars = splitFormulas (guarantees spec) parts
-
-    splitInOutputs = map (uncurry union)
-        $ zip (map (unions . (map getInOutputs)) splitGuars) (parts ++ cycle [Set.empty])
-
-    splitAssmpts = distributeAssumptions (assumptions spec) splitInOutputs
-  in
-    fmap cleanSymboltable $ buildSpecs $ zip splitAssmpts splitGuars
-  where
-    buildSpecs  = foldl (\xs -> \(a,g) -> spec{assumptions = a, guarantees = g}:xs) []
-
-
--- | Creates the dependency graph of the specification
---  It respects impressionable inputs and outputs as nodes
-
-createDepGraph
- :: Specification -> Map.Map Int (Set Int)
-createDepGraph spec =
-  let
-    guaranteeOIIEdges = makeEdgesForNodes outsAndImpIns (guarantees spec)
-    assumptionOIIEdges = makeEdgesForNodes outsAndImpIns (assumptions spec)
-
-    assumptionGraph = createOIGraph $ assumptions spec
-
-    outsAndImpIns = explore allOutputs Set.empty assumptionGraph
-
-    allOutputs = filter (\x -> stKind table x == Output) $ range $ stBounds table
-
-    table = symboltable spec
-  in
-    fromListWith union $ concat $ guaranteeOIIEdges ++ assumptionOIIEdges
-  where
-    getOutInsAlsoIn fml nodes = (intersection (getInOutputs fml) nodes)
-    makeEdgesForNodes nodes = foldl (\xs -> \fml -> makeEdges (getOutInsAlsoIn fml nodes):xs) []
-
-
--- | Creates an neighbor relation for a graph from a list of formulas
---  edges are created for:
---   - every pair of inputs appearing in the same formula (bidirectional)
---   - every pair of an out- and an input appearing in the same formula (only out->in)
-
-createOIGraph
- :: [Formula Int] -> Map.Map Int (Set Int)
-createOIGraph fmls =
-  let
-    assumptionIIEdges = foldl (\xs -> \x -> makeEdges (inputs x):xs) [] fmls
-    assumptionOIEdges = foldl (\xs -> \x -> makeOIEdges (inputs x) (outputs x):xs) [] fmls
-
-  in
-    fromListWith union $ concat $ assumptionIIEdges ++ assumptionOIEdges
-
-
-
-makeOIEdges :: Set Int -> Set Int -> [(Int, Set Int)]
-makeOIEdges inputs outputs = if size inputs < 1 || size outputs < 1 then []
-                            else foldl (\xs -> \x -> (x, inputs):xs) [] outputs
-
-makeEdges :: Set Int -> [(Int, Set Int)]
-makeEdges deps = if size deps < 1 then []
-                else foldl (\xs -> \x -> (x, Set.delete x deps):xs) [] deps
+import Data.Graph.Inductive.Query.DFS
 
 -----------------------------------------------------------------------------
 
--- TODO replace folding over tree by getting (foldr Set.insert Set.empty x) -> (union (inputs x) (outputs x))
 
--- | Filter Assumptions according to guarantees
-
-filterAssumptions
- :: Specification -> Specification
-filterAssumptions spec@Specification{..} =
-  let
-    filteredAssumptions =
-                    filter (\x -> Set.isSubsetOf ((foldr Set.insert) Set.empty x) vars) assumptions
-    vars = foldl (foldr Set.insert) Set.empty guarantees
-  in
-    spec { assumptions = filteredAssumptions }
+getInOutputs :: Formula Int -> Set Int
+getInOutputs fml = inputs fml `union` outputs fml
 
 -----------------------------------------------------------------------------
-
 -- | Create symboltable for specification part
-
-cleanSymboltable
-  :: Specification -> Specification
+cleanSymboltable :: Specification -> Specification
 cleanSymboltable spec@Specification{..} =
   let
-    assVars = (foldl (foldr Set.insert) Set.empty assumptions)
-    vars = toAscList $ foldl (foldr Set.insert) assVars guarantees
+    vars = elems . Set.unions $ map symbols (assumptions ++ guarantees)
 
-    newSymbols  = fromDescList $ mapping
-    mapping = snd $ foldl (\(i, xs) -> \x -> (i+1,(x,i):xs)) (1,[]) vars
+    -- mapping from old to new variables ((index in vars) + 1)
+    old2new :: Int -> Int
+    old2new = (+1) . fromJust . (`elemIndex` vars)
 
-    oldNewArr = listArray (1,fst $ head mapping) $ reverse $ fmap fst mapping
-    table = fmap (\x -> updateRec ((Map.!) newSymbols) ((symtable symboltable) Ar.! x)) oldNewArr
+    records = map (\x -> updateRec old2new (symtable symboltable ! x)) vars
+    table = list2array records
   in
     spec
-      { assumptions = fmap (fmap ((Map.!) newSymbols)) assumptions
-      , guarantees  = fmap (fmap ((Map.!) newSymbols)) guarantees
+      { assumptions = map (fmap old2new) assumptions
+      , guarantees  = map (fmap old2new) guarantees
       , symboltable = symbolTable table
       }
+  where
+    list2array l = Array.listArray (1, length l) l
 
 -----------------------------------------------------------------------------
 
 -- | Update the identifiers in one symboltable record
--- TODO update Bindings
-updateRec
-  :: (Int -> Int) -> IdRec -> IdRec
-updateRec dict rec = rec {idArgs = fmap dict $ idArgs rec, idDeps = fmap dict $ idDeps rec}
+updateRec :: (Int -> Int) -> IdRec -> IdRec
+updateRec dict rec@IdRec{idArgs, idDeps, idBindings} =
+  rec
+  { idArgs = dict <$> idArgs
+  , idDeps = dict <$> idDeps
+  , idBindings = (dict <$>) <$> idBindings
+  }
 
 -----------------------------------------------------------------------------
 
 -- | Splits a list of formulas by disjoint sets of variables
-
-splitFormulas
-  :: [Formula Int] -> [Set Int] -> [[Formula Int]]
-splitFormulas guars parts = map fst guarParts
+splitFormulas :: [Formula Int] -> [Set Int] -> [[Formula Int]]
+splitFormulas formulas parts = map fst formulaParts
   where
-    guarParts = foldr insertFormula zippedParts guars
-    zippedParts = foldr (\s -> \xs -> ([],s):xs) [] parts
+    formulaParts = foldr insertFormula zippedParts formulas
+    zippedParts = map ([],) parts
 
-insertFormula
- :: Formula Int -> [([Formula Int], Set Int)] -> [([Formula Int], Set Int)]
-insertFormula fml   []        = [([fml], empty)]
-insertFormula fml ((fs,s):xr) = if not $ disjoint (getInOutputs fml) s
-                                -- since s only contains outputs and impressionable inputs,
-                                -- checking for disjunctness with all inputs suffices
-                                then (fml:fs,s):xr
-                                else (fs,s):insertFormula fml xr
+
+insertFormula :: Formula Int -> [([Formula Int], Set Int)] -> [([Formula Int], Set Int)]
+insertFormula formula   []                        = [([formula], empty)]
+insertFormula formula ((formulas,variableSet):xr)
+                          = if not $ disjoint (getInOutputs formula) variableSet
+                            then (formula:formulas,variableSet):xr
+                            else (formulas,variableSet):insertFormula formula xr
+
 
 -----------------------------------------------------------------------------
 
--- | Distributes assumptions over sets of in-/ouputs
+-- | 'split' implements an optimized decomposition algorithm which analyses
+-- assumptions and guarantees. This algorithm preserves equisynthesizeability
+-- as long as for a given specification [assumptions] -> [guarantees]
+-- [assumptions] -> bot is unrealizable.
 
-distributeAssumptions
-  :: [Formula Int] -> [Set Int] -> [[Formula Int]]
-distributeAssumptions assmpts parts = map pickAssumptions parts
+split :: Specification -> [Specification]
+split spec@Specification{assumptions, guarantees} =
+  let
+    decRelProps = decompRelProps spec
+    graph = buildGraph (elems decRelProps) preEdges
+    preEdges = map (elems . (intersection decRelProps) . getInOutputs) (assumptions ++ guarantees)
+    connComp = map Set.fromList $ components graph
+    (freeAssumptions, boundAssumptions) = partition (null . (intersection decRelProps) . getInOutputs) assumptions
+    splitGuars = splitFormulas guarantees connComp
+    splitAssumptions  = splitFormulas boundAssumptions connComp
+  in
+    fmap cleanSymboltable $ buildSpecs $ addFreeAssumptions freeAssumptions $ zip splitAssumptions splitGuars
   where
-    isRelated set fml = isSubsetOf (getInOutputs fml) set
-    pickAssumptions set = filter (isRelated set) assmpts
+    buildSpecs  = map (\(a,g) -> spec{assumptions = a, guarantees = g})
+
 
 -----------------------------------------------------------------------------
 
--- | Uses DFS to extract unconnected subgraphs, returns sets of connected nodes
+-- | 'addFreeAssumptions' requires a list of input-only assumptions and a list
+-- of assumption - guarantee specification pairs. It then adds the assumptions
+-- such that [not added] and [added], [assumptions], [guarantees] do not share
+-- any propositions.
 
-connectedParts
-  :: Map.Map Int (Set Int) -> [Set Int]
-connectedParts graph = if null graph then [] else parts
+addFreeAssumptions :: [Formula Int] -> [([Formula Int], [Formula Int])] -> [([Formula Int], [Formula Int])]
+addFreeAssumptions freeAssumptions specs =
+  let
+    assumptionsInputs = map inputs freeAssumptions
+    preEdges = map elems assumptionsInputs
+    graph = buildGraph (elems (Set.unions assumptionsInputs)) preEdges
+    assParts = Set.fromList <$> components graph
+    freeAssumptionsSplit = splitFormulas freeAssumptions assParts
+  in
+    map (addFreeAssumpt freeAssumptionsSplit) specs
+  where
+    addFreeAssumpt :: [[Formula Int]] -> ([Formula Int], [Formula Int]) -> ([Formula Int], [Formula Int])
+    addFreeAssumpt freeAssumptionParts (assmpts, guars) =
+      let
+        props = Set.unions $ map getInOutputs (assmpts ++ guars)
+        matchAssmpt = concat $ filter (not . disjoint props . Set.unions . (map getInOutputs)) freeAssumptionParts
+      in
+        (matchAssmpt ++ assmpts, guars)
+
+-----------------------------------------------------------------------------
+
+-- | 'decompRelProps' implements an algorithm to find propositions relevant for
+-- decomposition. Those are all outputs and all inputs that can be influenced
+-- by outputs.
+
+decompRelProps :: Specification -> Set Int
+decompRelProps spec =
+  let
+    (out, inp) = partition (\x -> stKind table x == Output) $ range $ stBounds table
+    table = symboltable spec
+    graph = buildGraph (out++inp) preEdges
+    preEdges = map (elems . getInOutputs) (assumptions spec)
+
+  in
+    Set.fromList $ udfs out graph
+
+-----------------------------------------------------------------------------
+
+-- | 'buildGraph' builds a graph with all elements of intNodes as nodes and
+-- guarantees nodes in the same list in intOutputs to be in the same connected
+-- component. E.g. buildGraph [1,2,3,4,5,6] [[1,2,3],[3,5],[4,6]]
+-- will result in a graph that has six nodes and the connected components
+-- [1,2,3,5] and [4,6].
+
+buildGraph :: [Int] -> [[Int]] -> Gr () ()
+buildGraph intNodes intOutputs =
+        mkGraph (map intToNode intNodes) (concatMap buildEdges intOutputs)
     where
-    part = (explore [head (keys graph)] empty graph)
-    parts = part:connectedParts (foldr Map.delete graph part)
+        intToNode n = (n, ())
 
------------------------------------------------------------------------------
-
--- | Does DFS on a Graph represented as a Map and returns the reachable nodes
-
-explore
-  :: [Int] -> Set Int -> Map.Map Int (Set Int) -> Set Int
-explore []      explored   _    = explored
-explore (x:xr)  explored graph  = explore
-                        -- add neighbour nodes to queue, but only if not yet explored
-                        (toList (difference (fromMaybe Set.empty (graph Map.!? x)) explored) ++ xr)
-                        (insert x explored)
-                        graph
-
-
-getInOutputs
-  :: Formula Int -> Set Int
-getInOutputs fml = (union (inputs fml) (outputs fml))
+        buildEdges :: [Node] -> [LEdge ()]
+        buildEdges []     = []
+        buildEdges (x:xr) = map (tupToEdge x) xr -- ++ buildEdges xr
+        tupToEdge :: Node -> Node -> LEdge ()
+        tupToEdge a b = (a,b,())

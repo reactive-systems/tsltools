@@ -7,16 +7,96 @@
 --
 -----------------------------------------------------------------------------
 
+{-# LANGUAGE LambdaCase #-}
+
+-----------------------------------------------------------------------------
+
 module SplitTests
-  ( splitTests
+  ( tests
   ) where
 
 -----------------------------------------------------------------------------
 
-splitTests
+import Distribution.TestSuite
+  ( Progress(..)
+  , Result(..)
+  , Test(..)
+  , TestInstance(..)
+  )
+
+import TSL (Specification, fromTSL, split, toTSL)
+
+import Data.Char (isSpace)
+
+import Data.Set as Set (fromList, (\\))
+
+-----------------------------------------------------------------------------
+
+tests :: [Test]
+tests =
+  zipWith genSplitTest [1..] splitTestsRaw
+
+
+genSplitTest :: Int -> (String, [String]) -> Test
+genSplitTest i (spec, splits) =
+  let
+    x =
+      TestInstance
+        { run = do
+            fromTSL Nothing spec
+            >>= \case
+              Left _ -> do
+                putStrLn $ "Incorrect Specification:\n\n" ++ spec
+                return $ Finished $ Fail $
+                  "Split test " ++ show i ++ " failed."
+              Right s -> case splitTest' s splits of
+                Right () -> return $ Finished Pass
+                Left err -> do
+                  putStrLn err
+                  return $ Finished $ Fail $
+                    "Split test " ++ show i ++ " failed."
+        , name = "split" ++ show i
+        , tags = []
+        , options = []
+        , setOption = \_ _ -> Right x
+        }
+  in
+    Test x
+
+  where
+    splitTest' :: Specification -> [String] -> Either String ()
+    splitTest' spec splitsExpected =
+      let
+        setExpected = Set.fromList $ map trim splitsExpected
+        nExpected = length setExpected
+
+        splitsGot = split spec
+        setGot = Set.fromList $ map (trim . toTSL) splitsGot
+        nGot = length setGot
+      in
+      if nGot /= nExpected
+      then
+        Left $ "Expected " ++ show nExpected ++
+                " many splits, but got " ++
+                show nGot ++ "."
+      else
+        if setGot /= setExpected
+        then
+          let
+            expected = show $ setExpected \\ setGot
+            got = show $ setGot \\ setExpected
+          in
+          Left $ "Expected:\n\n" ++ expected ++ "\nbut Got:\n\n" ++ got ++ "\n"
+        else Right ()
+
+    trim = f . f
+    f = reverse . dropWhile isSpace
+
+
+splitTestsRaw
   :: [(String, [String])]
 
-splitTests =
+splitTestsRaw =
   [ ( unlines
         [ "always assume {"
         , "    F a;"
@@ -44,6 +124,7 @@ splitTests =
       , unlines
           [ "assume {"
           , "  (G (F a));"
+          , "  (G (! (a && c)));"
           , "}"
           , ""
           , "guarantee {"
@@ -336,8 +417,8 @@ splitTests =
         ]
     , [ unlines
           [ " assume {"
-          , "  (G ([c <- val3()] -> (X in2)));"
           , "  (G (F (! in3)));"
+          , "  (G ([c <- val3()] -> (X in2)));"
           , "}"
           , ""
           , "guarantee {"
@@ -347,8 +428,8 @@ splitTests =
           ]
       , unlines
           [ " assume {"
-          , "  (G (([a <- val1()] && [b <- val2()]) -> (X in1)));"
           , "  (G (F (! in3)));"
+          , "  (G (([a <- val1()] && [b <- val2()]) -> (X in1)));"
           , "}"
           , ""
           , "guarantee {"
@@ -359,7 +440,7 @@ splitTests =
       ]
     )
   , ( unlines
-        [ " // should be split in two parts: out, a and c, out2"
+        [ " // should be split in two parts: out and out2"
         , "always assume {"
         , "    !(a && c)"
         , "}"
@@ -380,12 +461,39 @@ splitTests =
           ]
       , unlines
           [ " assume {"
+          , "  (G (! (a && c)));"
           , "}"
           , ""
           , "guarantee {"
           , "  (G ([out <- b()] U a));"
           , "}"
           ]
+      ]
+    )
+  , ( unlines
+        [ "assume {"
+        , "    (G in1 -> in2);"
+        , "    ((! G in1) -> in3);"
+        , "    (in2 <-> in4);"
+        , "    (in3 <-> !in4)"
+        , "}"
+        , ""
+        , "guarantee {"
+        , "    (G in1) <-> [out <- top()];"
+        , "}"
+        ]
+    , [ unlines
+        [ "assume {"
+        , "  ((G in1) -> in2);"
+        , "  ((! (G in1)) -> in3);"
+        , "  (in2 <-> in4);"
+        , "  (in3 <-> (! in4));"
+        , "}"
+        , ""
+        , "guarantee {"
+        , "  ((G in1) <-> [out <- top()]);"
+        , "}"
+        ]
       ]
     )
   ]

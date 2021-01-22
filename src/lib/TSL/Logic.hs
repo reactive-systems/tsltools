@@ -22,6 +22,7 @@ module TSL.Logic
   , outputs
   , functions
   , predicates
+  , symbols
   , tslFormula
   , tlsfFormula
   , encodeInputAP
@@ -36,7 +37,7 @@ module TSL.Logic
 
 import Data.Char (isUpper, toLower, toUpper)
 
-import Data.Set (Set, difference, empty, insert)
+import Data.Set (Set, difference, empty, insert, unions)
 
 import qualified Data.Set as S (map)
 
@@ -403,6 +404,12 @@ predicates fml =
       PredicateTerm p -> pti a p
       FunctionTerm f  -> fti a f
       _               -> a
+
+-----------------------------------------------------------------------------
+
+symbols
+  :: Ord a => Formula a -> Set a
+symbols = unions . ((<*>) [inputs, outputs, functions, predicates]) . pure
 
 -----------------------------------------------------------------------------
 

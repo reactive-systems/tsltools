@@ -32,12 +32,9 @@ import TSL
   , decodeOutputAP
   , encodeInputAP
   , encodeOutputAP
-  , fromTSL
-  , split
-  , toTSL
   )
 
-import SplitTests (splitTests)
+import qualified SplitTests (tests)
 
 import Test.QuickCheck
   ( Arbitrary
@@ -47,8 +44,6 @@ import Test.QuickCheck
   , listOf
   , quickCheckResult
   )
-
-import Data.Char (isSpace)
 
 import Data.Char (chr, ord)
 
@@ -113,7 +108,9 @@ tests
 tests = return $
   [ test "QuickCheck: Read Input" qc01
   , test "QuickCheck: Read Output" qc02
-  ] ++ map splitTest (zip [1 :: Int, 2..] splitTests)
+  ]
+  ++
+  SplitTests.tests
 
   where
     qc01 =
@@ -138,46 +135,5 @@ tests = return $
             }
       in
         Test t
-
-    splitTest (i,(spec, splits)) =
-      let
-        x =
-          TestInstance
-            { run = do
-                fromTSL Nothing spec >>= \case
-                  Left _ -> do
-                    putStrLn $ "Incorrect Specification:\n\n" ++ spec
-                    return $ Finished $ Fail $
-                      "Split test " ++ show i ++ " failed."
-                  Right s -> case splitTest' (s, splits) of
-                    Right () -> return $ Finished Pass
-                    Left err -> do
-                      putStrLn err
-                      return $ Finished $ Fail $
-                        "Split test " ++ show i ++ " failed."
-            , name = "split" ++ show i
-            , tags = []
-            , options = []
-            , setOption = \_ _ -> Right x
-            }
-      in
-        Test x
-
-
-    splitTest' (spec, splits) =
-      let specs = split spec
-      in if (length specs == length splits)
-      then mapM_ check $ zip splits $ map toTSL specs
-      else Left $ "Expected " ++ show (length splits) ++
-                  " many splits, " ++ "but got " ++
-                  show (length specs) ++ "."
-
-    check (exp, res)
-      | trim exp == trim res = return ()
-      | otherwise =
-          Left $ "Expected:\n\n" ++ exp ++ "\nbut Got:\n\n" ++ res ++ "\n"
-
-    trim = f . f
-    f = reverse . dropWhile isSpace
 
 -----------------------------------------------------------------------------
