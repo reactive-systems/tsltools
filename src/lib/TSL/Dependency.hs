@@ -3,7 +3,10 @@
 -- Module      :  Dependency
 -- Maintainer  :  Marvin Stenger
 --
--- TODO
+-- This module provides a representation for the dependency relation between
+-- a set of guarantees and their assumptions as well as functions to extract
+-- this representation out of the given 'Formula's or a given set of
+-- 'Specification's.
 --
 -----------------------------------------------------------------------------
 
@@ -36,11 +39,17 @@ import Data.Maybe (fromJust)
 
 import Data.Set as Set (elems, fromList, union)
 
+-----------------------------------------------------------------------------
 
+-- | Representation of the dependency relation between
+-- a set of guarantees and their assumptions.
 data DependencyRepresentation =
   DependencyRepresentation {
+    -- | all assumptions in ascending lexical order
     assumptions :: [Formula String]
+    -- | all guarantees in ascending lexical order
   , guarantees :: [Formula String]
+    -- | mapping from guarantees to their required assumptions
   , g2as :: Formula String -> [Formula String]
   }
 
@@ -113,7 +122,11 @@ formulas2dependencies formulas =
   , ..
   }
 
+-----------------------------------------------------------------------------
 
+-- | Function to extract the dependency relation between
+-- a set of guarantees and their assumptions
+-- out of a list of 'Specification's
 specifications2dependencies
   :: [Specification] -> DependencyRepresentation
 
