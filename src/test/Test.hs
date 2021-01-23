@@ -36,6 +36,8 @@ import TSL
 
 import qualified SplitTests (tests)
 
+import qualified DependencyTests (tests)
+
 import Test.QuickCheck
   ( Arbitrary
   , Result(..)
@@ -109,8 +111,8 @@ tests = return $
   [ test "QuickCheck: Read Input" qc01
   , test "QuickCheck: Read Output" qc02
   ]
-  ++
-  SplitTests.tests
+  ++ SplitTests.tests
+  ++ DependencyTests.tests
 
   where
     qc01 =
