@@ -95,6 +95,7 @@ in the main directory to build TSL tools.
 * [The original paper](https://www.react.uni-saarland.de/publications/FKPS19a.html)
   and its 
   [extended version](https://arxiv.org/abs/1712.00246)
+* [The FRP paper](https://www.react.uni-saarland.de/publications/FKPS19b.html) 'Synthesizing Functional Reactive Programs'
 * A FPGA arcade game specified using TSL, 
   [syntroids](https://www.react.uni-saarland.de/casestudies/syntroids/)
 * **WIP**: A tool-paper describing the format and other features of `tsltools`.
