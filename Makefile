@@ -67,14 +67,6 @@ haddock:
 
 clean:
 	${BLDTOOL} clean
-	rm -f ${TSL2TLSF}
-	rm -f ${TSLCHECK}
-	rm -f ${TSLSIZE}
-	rm -f ${TSLSYM}
-	rm -f ${TSLSYNTH}
-	rm -f ${CFMCHECK}
-	rm -f ${CFMINFO}
-	rm -f ${CFMSYM}
 	rm -f ${CFM2CODE}
 
 .PHONY: clean

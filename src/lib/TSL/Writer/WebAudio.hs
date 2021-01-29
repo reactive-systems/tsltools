@@ -109,6 +109,7 @@ implement _ _ cfm@CFM{..} =
 
 -- TODO: make datatype more structured & intuitive.
 data JSElem = NullElem
+            | Keyboard {varName :: String}
             | Cell {varName :: String}
             | Select {varName :: String}
             | Signal {varName :: String}
@@ -117,9 +118,10 @@ data JSElem = NullElem
             deriving (Show, Eq)
 
 actionName :: JSElem -> String
-actionName (Select _) = "change"
-actionName (Button _) = "click"
-actionName (Note _) = "click"
+actionName (Keyboard _) = "click"
+actionName (Select _)   = "change"
+actionName (Button _)   = "click"
+actionName (Note _)     = "click"
 actionName _ = ""
 
 strToJSElem :: String -> JSElem
@@ -212,9 +214,12 @@ implementWebAudio inputs outputs =
         ,"function f_getWaveformVal(node){return waveformControl.value}"
         ,"function f_getArpType(node){return arpeggiatorStyleControl.value}"
         ]
+  
+      keyboardElem :: JSElem
+      keyboardElem = Keyboard "keyboardNode"
 
       inputSignals :: [JSElem]
-      inputSignals = map strToJSElem inputs
+      inputSignals = keyboardElem:(map strToJSElem inputs)
 
       eventableInputs :: [JSElem]
       eventableInputs = filter eventable inputSignals
@@ -227,10 +232,11 @@ implementWebAudio inputs outputs =
       updateVarsToUI = "updateVarsToUI();"
 
       eventable :: JSElem -> Bool
-      eventable (Button _)  = True
-      eventable (Select _)  = True
-      eventable (Note _)    = True
-      eventable _           = False
+      eventable (Button _)    = True
+      eventable (Select _)    = True
+      eventable (Note _)      = True
+      eventable (Keyboard _ ) = True
+      eventable _             = False
 
       isNote :: JSElem -> Bool
       isNote (Note _) = True
