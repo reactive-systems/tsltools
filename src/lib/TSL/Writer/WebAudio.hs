@@ -219,7 +219,7 @@ implementWebAudio inputs outputs =
       keyboardElem = Keyboard "keyboardNode"
 
       inputSignals :: [JSElem]
-      inputSignals = keyboardElem:(map strToJSElem inputs)
+      inputSignals = map strToJSElem inputs ++ [keyboardElem]
 
       eventableInputs :: [JSElem]
       eventableInputs = filter eventable inputSignals
@@ -255,6 +255,14 @@ implementWebAudio inputs outputs =
 
       signalUpdateCode :: JSElem -> String
       signalUpdateCode NullElem = saveOutput 0 NullElem
+      signalUpdateCode (Keyboard _) = 
+        "for(let i=0; i<unselectedNotes.length;i++){\n" ++
+        indent 4 "unselectedNotes[i].addEventListener(\"" ++ 
+        actionName keyboardElem ++ "\", " ++
+        "_ => {\n" ++
+        saveOutput 8 keyboardElem ++
+        indent 4 "\n});" ++
+        "};\n"
       signalUpdateCode var = 
         varName var ++
         ".addEventListener(\"" ++
