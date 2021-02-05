@@ -107,7 +107,6 @@ implement _ _ cfm@CFM{..} =
 
 -----------------------------------------------------------------------------
 
--- TODO: make datatype more structured & intuitive.
 data JSElem = NullElem
             | Keyboard {varName :: String}
             | Cell {varName :: String}
@@ -382,8 +381,7 @@ prCircuitImpl Circuit{..} =
     "{"
     , ""
     , indent 4 "// Latches"
-    -- I have no idea why commenting this works
-    -- , concatMap prLatchJS latches
+    -- No latch implementation here.
     , indent 4 "// Gates"
     , concatMap prGate gates
     , indent 4 "// Outputs"
@@ -392,7 +390,6 @@ prCircuitImpl Circuit{..} =
     ]
 
   where
-    -- TODO: verify minusOne implementation.
     prWire' x
       | Circuit.wire x <= length inputs = 
         let minusedOne = Circuit.wire x - 1
@@ -407,7 +404,6 @@ prCircuitImpl Circuit{..} =
     latchVarInit l =
       let
         iw = latchInput l  :: Invertible Circuit.Wire
-        -- TODO: verify that variables start out as false/true.
         unwrapped = case iw of
           Negative w -> w
           Positive w -> w
@@ -434,19 +430,6 @@ prCircuitImpl Circuit{..} =
         ow = gateOutput g :: Circuit.Wire
       in
         "var " ++ (prWire' ow) ++ " = false;\n"
-
-    prLatchJS :: Latch -> String
-    prLatchJS l =
-      let
-        iw = latchInput l :: Invertible Circuit.Wire
-        ow = latchOutput l :: Circuit.Wire
-
-        polarization = case iw of
-          Negative w -> "!" ++ prWire' w
-          Positive w -> prWire' w
-      in
-        indent 4 (prWire' ow) ++
-        " = " ++ polarization ++ ";\n"
 
     prGate g =
       let
