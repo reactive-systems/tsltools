@@ -1,17 +1,14 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Parser
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- Parsing module containing all neccessary parsers.
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    TupleSections
-
-  #-}
+{-# LANGUAGE LambdaCase    #-}
+{-# LANGUAGE TupleSections #-}
 
 -----------------------------------------------------------------------------
 
@@ -21,34 +18,17 @@ module TSL.Parser
 
 -----------------------------------------------------------------------------
 
-import TSL.Error
-  ( Error
-  , parseError
-  )
+import TSL.Error (Error, parseError)
 
-import TSL.Parser.Data
-  ( Specification(..)
-  )
+import TSL.Parser.Data (Specification(..))
 
-import TSL.Parser.Global
-  ( elementsParser
-  )
+import TSL.Parser.Global (GlobalElement(..), elementsParser)
 
-import Data.Either
-  ( partitionEithers
-  )
+import Text.Parsec (many1)
 
-import Text.Parsec
-  ( many1
-  )
+import qualified Text.Parsec as P (parse)
 
-import qualified Text.Parsec as P
-  ( parse
-  )
-
-import Text.Parsec.String
-  ( Parser
-  )
+import Text.Parsec.String (Parser)
 
 -----------------------------------------------------------------------------
 
@@ -69,11 +49,20 @@ specificationParser
   :: Parser Specification
 
 specificationParser = do
-  (xs,ys) <- partitionEithers <$> many1 elementsParser
+  (is,as,ss) <- partitionTypes ([], [], []) <$> many1 elementsParser
 
   return Specification
-    { definitions = xs
-    , sections = concatMap (\(t,vs) -> map (t,) vs) ys
+    { imports = is
+    , definitions = as
+    , sections = concatMap (\(t,vs) -> map (t,) vs) ss
     }
+
+  where
+    partitionTypes (is, as, ss) = \case
+      []   -> (reverse is, reverse as, reverse ss)
+      x:xr -> case x of
+        Import y     -> partitionTypes (y:is, as, ss) xr
+        Assignment y -> partitionTypes (is, y:as, ss) xr
+        Section y    -> partitionTypes (is, as, y:ss) xr
 
 -----------------------------------------------------------------------------

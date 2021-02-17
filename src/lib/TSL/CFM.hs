@@ -1,22 +1,18 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.CFM
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- Control flow model representation.
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    MultiParamTypeClasses
-  , DeriveGeneric
-  , LambdaCase
-  , RecordWildCards
-  , TupleSections
-  , FlexibleContexts
-
-  #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE TupleSections         #-}
 
 -----------------------------------------------------------------------------
 
@@ -30,7 +26,7 @@ module TSL.CFM
   , CFM(..)
   , fromCFM
   , fromCircuit
-  , csvSymbolTable
+  , symbolTable
   , rmDouble
   , termType
   , prType
@@ -43,127 +39,81 @@ module TSL.CFM
 
 -----------------------------------------------------------------------------
 
-import GHC.Generics
-  ( Generic
-  )
+import GHC.Generics (Generic)
 
-import Data.Maybe
-  ( fromMaybe
-  , mapMaybe
-  )
+import Data.Maybe (fromMaybe, mapMaybe)
 
-import Data.Either
-  ( partitionEithers
-  )
+import Data.Either (partitionEithers)
 
-import Control.Arrow
-  ( (***)
-  )
+import Control.Arrow ((***))
 
-import Data.List
-  ( groupBy
-  , sortBy
-  , find
-  , transpose
-  )
+import Data.List (find, groupBy, sortBy, transpose)
 
-import Data.Function
-  ( on
-  )
+import Data.Function (on)
 
-import Control.Monad
-  ( foldM
-  )
+import Control.Monad (foldM)
 
-import Control.Exception
-  ( assert
-  )
+import Control.Exception (assert)
 
-import Control.Monad.ST
-  ( ST
-  , runST
-  )
+import Control.Monad.ST (ST, runST)
 
 import Data.Set
-  ( insert
-  , toList
+  ( deleteAt
+  , difference
+  , elemAt
   , empty
   , fromList
+  , insert
   , member
+  , size
+  , toList
   , union
   , unions
-  , size
-  , deleteAt
-  , elemAt
-  , difference
   )
 
-import Data.Array
-  ( array
-  , (!)
-  )
+import Data.Array (array, (!))
 
-import qualified Data.Array as A
-  ( bounds
-  )
+import qualified Data.Array as A (bounds)
 
 import Data.Array.ST
   ( STArray
+  , mapArray
   , newArray
   , readArray
-  , writeArray
   , runSTArray
-  , mapArray
+  , writeArray
   )
 
-import TSL.SymbolTable
-  ( csvFormat
-  )
+import TSL.SymbolTable (IdRec(..), SymbolTable(..))
+
+import qualified TSL.SymbolTable as ST (Kind(..), symbolTable)
 
 import TSL.Logic
-  ( SignalTerm(..)
-  , FunctionTerm(..)
+  ( FunctionTerm(..)
   , PredicateTerm(..)
-  , readInput
-  , readOutput
+  , SignalTerm(..)
+  , decodeInputAP
+  , decodeOutputAP
   )
 
-import TSL.Error
-  ( Error
-  , errFormat
-  )
+import TSL.Error (Error, errFormat)
 
-import TSL.Types
-  ( ExprType(..)
-  )
+import TSL.Types (ExprType(..))
 
-import qualified TSL.Types as T
-  ( prType
-  )
+import qualified TSL.Types as T (prType)
 
-import TSL.Aiger
-  ( Circuit
-  , parseAag
-  )
+import TSL.Aiger (Circuit, parseAag)
 
 import qualified TSL.Aiger as Circuit
-  ( Input(..)
-  , Output(..)
-  , Circuit(..)
+  ( Circuit(..)
+  , Input(..)
   , Invertible(..)
+  , Output(..)
   )
 
-import qualified Data.Map.Strict as Map
-  ( fromList
-  , member
-  , (!)
-  )
+import qualified Data.Map.Strict as Map (fromList, member, (!))
 
-import qualified Data.IntMap as IM
-  ( (!)
-  , fromList
-  , lookup
-  )
+import qualified Data.IntMap as IM (fromList, lookup, (!))
 
 -----------------------------------------------------------------------------
 
@@ -342,67 +292,95 @@ statistics cfm@CFM{..} =
 
 -----------------------------------------------------------------------------
 
--- | Prints a symbol table in the CSV format.
+-- | Creates a symbol table from the CFM.
 
-csvSymbolTable
-  :: CFM -> String
+symbolTable
+  :: CFM -> SymbolTable
 
-csvSymbolTable cfm@CFM{..} =
-  csvFormat
-    $ ([ "Id"
-       , "Name"
-       , "Type"
-       , "Kind"
-       , "Depends"
-       ] :)
-    $ sortIds
-    $ [ ( sourceId $ Left  i                                  -- id
-        , inputName i                                         -- name
-        , [ wireType $ inputWire i ]                          -- type
-        , "input"                                             -- kind
-        , []                                                  -- depends
+symbolTable cfm@CFM{..} =
+  let
+    xs =
+      [ ( sourceId $ Left i
+        , IdRec
+            { idName     = inputName i
+            , idType     = t2et [wireType $ inputWire i]
+            , idKind     = ST.Input
+            , idDeps     = []
+            , idArgs     = []
+            , idPos      = Nothing
+            , idBindings = Nothing
+            }
         )
       | i <- inputs
       , not $ loopedInput i
       ]
       ++
-      [ ( outputId o                                          -- id
-        , outputName o                                        -- name
-        , [ wireType $ fst $ head $ outputSwitch o ]          -- type
-        , "output"                                            -- kind
-        , transitive empty empty $ map fst $ outputSwitch o   -- depends
+      [ ( outputId o
+        , IdRec
+            { idName     = outputName o
+            , idType     = t2et [wireType $ fst $ head $ outputSwitch o]
+            , idKind     = ST.Output
+            , idDeps     = transitive empty empty $ map fst $ outputSwitch o
+            , idArgs     = []
+            , idPos      = Nothing
+            , idBindings = Nothing
+            }
         )
       | o <- outputs
       ]
       ++
-      [ ( sourceId $ Right t                                  -- id
-        , termName t                                          -- name
-        , termType cfm t                                      -- type
-        , "constant"                                          -- kind
-        , []                                                  -- depends
+      [ ( sourceId $ Right t
+        , IdRec
+            { idName     = termName t
+            , idType     = t2et $ termType cfm t
+            , idKind     = ST.Constant
+            , idDeps     = []
+            , idArgs     = []
+            , idPos      = Nothing
+            , idBindings = Nothing
+            }
         )
       | t <- constants cfm
       ]
       ++
-      [ ( sourceId $ Right t                                  -- id
-        , termName t                                          -- name
-        , termType cfm t                                      -- type
-        , "predicate"                                         -- kind
-        , []                                                  -- depends
+      [ ( sourceId $ Right t
+        , IdRec
+            { idName     = termName t
+            , idType     = t2et $ termType cfm t
+            , idKind     = ST.Predicate
+            , idDeps     = []
+            , idArgs     = []
+            , idPos      = Nothing
+            , idBindings = Nothing
+            }
         )
       | t <- predicates cfm
       ]
       ++
-      [ ( sourceId $ Right t                                  -- id
-        , termName t                                          -- name
-        , termType cfm t                                      -- type
-        , "function"                                          -- kind
-        , []                                                  -- depends
+      [ ( sourceId $ Right t
+        , IdRec
+            { idName     = termName t
+            , idType     = t2et $ termType cfm t
+            , idKind     = ST.Function
+            , idDeps     = []
+            , idArgs     = []
+            , idPos      = Nothing
+            , idBindings = Nothing
+            }
         )
       | t <- functions cfm
       ]
+  in
+    ST.symbolTable $ array (0,length xs - 1) $ sortIds xs
 
   where
+    t2et = \case
+      []           -> assert False undefined
+      [Boolean]    -> TBoolean
+      [Poly x]     -> TPoly x
+      Boolean : xr -> TFml TBoolean $ t2et xr
+      Poly x : xr  -> TFml (TPoly x) $ t2et xr
+
     -- | Computes the transitive closure of the dependencies
 
     transitive is ws = \case
@@ -438,7 +416,7 @@ csvSymbolTable cfm@CFM{..} =
     sortIds xs =
       let
         -- get the current id ordern
-        is = map (\(i,_,_,_,_) -> i) xs
+        is = map fst xs
 
         -- create an update mapping to rearrange them in order
         rearrange =
@@ -446,24 +424,11 @@ csvSymbolTable cfm@CFM{..} =
           Map.fromList $ zip is [0,1..length is - 1]
 
         -- create an update function to update the entry
-        updEntry (i, n, t, k, is) =
-          [ show $ rearrange i
-          , n
-          , prTypeFnChain t
-          , k
-          , prDeps $ map (rearrange . upd) is
-          ]
+        updEntry (i, x@IdRec{..}) =
+          (rearrange i, x { idDeps = map (rearrange . upd)  idDeps })
       in
         -- apply everthing
         map updEntry xs
-
-
-    -- | The dependency list is printed as a comma separated list.
-
-    prDeps xs = case toList $ fromList xs of
-      (x:xr) -> show x ++ concatMap ((',':) . (' ':) . show) xr
-      []     -> ""
-
 
     -- | Updates the output index with respect to the looped signals.
 
@@ -504,7 +469,7 @@ csvSymbolTable cfm@CFM{..} =
 
 -- | Parses a Control Flow Model that is given as an AIGER circuit,
 -- which has been synthesized from a TLSF specification that
--- (generated from a TSL specifciation).
+-- (generated from a TSL specification).
 
 fromCFM
   :: String -> Either Error CFM
@@ -616,8 +581,8 @@ fromCircuit circuit = do
     -- | Extracts the arguments of a predicate term.
 
     ptArgs a = \case
-      PApplied p x       -> ptArgs (x:a) p
-      _                  -> reverse a
+      PApplied p x -> ptArgs (x:a) p
+      _            -> reverse a
 
     -- | Extracts the name of a function or predicate term wrapped
     -- into the 'SignalTerm' constructor.
@@ -655,14 +620,14 @@ fromCircuit circuit = do
     -- | Parses the predicate terms from the circuit input names.
 
     inputTerms =
-      mapM (readInput . Circuit.inputName circuit)
+      mapM (decodeInputAP . Circuit.inputName circuit)
         $ Circuit.inputs circuit
 
     -- | Parses the update terms from the circuit output names.
 
     outputTerms = do
       xs <-
-        mapM (readOutput . Circuit.outputName circuit)
+        mapM (decodeOutputAP . Circuit.outputName circuit)
           $ Circuit.outputs circuit
 
       return $ zip xs $ Circuit.outputs circuit
@@ -679,8 +644,8 @@ fromCircuit circuit = do
       FApplied f x     -> subTermsF (subTerms a x) f
 
     subTermsP a = \case
-      PApplied f x      -> subTermsP (subTerms a x) f
-      _                 -> a
+      PApplied f x -> subTermsP (subTerms a x) f
+      _            -> a
 
     -- | Classifies function terms int pure signals and larger
     -- constructed terms.

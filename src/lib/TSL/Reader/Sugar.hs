@@ -2,17 +2,13 @@
 -- |
 -- Module      :  TSL.Reader.Sugar
 -- License     :  MIT (see the LICENSE file)
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- Removes syntactic sugar elements from the specification.
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    LambdaCase
-
-  #-}
+{-# LANGUAGE LambdaCase #-}
 
 module TSL.Reader.Sugar
   ( replaceSugar
@@ -20,27 +16,15 @@ module TSL.Reader.Sugar
 
 -----------------------------------------------------------------------------
 
-import TSL.Error
-  ( Error
-  )
+import TSL.Error (Error)
 
-import TSL.Binding
-  ( Binding(..)
-  , BoundExpr(..)
-  )
+import TSL.Binding (Binding(..), BoundExpr(..))
 
-import TSL.Reader.Data
-  ( Specification(..)
-  )
+import TSL.Reader.Data (Specification(..))
 
-import TSL.Expression
-  ( Expr(..)
-  , Expr'(..)
-  )
+import TSL.Expression (Expr(..), Expr'(..))
 
-import Control.Exception
-  ( assert
-  )
+import Control.Exception (assert)
 
 -----------------------------------------------------------------------------
 

@@ -1,20 +1,16 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Error
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- Data structures to wrap all contents, that are needed to print nice
 -- error messages.
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    LambdaCase
-  , RecordWildCards
-  , ViewPatterns
-
-  #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ViewPatterns    #-}
 
 -----------------------------------------------------------------------------
 
@@ -28,12 +24,14 @@ module TSL.Error
   , depError
   , cfgError
   , parseError
+  , genericError
   , prError
   , prErrPos
   , errUnknown
   , errConflict
   , errPattern
   , errConditional
+  , errCircularImp
   , errCircularDep
   , errExpect
   , errRange
@@ -42,51 +40,28 @@ module TSL.Error
 
 -----------------------------------------------------------------------------
 
-import TSL.Types
-  ( ExprType(..)
-  , reducer
-  , prType
-  )
+import TSL.Types (ExprType(..), prType, reducer)
 
-import TSL.Expression
-  ( ExprPos(..)
-  , SrcPos(..)
-  )
+import TSL.Expression (ExprPos(..), SrcPos(..))
 
-import Text.Parsec.Error
-  ( ParseError
-  )
+import Text.Parsec.Error (ParseError)
 
-import System.Exit
-  ( exitFailure
-  )
+import System.Exit (exitFailure)
 
-import System.IO
-  ( hPrint
-  , stderr
-  )
+import System.IO (hPrint, stderr)
 
-import Control.Monad.State
-  ( StateT(..)
-  )
+import Control.Monad.State (StateT(..))
 
-import Data.Maybe
-  ( fromMaybe
-  )
+import Data.Maybe (fromMaybe)
 
-import Data.IntMap
-  ( insert
-  , empty
-  )
+import Data.IntMap (empty, insert)
 
-import qualified Data.IntMap as IM
-  ( lookup
-  )
+import qualified Data.IntMap as IM (lookup)
 
 -----------------------------------------------------------------------------
 
-data Error =
-    ErrType TypeError
+data Error
+  = ErrType TypeError
   | ErrParse ParseError
   | ErrBnd BindingError
   | ErrDep DependencyError
@@ -95,6 +70,14 @@ data Error =
   | ErrConv ConvError
   | ErrCfg CfgError
   | ErrFormat FormatError
+  | ErrGeneric GenericError
+
+-----------------------------------------------------------------------------
+
+newtype GenericError =
+  GenericError
+    { errGen :: String
+    }
 
 -----------------------------------------------------------------------------
 
@@ -107,72 +90,81 @@ newtype FormatError =
 
 data TypeError =
   TypeError
-  { errTPos :: ExprPos
-  , errTMsgs :: [String]
-  } deriving (Eq, Ord)
+    { errTPos :: ExprPos
+    , errTMsgs :: [String]
+    }
+  deriving (Eq, Ord)
 
 -----------------------------------------------------------------------------
 
 data BindingError =
   BindingError
-  { errBPos :: ExprPos
-  , errBMsgs :: [String]
-  } deriving (Eq, Ord)
+    { errBPos :: ExprPos
+    , errBMsgs :: [String]
+    }
+  deriving (Eq, Ord)
 
 -----------------------------------------------------------------------------
 
 data DependencyError =
   DependencyError
-  { errDPos :: ExprPos
-  , errDMsgs :: [String]
-  } deriving (Eq, Ord)
+    { errDPos :: ExprPos
+    , errDMsgs :: [String]
+    }
+  deriving (Eq, Ord)
 
 -----------------------------------------------------------------------------
 
 data SyntaxError =
   SyntaxError
-  { errSPos :: ExprPos
-  , errSMsgs :: [String]
-  } deriving (Eq, Ord)
+    { errSPos :: ExprPos
+    , errSMsgs :: [String]
+    }
+  deriving (Eq, Ord)
 
 -----------------------------------------------------------------------------
 
 data RunTimeError =
   RunTimeError
-  { errRPos :: ExprPos
-  , errRMsgs :: [String]
-  } deriving (Eq, Ord)
+    { errRPos :: ExprPos
+    , errRMsgs :: [String]
+    }
+  deriving (Eq, Ord)
 
 -----------------------------------------------------------------------------
 
 data ConvError =
   ConvError
-  { title :: String
-  , cmsg :: String
-  } deriving (Eq, Ord)
+    { title :: String
+    , cmsg :: String
+    }
+  deriving (Eq, Ord)
 
 -----------------------------------------------------------------------------
 
 newtype CfgError =
   ConfigError
-  { fmsg :: String
-  } deriving (Eq, Ord)
+    { fmsg :: String
+    }
+  deriving (Eq, Ord)
 
 -----------------------------------------------------------------------------
 
 instance Show Error where
   show = \case
-    ErrParse x                 -> show x
-    ErrType TypeError{..}      -> pr "Type Error" errTPos errTMsgs
-    ErrBnd BindingError{..}    -> pr "Binding Error" errBPos errBMsgs
-    ErrDep DependencyError{..} -> pr "Dependency Error" errDPos errDMsgs
-    ErrSyntax SyntaxError{..}  -> pr "Syntax Error" errSPos errSMsgs
-    ErrRunT RunTimeError{..}   -> pr "Evaluation Error" errRPos errRMsgs
-    ErrCfg ConfigError{..}     -> "\"Error\":\n" ++ fmsg
-    ErrConv ConvError{..}      -> "\"Conversion Error\": " ++ title ++
-                                 "\n" ++ cmsg
-    ErrFormat FormatError{..}  -> "\"Format Error\": Unexpected format" ++
-                                 "\n" ++ errFmt
+    ErrParse x                   -> show x
+    ErrType TypeError {..}       -> pr "Type Error" errTPos errTMsgs
+    ErrBnd BindingError {..}     -> pr "Binding Error" errBPos errBMsgs
+    ErrDep DependencyError {..}  -> pr "Dependency Error" errDPos errDMsgs
+    ErrSyntax SyntaxError {..}   -> pr "Syntax Error" errSPos errSMsgs
+    ErrRunT RunTimeError {..}    -> pr "Evaluation Error" errRPos errRMsgs
+    ErrCfg ConfigError {..}      -> "\"Error\":\n" ++ fmsg
+    ErrConv ConvError {..}       ->
+      "\"Conversion Error\": " ++ title ++ "\n" ++ cmsg
+    ErrFormat FormatError {..}   ->
+      "\"Format Error\": Unexpected format" ++ "\n" ++ errFmt
+    ErrGeneric GenericError {..} -> "Error: " ++ errGen
+
     where
       pr errname pos msgs =
         "\"" ++ errname ++ "\" (" ++ prErrPos pos ++ "):\n" ++ concat msgs
@@ -185,7 +177,8 @@ instance Show Error where
 syntaxError
   :: ExprPos -> String -> Either Error a
 
-syntaxError pos msg = Left $ ErrSyntax $ SyntaxError pos [msg]
+syntaxError pos =
+  Left . ErrSyntax . SyntaxError pos . return
 
 -----------------------------------------------------------------------------
 
@@ -194,7 +187,8 @@ syntaxError pos msg = Left $ ErrSyntax $ SyntaxError pos [msg]
 runtimeError
   :: ExprPos -> String -> Either Error a
 
-runtimeError pos msg = Left $ ErrRunT $ RunTimeError pos [msg]
+runtimeError pos =
+  Left . ErrRunT . RunTimeError pos . return
 
 -----------------------------------------------------------------------------
 
@@ -204,7 +198,8 @@ runtimeError pos msg = Left $ ErrRunT $ RunTimeError pos [msg]
 typeError
   :: ExprPos -> String -> Either Error a
 
-typeError pos msg = Left $ ErrType $ TypeError pos [msg]
+typeError pos =
+  Left . ErrType . TypeError pos . return
 
 -----------------------------------------------------------------------------
 
@@ -214,7 +209,8 @@ typeError pos msg = Left $ ErrType $ TypeError pos [msg]
 bindingError
   :: ExprPos -> String -> Either Error a
 
-bindingError pos msg = Left $ ErrBnd $ BindingError pos [msg]
+bindingError pos =
+  Left . ErrBnd . BindingError pos . return
 
 -----------------------------------------------------------------------------
 
@@ -224,8 +220,8 @@ bindingError pos msg = Left $ ErrBnd $ BindingError pos [msg]
 depError
   :: ExprPos -> String -> Either Error a
 
-depError pos msg = Left $ ErrDep $ DependencyError pos [msg]
-
+depError pos =
+  Left . ErrDep . DependencyError pos . return
 
 -----------------------------------------------------------------------------
 
@@ -235,7 +231,8 @@ depError pos msg = Left $ ErrDep $ DependencyError pos [msg]
 cfgError
   :: String -> Either Error a
 
-cfgError msg = Left $ ErrCfg $ ConfigError msg
+cfgError =
+  Left . ErrCfg . ConfigError
 
 -----------------------------------------------------------------------------
 
@@ -245,7 +242,8 @@ cfgError msg = Left $ ErrCfg $ ConfigError msg
 conversionError
   :: String -> String -> Either Error a
 
-conversionError t msg = Left $ ErrConv $ ConvError t msg
+conversionError t =
+  Left . ErrConv . ConvError t
 
 -----------------------------------------------------------------------------
 
@@ -254,7 +252,18 @@ conversionError t msg = Left $ ErrConv $ ConvError t msg
 parseError
   :: ParseError -> Either Error a
 
-parseError err = Left $ ErrParse err
+parseError =
+  Left . ErrParse
+
+-----------------------------------------------------------------------------
+
+-- | Use this error, whenever something failed internally
+
+genericError
+  :: String -> Either Error a
+
+genericError =
+  Left . ErrGeneric . GenericError
 
 -----------------------------------------------------------------------------
 
@@ -263,9 +272,8 @@ parseError err = Left $ ErrParse err
 prError
   :: Error -> IO a
 
-prError err = do
-  hPrint stderr $ show err
-  exitFailure
+prError err =
+  hPrint stderr (show err) >> exitFailure
 
 -----------------------------------------------------------------------------
 
@@ -281,11 +289,19 @@ prErrPos pos =
     el = srcLine $ srcEnd pos
     ec = srcColumn $ srcEnd pos
   in
-    "line " ++ show bl ++ "," ++
-    "column " ++ show bc ++
-    if bl == el
-    then " - " ++ show ec
-    else " - line " ++ show el ++ ", column " ++ show ec
+    concat
+      [ "line "
+      , show bl
+      , ", "
+      , "column "
+      , show bc
+      , if bl == el
+        then " - " ++ show ec
+        else " - line " ++ show el ++ ", column " ++ show ec
+      , case srcPath pos of
+          Nothing   -> ""
+          Just path -> ", " ++ path
+      ]
 
 -----------------------------------------------------------------------------
 
@@ -306,9 +322,12 @@ errConflict
   :: String -> ExprPos -> ExprPos -> StateT a (Either Error) b
 
 errConflict i x y =
-  let msg = "conflicting definitions: " ++ i ++ "\n" ++
-            "already bound at " ++ prErrPos x
-  in StateT $ const $ bindingError y msg
+  let
+    msg =
+      "conflicting definitions: " ++
+      i ++ "\n" ++ "already bound at " ++ prErrPos x
+  in
+    StateT $ const $ bindingError y msg
 
 -----------------------------------------------------------------------------
 
@@ -319,9 +338,12 @@ errPattern
   :: ExprPos -> StateT a (Either Error) b
 
 errPattern pos =
-  let msg = "Formulas are not allowed on the right hand side " ++
-            "of a pattern match."
-  in StateT $ const $ typeError pos msg
+  let
+    msg =
+      "Formulas are not allowed on the right hand side " ++
+      "of a pattern match."
+  in
+    StateT $ const $ typeError pos msg
 
 -----------------------------------------------------------------------------
 
@@ -332,9 +354,12 @@ errConditional
   :: ExprPos -> StateT a (Either Error) b
 
 errConditional pos =
-  let msg = "expecting expression of the form:\n" ++
-            "  identifyer <- set"
-  in StateT $ const $ syntaxError pos msg
+  let
+    msg =
+      "expecting expression of the form:\n" ++
+      "  identifyer <- set"
+  in
+    StateT $ const $ syntaxError pos msg
 
 -----------------------------------------------------------------------------
 
@@ -342,17 +367,48 @@ errConditional pos =
 -- circular dependency between each other.
 
 errCircularDep
-  :: [(String,ExprPos)] -> ExprPos -> Either Error b
+  :: [(String, ExprPos)] -> ExprPos -> Either Error b
 
 errCircularDep xs pos =
   let
     m = foldl max (length $ fst $ head xs) $ map (length . fst) xs
-    msg = "detected circular dependencies between:" ++
-          concatMap (\(x,y) -> "\n  " ++ x ++
-                              replicate (m - length x) ' ' ++
-                              " (defined at " ++ prErrPos y ++ ")") xs ++
-            if length xs > 1 then "" else " depends on itself"
-  in depError pos msg
+    msg =
+      "detected circular dependencies between:" ++
+      concatMap
+        (\(x, y) ->
+           "\n  " ++
+           x ++
+           replicate (m - length x) ' ' ++
+           " (defined at " ++ prErrPos y ++ ")")
+        xs ++
+        if length xs > 1
+          then ""
+          else " depends on itself"
+   in
+     depError pos msg
+
+-----------------------------------------------------------------------------
+
+-- | Throws an error that indicates a set of imports that decribe a
+-- circular dependency between each other.
+
+errCircularImp
+  :: [(String, ExprPos)] -> ExprPos -> Either Error b
+
+errCircularImp xs pos =
+  let
+    m = foldl max (length $ fst $ head xs) $ map (length . fst) xs
+    msg =
+      "detected circular imports:" ++
+      concatMap
+        (\(x, y) ->
+           "\n  " ++
+           x ++
+           replicate (m - length x) ' ' ++
+           " (imported at " ++ prErrPos y ++ ")")
+        xs
+   in
+     depError pos msg
 
 -----------------------------------------------------------------------------
 
@@ -365,10 +421,12 @@ errExpect x y pos =
   let
     f i = fromMaybe (TPoly i) $ IM.lookup i $ joinPoly empty x y
     r = reducer [upd f x, upd f y]
-    msg = "expecting expression of type: " ++ prType r (upd f x) ++ "\n" ++
-          "but found expression of type: " ++ prType r (upd f y)
-  in
-    StateT $ const $ typeError pos msg
+    msg =
+      "expecting expression of type: " ++
+      prType r (upd f x) ++
+      "\n" ++ "but found expression of type: " ++ prType r (upd f y)
+   in
+     StateT $ const $ typeError pos msg
 
   where
     upd f = \case
@@ -384,19 +442,17 @@ errExpect x y pos =
         Nothing -> Left i
         Just t  -> case t of
           TSignal (TPoly j)
-            | i == j     -> Left i
+            | i == j    -> Left i
             | otherwise -> readType im $ TPoly j
           TPoly j
-            | i == j     -> Left i
+            | i == j    -> Left i
             | otherwise -> readType im $ TPoly j
           _ -> Right t
       t -> Right t
 
-
-    joinPoly im (TFml x y) (TFml x' y') = joinPoly (joinPoly im x x') y y'
-    joinPoly im TFml{} _ = im
-    joinPoly im _ TFml{} = im
-
+    joinPoly im (TFml x y)       (TFml x' y')     = joinPoly (joinPoly im x x') y y'
+    joinPoly im TFml {}          _                = im
+    joinPoly im _                TFml {}          = im
     joinPoly im (rmS -> TPoly i) (rmS -> TPoly j) =
       case (readType im (TPoly i), readType im (TPoly j)) of
         (Left i', Left j') ->
@@ -407,22 +463,20 @@ errExpect x y pos =
         (Right t, Left j') ->
           insert i t $ insert j' t $ insert j t im
         _ -> im
-
-    joinPoly im (rmS -> TPoly i) t =
+    joinPoly im (rmS -> TPoly i) t                 =
       case readType im (TPoly i) of
         Left i' -> insert i t $ insert i' t im
         _       -> im
-
-    joinPoly im t (rmS -> TPoly i) =
+    joinPoly im t               (rmS -> TPoly i)   =
       case readType im (TPoly i) of
         Left i' -> insert i t $ insert i' t im
         _       -> im
+    joinPoly im _               _                 = im
 
-    joinPoly im _ _ = im
-
-    rmS = \case
-      TSignal x -> rmS x
-      x         -> x
+    rmS =
+      \case
+        TSignal x -> rmS x
+        x         -> x
 
 -----------------------------------------------------------------------------
 
@@ -433,9 +487,12 @@ errRange
   :: ExprType -> ExprPos -> StateT a (Either Error) b
 
 errRange x pos =
-  let msg = "expecting: range expression\n" ++
-            "but found: " ++ prType (reducer [x]) x ++ " expression"
-  in StateT $ \_ -> typeError pos msg
+  let
+    msg =
+      "expecting: range expression\n" ++
+      "but found: " ++ prType (reducer [x]) x ++ " expression"
+  in
+    StateT $ \_ -> typeError pos msg
 
 -----------------------------------------------------------------------------
 

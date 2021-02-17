@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Main
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- Transforms TSL specifications into TLSF specifications.
 --
@@ -13,49 +13,15 @@ module Main
 
 -----------------------------------------------------------------------------
 
-import TSL
-  ( fromTSL
-  , toTLSF
-  )
+import EncodingUtils (initEncoding)
 
-import System.Directory
-  ( doesFileExist
-  )
+import ArgParseUtils (parseMaybeFilePath)
 
-import System.FilePath
-  ( takeBaseName
-  )
+import FileUtils (loadTSL)
 
-import System.Environment
-  ( getArgs
-  )
+import TSL (toTLSF)
 
-import System.Console.ANSI
-  ( SGR(..)
-  , ConsoleLayer(..)
-  , ColorIntensity(..)
-  , Color(..)
-  , setSGR
-  , hSetSGR
-  )
-
-import System.IO
-  ( stderr
-  , hPrint
-  , hPutStr
-  , hPutStrLn
-  )
-
-import GHC.IO.Encoding
-  ( utf8
-  , setLocaleEncoding
-  , setFileSystemEncoding
-  , setForeignEncoding
-  )
-
-import System.Exit
-  ( exitFailure
-  )
+import System.FilePath (takeBaseName)
 
 -----------------------------------------------------------------------------
 
@@ -63,55 +29,17 @@ main
   :: IO ()
 
 main = do
-  setLocaleEncoding utf8
-  setFileSystemEncoding utf8
-  setForeignEncoding utf8
-  args <- getArgs
+  initEncoding
 
-  if length args /= 1 then do
-    cError Yellow "Usage: "
-    cErrorLn White "tsl2tlsf <file>"
-    resetColors
-    exitFailure
-  else do
-    exists <- doesFileExist $ head args
+  input <- parseMaybeFilePath
+            ("tsl2tlsf", "Transforms TSL specifications into TLSF specifications.")
 
-    if not exists then do
-      cError Red "File not found: "
-      cErrorLn White $ head args
-      resetColors
-      exitFailure
-    else do
-      str <- readFile $ head args
-      case fromTSL str of
-        Left err -> do
-          cPutStr Red "invalid: "
-          cPutStrLn White $ head args
-          resetColors
-          hPrint stderr err
-          exitFailure
-        Right s  ->
-          putStr $ toTLSF (takeBaseName (head args)) s
+  spec <- loadTSL input
 
-  where
-    cPutStr c str = do
-      setSGR [ SetColor Foreground Vivid c ]
-      putStr str
-
-    cPutStrLn c str = do
-      setSGR [ SetColor Foreground Vivid c ]
-      putStrLn str
-
-    cError c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
-      hPutStr stderr str
-
-    cErrorLn c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
-      hPutStrLn stderr str
-
-    resetColors = do
-      hSetSGR stderr [ Reset ]
-      setSGR [ Reset ]
+  putStrLn $ toTLSF (
+      case input of
+        Nothing   -> "STDIN"
+        Just file -> takeBaseName file
+    ) spec
 
 -----------------------------------------------------------------------------

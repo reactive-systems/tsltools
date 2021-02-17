@@ -1,10 +1,15 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Binding
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- A data type to store an identifier bound to an expression.
 --
+-----------------------------------------------------------------------------
+
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE RecordWildCards #-}
+
 -----------------------------------------------------------------------------
 
 module TSL.Binding
@@ -14,10 +19,9 @@ module TSL.Binding
 
 -----------------------------------------------------------------------------
 
-import TSL.Expression
-  ( Expr
-  , ExprPos
-  )
+import TSL.Expression (Expr, ExprPos)
+
+import Control.Arrow (first)
 
 -----------------------------------------------------------------------------
 
@@ -26,6 +30,15 @@ data BoundExpr a =
   | PatternBinding (Expr a) (Expr a)
   | SetBinding (Expr a)
   | RangeBinding (Expr a) (Int -> Int) (Expr a) (Int -> Int)
+
+-----------------------------------------------------------------------------
+
+instance Functor BoundExpr where
+  fmap f = \case
+    GuardedBinding xs    -> GuardedBinding $ map (fmap f) xs
+    PatternBinding x y   -> PatternBinding (fmap f x) $ fmap f y
+    SetBinding x         -> SetBinding $ fmap f x
+    RangeBinding x g y h -> RangeBinding (fmap f x) g (fmap f y) h
 
 -----------------------------------------------------------------------------
 
@@ -43,5 +56,16 @@ data Binding a =
     , bPos :: ExprPos
     , bVal :: BoundExpr a
     }
+
+-----------------------------------------------------------------------------
+
+instance Functor Binding where
+  fmap f Binding{..} =
+    Binding
+      { bIdent = f bIdent
+      , bArgs = map (first f) bArgs
+      , bPos = bPos
+      , bVal = fmap f bVal
+      }
 
 -----------------------------------------------------------------------------

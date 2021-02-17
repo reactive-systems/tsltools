@@ -1,100 +1,106 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Parser.Global
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- Parsers for global definitions and formula sections.
 --
 -----------------------------------------------------------------------------
 
 module TSL.Parser.Global
-  ( assignmentParser
+  ( GlobalElement(..)
+  , assignmentParser
   , sectionParser
   , elementsParser
   ) where
 
 -----------------------------------------------------------------------------
 
-import TSL.Binding
-  ( Binding(..)
-  , BoundExpr(..)
-  )
+import TSL.Binding (Binding(..), BoundExpr(..))
 
-import TSL.Expression
-  ( Expr(..)
-  , ExprPos(..)
-  )
+import TSL.Expression (Expr(..), ExprPos(..))
 
-import TSL.Types
-  ( SectionType(..)
-  )
+import TSL.Types (SectionType(..))
 
-import TSL.Parser.Data
-  ( globalDef
-  )
+import TSL.Parser.Data (globalDef)
 
-import TSL.Parser.Utils
-  ( identifier
-  )
+import TSL.Parser.Utils (identifier, positionParser)
 
-import TSL.Parser.Expression
-  ( exprParser
-  )
+import TSL.Parser.Expression (exprParser)
 
-import Data.Functor.Identity
-  ( Identity
-  )
+import Data.Functor.Identity (Identity)
 
-import Data.Maybe
-  ( catMaybes
-  )
+import Data.Maybe (catMaybes)
 
-import Control.Monad
-  ( void
-  )
+import Control.Monad (void)
 
 import Text.Parsec
-  ( (<|>)
+  ( ParsecT
+  , alphaNum
+  , char
+  , lookAhead
+  , many
+  , many1
   , oneOf
   , sepBy
-  , many1
+  , space
+  , upper
+  , (<|>)
   )
 
-import Text.Parsec.String
-  ( Parser
-  )
+import Text.Parsec.String (Parser)
 
 import Text.Parsec.Token
   ( GenLanguageDef(..)
   , GenTokenParser
-  , reservedNames
-  , whiteSpace
-  , natural
-  , makeTokenParser
-  , reserved
   , braces
+  , makeTokenParser
+  , natural
+  , reserved
+  , reservedNames
   , reservedOp
+  , stringLiteral
+  , whiteSpace
   )
 
 -----------------------------------------------------------------------------
 
+data GlobalElement =
+    Import (FilePath, String, ExprPos, ExprPos)
+  | Assignment (Binding String)
+  | Section (SectionType, [Expr String])
+
+-----------------------------------------------------------------------------
+
 elementsParser
-  :: Parser (Either (Binding String) (SectionType, [Expr String]))
+  :: Parser GlobalElement
 
 elementsParser =
-  (~~) >> (sectionParser <|> assignmentParser)
+  (~~) >> (importParser <|> sectionParser <|> assignmentParser)
+
+-----------------------------------------------------------------------------
+
+importParser
+  :: Parser GlobalElement
+
+importParser = do
+  keyword "import"
+  (file, p1) <- filepath
+  keyword "as"
+  (name, p2) <- modulename
+  return $ Import (file, name, p1, p2)
 
 -----------------------------------------------------------------------------
 
 -- | Parses a list of formulas within a section labeled by 'name'.
 
 sectionParser
-  :: Parser (Either a (SectionType, [Expr String]))
+  :: Parser GlobalElement
 
 sectionParser = do
   t <- sectionTypeParser
   xs <- br $ sepBy (nonEmptyParser exprParser) $ rOp ";"
-  return $ Right (t, catMaybes xs)
+  return $ Section (t, catMaybes xs)
 
   where
     nonEmptyParser p =
@@ -130,7 +136,7 @@ sectionTypeParser =
 -- definition.
 
 assignmentParser
-  :: Parser (Either (Binding String) a)
+  :: Parser GlobalElement
 
 assignmentParser = do
   (x,pos) <- identifier (~~)
@@ -142,13 +148,13 @@ assignmentParser = do
       args <- many1 (identifier (~~))
       (~~)
       reminderParser x args $
-        ExprPos (srcBegin pos) (srcEnd $ snd $ last args)
+        ExprPos (srcBegin pos) (srcEnd $ snd $ last args) Nothing
 
     reminderParser x args pos = do
       rOp "="
       es <- many1 exprParser
       rOp ";"
-      return $ Left $
+      return $ Assignment
         Binding
           { bIdent = x
           , bArgs = args
@@ -172,6 +178,8 @@ tokenparser =
       , "assume"
       , "guarantee"
       , "after"
+      , "import"
+      , "as"
       ]
     }
 
@@ -202,5 +210,25 @@ keyword
   :: String -> Parser ()
 
 keyword = void . reserved tokenparser
+
+-----------------------------------------------------------------------------
+
+filepath
+  :: ParsecT String () Identity (String, ExprPos)
+
+filepath =
+  positionParser (~~) $ stringLiteral tokenparser
+
+-----------------------------------------------------------------------------
+
+modulename
+  :: ParsecT String () Identity (String, ExprPos)
+
+modulename =
+  positionParser (~~) $ do
+    f <- upper
+    xr <- many (alphaNum <|> char '_')
+    void $ lookAhead space
+    return $ f : xr
 
 -----------------------------------------------------------------------------
