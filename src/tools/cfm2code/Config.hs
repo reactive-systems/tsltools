@@ -75,6 +75,8 @@ configParser = Configuration
     <|> flag' Monadic     (long "monadic"     <> help "generates code for 'Monadic'-FRP libraries")
     <|> flag' Arrow       (long "arrow"       <> help "generates code for 'Arrowized'-FRP libraries")
     <|> flag' Clash       (long "clash"       <> help "generates code for the hardware description language 'ClaSH'")
+    <|> flag' JavaScript  (long "javascript"  <> help "generates code for ")
+    <|> flag' WebAudio    (long "webaudio"    <> help "generates code for ")
     )
   <*> option str
       (  long "module-name"
@@ -130,7 +132,7 @@ parseArguments = do
       exitFailure
 
     fstLower = \case
-      []   -> []
+      []   -> []u
       x:xr -> toLower x : xr
 
     fstUpper = \case

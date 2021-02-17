@@ -1,4 +1,4 @@
-dist
+istdist
 dist-newstyle
 cabal-dev
 *.o
@@ -32,4 +32,5 @@ tslcoregen
 tslminrealizable
 .commit
 .stack-work
+local_testing
 stack.yaml.lock

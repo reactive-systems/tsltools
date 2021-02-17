@@ -71,6 +71,8 @@ library
     TSL.Writer.Applicative
     TSL.Writer.Arrow
     TSL.Writer.Monadic
+    TSL.Writer.JavaScript
+    TSL.Writer.WebAudio
     TSL.Aiger
     TSL.Logic
     TSL.Eval

@@ -118,6 +118,14 @@ import qualified TSL.Writer.Arrow as Arrow (implement)
 
 import qualified TSL.Writer.Monadic as Monadic (implement)
 
+import qualified TSL.Writer.JavaScript as JavaScript
+  ( implement
+  )
+
+import qualified TSL.Writer.WebAudio as WebAudio
+  ( implement
+  )
+
 -----------------------------------------------------------------------------
 
 data CodeTarget
@@ -125,6 +133,8 @@ data CodeTarget
   | Monadic
   | Arrow
   | Clash
+  | JavaScript
+  | WebAudio
   deriving (Show, Ord, Eq)
 
 -----------------------------------------------------------------------------
@@ -146,5 +156,7 @@ implement = \case
   Arrow       -> Arrow.implement
   Clash       -> Clash.implement
   Monadic     -> Monadic.implement
+  JavaScript  -> JavaScript.implement
+  WebAudio    -> WebAudio.implement
 
 -----------------------------------------------------------------------------
