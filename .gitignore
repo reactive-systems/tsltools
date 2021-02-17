@@ -1,4 +1,4 @@
-dist
+istdist
 dist-newstyle
 cabal-dev
 *.o
@@ -18,11 +18,19 @@ cabal.sandbox.config
 tsl2tlsf
 tslcheck
 tslsize
+tslsplit
 tslsym
+tslplay
+tsl2toml
+tslresolve
 cfm2code
 cfmcheck
 cfminfo
 cfmsym
+cstratsim
+tslcoregen
+tslminrealizable
 .commit
 .stack-work
 local_testing
+stack.yaml.lock

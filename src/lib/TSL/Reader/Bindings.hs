@@ -1,19 +1,15 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Reader.Bindings
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- Extracts the static expression bindings from the specification.
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    RecordWildCards
-  , LambdaCase
-  , TupleSections
-
-  #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections   #-}
 
 -----------------------------------------------------------------------------
 
@@ -23,76 +19,36 @@ module TSL.Reader.Bindings
 
 -----------------------------------------------------------------------------
 
-import TSL.Binding
-  ( Binding(..)
-  , BoundExpr(..)
-  )
+import TSL.Binding (Binding(..), BoundExpr(..))
 
-import TSL.Expression
-  ( ExprId
-  , Expr(..)
-  , Expr'(..)
-  , subExpressions
-  )
+import TSL.Expression (Expr(..), Expr'(..), ExprId, subExpressions)
 
 import TSL.Reader.Data
-  ( Specification(..)
+  ( ArgumentTable
   , ExpressionTable
   , NameTable
   , PositionTable
-  , ArgumentTable
   , ScopeTable
+  , Specification(..)
   )
 
-import TSL.Error
-  ( Error
-  , errConditional
-  , errCircularDep
-  )
+import TSL.Error (Error, errCircularDep, errConditional)
 
-import Data.Graph
-  ( buildG
-  , scc
-  )
+import Data.Graph (buildG, scc)
 
-import Data.Tree
-  ( flatten
-  )
+import Data.Tree (flatten)
 
-import Control.Monad.State
-  ( StateT(..)
-  , execStateT
-  , put
-  , get
-  , when
-  )
+import Control.Monad.State (StateT(..), execStateT, get, put, when)
 
-import Control.Exception
-  ( assert
-  )
+import Control.Exception (assert)
 
-import Data.IntMap.Strict
-  ( (!)
-  , member
-  , empty
-  , insert
-  , toList
-  , findMax
-  )
+import Data.IntMap.Strict (empty, findMax, insert, member, toList, (!))
 
-import qualified Data.IntMap.Strict as IM
-  ( map
-  , lookup
-  )
+import qualified Data.IntMap.Strict as IM (lookup, map)
 
-import Data.Set
-  ( elems
-  , fromList
-  )
+import Data.Set (elems, fromList)
 
-import TSL.Types
-  ( SectionType
-  )
+import TSL.Types (SectionType)
 
 -----------------------------------------------------------------------------
 
@@ -175,50 +131,61 @@ exprBindings
   :: Expr Int -> GetBindings ()
 
 exprBindings e@Expr{..} = case expr of
-  NumRPlus xs x        -> mapM_ conditional xs >> exprBindings x
-  NumRMul xs x         -> mapM_ conditional xs >> exprBindings x
-  SetRCup xs x         -> mapM_ conditional xs >> exprBindings x
-  SetRCap xs x         -> mapM_ conditional xs >> exprBindings x
-  BlnRAnd xs x         -> mapM_ conditional xs >> exprBindings x
-  BlnROr xs x          -> mapM_ conditional xs >> exprBindings x
-  TslRNext _ x         -> exprBindings x
-  TslRGlobally _ x     -> exprBindings x
-  TslRFinally _ x      -> exprBindings x
+  NumRPlus xs x          -> mapM_ conditional xs >> exprBindings x
+  NumRMul xs x           -> mapM_ conditional xs >> exprBindings x
+  SetRCup xs x           -> mapM_ conditional xs >> exprBindings x
+  SetRCap xs x           -> mapM_ conditional xs >> exprBindings x
+  BlnRAnd xs x           -> mapM_ conditional xs >> exprBindings x
+  BlnROr xs x            -> mapM_ conditional xs >> exprBindings x
+  TslRNext _ x           -> exprBindings x
+  TslRPrevious _ x       -> exprBindings x
+  TslRGlobally _ x       -> exprBindings x
+  TslRFinally _ x        -> exprBindings x
+  TslRHistorically _ x   -> exprBindings x
+  TslROnce _ x           -> exprBindings x
   Colon w@(Expr v _ _) z -> case v of
     Pattern x y -> addPatternIds (PatternBinding x y) y >> exprBindings z
-    _ -> exprBindings w >> exprBindings z
-  _                    -> mapM_ exprBindings $ subExpressions e
+    _           -> exprBindings w >> exprBindings z
+  _                      -> mapM_ exprBindings $ subExpressions e
 
   where
     addPatternIds
       :: BoundExpr Int -> Expr Int -> GetBindings ()
 
     addPatternIds b Expr{..} = case expr of
-      BaseWild         -> return ()
-      BaseTrue         -> return ()
-      BaseFalse        -> return ()
-      BaseOtherwise    -> return ()
-      BaseId i         ->
+      BaseWild             -> return ()
+      BaseTrue             -> return ()
+      BaseFalse            -> return ()
+      BaseOtherwise        -> return ()
+      BaseId i             ->
         get >>= \st@ST{..} -> put st
           { tBinding = insert i b tBinding
           , tInternal = insert i () tInternal
           }
-      BlnNot x         -> addPatternIds b x
-      BlnOr x y        -> addPatternIds b x >> addPatternIds b y
-      BlnAnd x y       -> addPatternIds b x >> addPatternIds b y
-      BlnImpl x y      -> addPatternIds b x >> addPatternIds b y
-      BlnEquiv x y     -> addPatternIds b x >> addPatternIds b y
-      TslNext x        -> addPatternIds b x
-      TslRNext _ x     -> addPatternIds b x
-      TslGlobally x    -> addPatternIds b x
-      TslRGlobally _ x -> addPatternIds b x
-      TslFinally x     -> addPatternIds b x
-      TslRFinally _ x  -> addPatternIds b x
-      TslUntil x y     -> addPatternIds b x >> addPatternIds b y
-      TslWeak x y      -> addPatternIds b x >> addPatternIds b y
-      TslAsSoonAs x y  -> addPatternIds b x >> addPatternIds b y
-      TslRelease x y   -> addPatternIds b x >> addPatternIds b y
-      _                -> assert False undefined
+      BlnNot x             -> addPatternIds b x
+      BlnOr x y            -> addPatternIds b x >> addPatternIds b y
+      BlnAnd x y           -> addPatternIds b x >> addPatternIds b y
+      BlnImpl x y          -> addPatternIds b x >> addPatternIds b y
+      BlnEquiv x y         -> addPatternIds b x >> addPatternIds b y
+      TslNext x            -> addPatternIds b x
+      TslRNext _ x         -> addPatternIds b x
+      TslPrevious x        -> addPatternIds b x
+      TslRPrevious _ x     -> addPatternIds b x
+      TslGlobally x        -> addPatternIds b x
+      TslRGlobally _ x     -> addPatternIds b x
+      TslFinally x         -> addPatternIds b x
+      TslRFinally _ x      -> addPatternIds b x
+      TslHistorically x    -> addPatternIds b x
+      TslRHistorically _ x -> addPatternIds b x
+      TslOnce x            -> addPatternIds b x
+      TslROnce _ x         -> addPatternIds b x
+      TslUntil x y         -> addPatternIds b x >> addPatternIds b y
+      TslWeak x y          -> addPatternIds b x >> addPatternIds b y
+      TslAsSoonAs x y      -> addPatternIds b x >> addPatternIds b y
+      TslRelease x y       -> addPatternIds b x >> addPatternIds b y
+      TslSince x y         -> addPatternIds b x >> addPatternIds b y
+      TslTriggered x y     -> addPatternIds b x >> addPatternIds b y
+      _                    -> assert False undefined
 
     conditional (Expr x _ _) = case x of
       BlnElem (Expr l _ _) s -> case l of
@@ -339,7 +306,7 @@ checkCircularDeps s@Specification{..} = do
   where
     isunary (x,_) = case IM.lookup x arguments of
       Just xs -> null xs
-      Nothing -> assert False undefined
+      Nothing -> True
 
     check = \case
       []     -> return ()
@@ -414,58 +381,66 @@ fixExprIds s@Specification{..} = do
       n <- get
       put (n + 1)
       e' <- case expr e of
-        BaseWild         -> return BaseWild
-        BaseTrue         -> return BaseTrue
-        BaseFalse        -> return BaseFalse
-        BaseCon i        -> return $ BaseCon i
-        BaseOtherwise    -> return BaseOtherwise
-        BaseId i         -> return $ BaseId i
-        BaseConFn i      -> return $ BaseConFn i
-        BaseUpd x i      -> updExpr1 (flip BaseUpd i) x
-        NumSMin x        -> updExpr1 NumSMin x
-        NumSMax x        -> updExpr1 NumSMax x
-        NumSSize x       -> updExpr1 NumSSize x
-        BlnNot x         -> updExpr1 BlnNot x
-        TslNext x        -> updExpr1 TslNext x
-        TslGlobally x    -> updExpr1 TslGlobally x
-        TslFinally x     -> updExpr1 TslFinally x
-        NumPlus x y      -> updExpr2 NumPlus x y
-        NumMinus x y     -> updExpr2 NumMinus x y
-        NumMul x y       -> updExpr2 NumMul x y
-        NumDiv x y       -> updExpr2 NumDiv x y
-        NumMod x y       -> updExpr2 NumMod x y
-        SetCup x y       -> updExpr2 SetCup x y
-        SetCap x y       -> updExpr2 SetCap x y
-        SetMinus x y     -> updExpr2 SetMinus x y
-        BlnEQ x y        -> updExpr2 BlnEQ x y
-        BlnNEQ x y       -> updExpr2 BlnNEQ x y
-        BlnGE x y        -> updExpr2 BlnGE x y
-        BlnGEQ x y       -> updExpr2 BlnGEQ x y
-        BlnLE x y        -> updExpr2 BlnLE x y
-        BlnLEQ x y       -> updExpr2 BlnLEQ x y
-        BlnElem x y      -> updExpr2 BlnElem x y
-        BlnOr x y        -> updExpr2 BlnOr x y
-        BlnAnd x y       -> updExpr2 BlnAnd x y
-        BlnImpl x y      -> updExpr2 BlnImpl x y
-        BlnEquiv x y     -> updExpr2 BlnEquiv x y
-        TslRNext x y     -> updExpr2 TslRNext x y
-        TslRGlobally x y -> updExpr2 TslRGlobally x y
-        TslRFinally x y  -> updExpr2 TslRFinally x y
-        TslUntil x y     -> updExpr2 TslUntil x y
-        TslWeak x y      -> updExpr2 TslWeak x y
-        TslAsSoonAs x y  -> updExpr2 TslAsSoonAs x y
-        TslRelease x y   -> updExpr2 TslRelease x y
-        Colon x y        -> updExpr2 Colon x y
-        Pattern x y      -> updExpr2 Pattern x y
-        SetRange x y z   -> updExpr3 SetRange x y z
-        SetExplicit xs   -> updExprN SetExplicit xs
-        BaseFn x y       -> updExpr2 BaseFn x y
-        NumRPlus xs x    -> updExprM NumRPlus xs x
-        NumRMul xs x     -> updExprM NumRMul xs x
-        SetRCup xs x     -> updExprM SetRCup xs x
-        SetRCap xs x     -> updExprM SetRCap xs x
-        BlnROr xs x      -> updExprM BlnROr xs x
-        BlnRAnd xs x     -> updExprM BlnRAnd xs x
+        BaseWild             -> return BaseWild
+        BaseTrue             -> return BaseTrue
+        BaseFalse            -> return BaseFalse
+        BaseCon i            -> return $ BaseCon i
+        BaseOtherwise        -> return BaseOtherwise
+        BaseId i             -> return $ BaseId i
+        BaseConFn i          -> return $ BaseConFn i
+        BaseUpd x i          -> updExpr1 (`BaseUpd` i) x
+        NumSMin x            -> updExpr1 NumSMin x
+        NumSMax x            -> updExpr1 NumSMax x
+        NumSSize x           -> updExpr1 NumSSize x
+        BlnNot x             -> updExpr1 BlnNot x
+        TslNext x            -> updExpr1 TslNext x
+        TslPrevious x        -> updExpr1 TslPrevious x
+        TslGlobally x        -> updExpr1 TslGlobally x
+        TslFinally x         -> updExpr1 TslFinally x
+        TslHistorically x    -> updExpr1 TslHistorically x
+        TslOnce x            -> updExpr1 TslOnce x
+        NumPlus x y          -> updExpr2 NumPlus x y
+        NumMinus x y         -> updExpr2 NumMinus x y
+        NumMul x y           -> updExpr2 NumMul x y
+        NumDiv x y           -> updExpr2 NumDiv x y
+        NumMod x y           -> updExpr2 NumMod x y
+        SetCup x y           -> updExpr2 SetCup x y
+        SetCap x y           -> updExpr2 SetCap x y
+        SetMinus x y         -> updExpr2 SetMinus x y
+        BlnEQ x y            -> updExpr2 BlnEQ x y
+        BlnNEQ x y           -> updExpr2 BlnNEQ x y
+        BlnGE x y            -> updExpr2 BlnGE x y
+        BlnGEQ x y           -> updExpr2 BlnGEQ x y
+        BlnLE x y            -> updExpr2 BlnLE x y
+        BlnLEQ x y           -> updExpr2 BlnLEQ x y
+        BlnElem x y          -> updExpr2 BlnElem x y
+        BlnOr x y            -> updExpr2 BlnOr x y
+        BlnAnd x y           -> updExpr2 BlnAnd x y
+        BlnImpl x y          -> updExpr2 BlnImpl x y
+        BlnEquiv x y         -> updExpr2 BlnEquiv x y
+        TslRNext x y         -> updExpr2 TslRNext x y
+        TslRPrevious x y     -> updExpr2 TslRPrevious x y
+        TslRGlobally x y     -> updExpr2 TslRGlobally x y
+        TslRFinally x y      -> updExpr2 TslRFinally x y
+        TslRHistorically x y -> updExpr2 TslRHistorically x y
+        TslROnce x y         -> updExpr2 TslROnce x y
+        TslUntil x y         -> updExpr2 TslUntil x y
+        TslWeak x y          -> updExpr2 TslWeak x y
+        TslAsSoonAs x y      -> updExpr2 TslAsSoonAs x y
+        TslRelease x y       -> updExpr2 TslRelease x y
+        TslSince x y         -> updExpr2 TslSince x y
+        TslTriggered x y     -> updExpr2 TslTriggered x y
+        Colon x y            -> updExpr2 Colon x y
+        Pattern x y          -> updExpr2 Pattern x y
+        SetRange x y z       -> updExpr3 SetRange x y z
+        SetExplicit xs       -> updExprN SetExplicit xs
+        BaseFn x y           -> updExpr2 BaseFn x y
+        NumRPlus xs x        -> updExprM NumRPlus xs x
+        NumRMul xs x         -> updExprM NumRMul xs x
+        SetRCup xs x         -> updExprM SetRCup xs x
+        SetRCap xs x         -> updExprM SetRCap xs x
+        BlnROr xs x          -> updExprM BlnROr xs x
+        BlnRAnd xs x         -> updExprM BlnRAnd xs x
 
       return e
         { expr = e'

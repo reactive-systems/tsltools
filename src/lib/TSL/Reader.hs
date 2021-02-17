@@ -1,20 +1,16 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Reader
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- The module reads a specification to the internal format.
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    RecordWildCards
-  , TupleSections
-  , MultiWayIf
-  , LambdaCase
-
-  #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE MultiWayIf      #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections   #-}
 
 -----------------------------------------------------------------------------
 
@@ -27,162 +23,118 @@ module TSL.Reader
 import TSL.Expression
   ( Expr(..)
   , Expr'(..)
+  , ExprPos(..)
+  , applySub
   , subExpressions
   )
 
-import TSL.Error
-  ( Error
-  )
+import TSL.Error (Error, errCircularImp, genericError)
 
-import TSL.SymbolTable
-  ( SymbolTable ( SymbolTable )
-  , IdRec(..)
-  , Kind(..)
-  )
+import TSL.SymbolTable (IdRec(..), Kind(..), SymbolTable, symbolTable)
 
-import TSL.Specification
-  ( Specification(..)
-  )
+import TSL.Specification (Specification(..))
 
-import TSL.Reader.Sugar
-  ( replaceSugar
-  )
+import TSL.Reader.Sugar (replaceSugar)
 
-import TSL.Parser
-  ( parse
-  )
+import TSL.Parser (parse)
 
-import TSL.Logic
-  ( Formula(..)
-  )
+import TSL.Logic (Formula(..))
 
-import TSL.Eval
-  ( eval
-  )
+import TSL.Eval (eval)
 
-import TSL.Reader.Bindings
-  ( specBindings
-  )
+import TSL.Reader.Bindings (specBindings)
 
-import TSL.Binding
-  ( BoundExpr(..)
-  , Binding(..)
-  )
+import TSL.Binding (Binding(..), BoundExpr(..))
 
-import TSL.Reader.InferType
-  ( inferTypes
-  )
+import TSL.Reader.InferType (inferTypes)
 
-import TSL.Types
-  ( ExprType(..)
-  , SectionType(..)
-  )
+import TSL.Types (ExprType(..), SectionType(..))
 
-import TSL.Reader.Abstraction
-  ( abstract
-  )
+import TSL.Reader.Abstraction (abstract)
 
-import qualified TSL.Reader.Data as RD
-  ( Specification(..)
-  )
+import qualified TSL.Parser.Data as PD (Specification(..))
 
-import Control.Exception
-  ( assert
-  )
+import qualified TSL.Reader.Data as RD (Specification(..))
 
-import Data.Function
-  ( on
-  )
+import Control.Exception (assert)
 
-import Data.List
-  ( sortBy
-  , groupBy
-  , partition
-  )
+import Data.Function (on)
 
-import Data.Maybe
-  ( fromJust
-  , fromMaybe
-  )
+import Data.List (groupBy, sortBy)
 
-import Data.Graph
-  ( buildG
-  , transposeG
-  , topSort
-  )
+import Data.Maybe (fromJust, fromMaybe)
+
+import Data.Graph (buildG, topSort, transposeG)
 
 import qualified Data.IntMap as IM
   ( IntMap
-  , (!)
-  , null
-  , lookup
-  , keys
-  , toAscList
-  , minViewWithKey
-  , maxViewWithKey
   , fromList
+  , keys
+  , lookup
+  , maxViewWithKey
   , member
-  )
-
-import qualified Data.Array.IArray as A
-  ( Array
-  , array
+  , minViewWithKey
+  , null
+  , toAscList
   , (!)
   )
 
-import Data.Set
-  ( Set
-  , empty
-  , member
-  , insert
-  , toList
-  )
+import Control.Arrow (second)
+
+import Control.Monad ((>=>))
+
+import qualified Data.Array.IArray as A (Array, array, (!))
+
+import System.Directory (canonicalizePath, doesFileExist, doesPathExist)
+
+import System.FilePath.Posix (combine, isAbsolute, takeDirectory)
+
+import Data.Set (Set, empty, insert, member, toList)
 
 -----------------------------------------------------------------------------
 
 -- | Parses a TSL specification.
 
 fromTSL
-  :: String -> Either Error Specification
+  :: Maybe FilePath -> String -> IO (Either Error Specification)
 
-fromTSL str =
-  -- parse the input
-  parse str >>=
+fromTSL specPath =
+  resolveImports specPath [] >=> return . (>>= process)
 
+-----------------------------------------------------------------------------
+
+process
+  :: PD.Specification -> Either Error Specification
+
+process =
   -- replace variable names by a unique identifier
-  abstract >>=
+  abstract >=>
 
   -- replace syntactic sugar constructs for later converison
-  replaceSugar >>=
+  replaceSugar >=>
 
   -- retrieve the bindings of expression variables
-  specBindings >>=
+  specBindings >=>
 
   -- infer types and typecheck
-  inferTypes >>=
+  inferTypes >=>
 
   -- lift reader specification to global specification
   \s@RD.Specification{..} -> do
     let st = symtable s
     es <- eval st $ map snd sections
     return Specification
-      { formula     = join $ zip (map fst sections) es
+      { assumptions =
+          [ initiate (st, f)
+          | (st, f) <- zip (map fst sections) es
+          , assumption st
+          ]
+      , guarantees  =
+          [ initiate (st, f)
+          | (st, f) <- zip (map fst sections) es
+          , not (assumption st) ]
       , symboltable = st
       }
-
------------------------------------------------------------------------------
-
-join
-  :: [(SectionType, Formula Int)] -> Formula Int
-
-join fs = case partition (assumption . fst) fs of
-  (_,[])    -> TTrue
-  ([],[g])  -> initiate g
-  ([],gs)   -> And $ map initiate gs
-  ([a],[g]) -> Implies (initiate a) $ initiate g
-  ([a],gs)  -> Implies (initiate a) $ And $ map initiate gs
-  (as,[g])  -> Implies (And $ map initiate as) $ initiate g
-  (as,gs)   -> Implies (And $ map initiate as) $ And $ map initiate gs
 
   where
     assumption = \case
@@ -190,6 +142,86 @@ join fs = case partition (assumption . fst) fs of
       Assume {}       -> True
       AlwaysAssume {} -> True
       _               -> False
+
+--------------------------------------------------------------------------------
+
+resolveImports
+  :: Maybe FilePath -> [(FilePath, ExprPos)] -> String -> IO (Either Error PD.Specification)
+
+resolveImports specPath ls str = case parse str of
+  Left err   -> return $ Left err
+  Right spec -> loadImports spec
+
+  where
+    loadImports spec = case PD.imports spec of
+      [] -> return $ Right spec
+      (path, name, p1, _):xr ->
+        resolvePath path
+        >>= \case
+          Nothing ->
+            return $ genericError $
+            "Import path resolution failed: import path was: \"" ++ path ++ "\" in \"" ++ importer ++ "\""
+          Just path' ->
+            if any ((== path') . fst) ls
+            then
+              let (x, p) : _ = filter ((== path') . fst) ls
+              in return $ errCircularImp [(path', p1), (x, p)] p
+            else do
+              exists <- doesFileExist path'
+              if not exists
+              then
+                return $ genericError $
+                "Imported file does not exist \"" ++ path' ++ "\" (import path was: \"" ++ path ++ "\" in \"" ++ importer ++ "\")"
+              else
+                readFile path'
+                >>= resolveImports (Just path') ((path', p1 { srcPath = Just path' }):ls)
+                >>= \case
+                  Left err    -> return $ Left err
+                  Right spec' ->
+                    loadImports PD.Specification
+                      { imports = xr
+                      , definitions =
+                          map
+                            (updB path' . fmap ((name ++ ".") ++))
+                            (PD.definitions spec')
+                          ++ PD.definitions spec
+                      , sections =
+                          map
+                            (second (upd path' . fmap ((name ++ ".") ++)))
+                            (PD.sections spec')
+                          ++ PD.sections spec
+                      }
+
+    resolvePath path = do
+      let combinedPath = case specPath of
+            Nothing -> path
+            Just specPath ->
+              if isAbsolute specPath
+              then specPath
+              else combine (takeDirectory specPath) path
+      exists <- doesPathExist combinedPath
+      if exists
+      then Just <$> canonicalizePath combinedPath
+      else return Nothing
+
+    importer = fromMaybe "STDIN" specPath
+
+    updE path = \case
+      GuardedBinding xs    -> GuardedBinding $ map (upd path) xs
+      PatternBinding x y   -> PatternBinding (upd path x) (upd path y)
+      SetBinding x         -> SetBinding $ upd path x
+      RangeBinding x g y h -> RangeBinding (upd path x) g (upd path y) h
+
+    updB path Binding{..} =
+      Binding
+        { bIdent = bIdent
+        , bArgs = map (second (\x -> x { srcPath = Just path })) bArgs
+        , bPos = bPos { srcPath = Just path }
+        , bVal = updE path bVal
+        }
+
+    upd path e =
+      applySub (upd path) e { srcPos = (srcPos e) { srcPath = Just path } }
 
 -----------------------------------------------------------------------------
 
@@ -231,15 +263,15 @@ symtable RD.Specification{..} =
       $ toList
       $ foldl extractOutputAssignments empty es
 
-
     idT i = {-updType si so i $ -} fromMaybe (TPoly i) $ IM.lookup i types
 
     -- list of identifiers sorted by dependencies
-    is' = topSort
-         $ transposeG
-         $ buildG (minkey, maxkey)
-         $ concatMap (\(i,xs) -> map (i,) xs)
-         $ IM.toAscList dependencies
+    is' =
+      topSort
+      $ transposeG
+      $ buildG (minkey, maxkey)
+      $ concatMap (\(i,xs) -> map (i,) xs)
+      $ IM.toAscList dependencies
 
     -- update mapping accoording to dependency order
     uD = (IM.fromList $ zip is' [minkey, minkey + 1 .. maxkey])
@@ -259,15 +291,15 @@ symtable RD.Specification{..} =
         aT = tEn so si a $ idT a
         bT = tEn so si b $ idT b
       in if
-        | aT /= bT   -> compare aT bT
+        | aT /= bT  -> compare aT bT
         | otherwise -> cmpD a b
 
     -- sorted identifiers by above ordering
     is = sortBy cmp $ IM.keys names
- in
-     SymbolTable
-   $ A.array (minkey, maxkey)
-   $ map (\i -> (i, entry oa si so i)) is
+  in
+    symbolTable
+      $ A.array (minkey, maxkey)
+      $ map (\i -> (i, entry oa si so i)) is
 
   where
     getExprs = \case
@@ -284,9 +316,11 @@ symtable RD.Specification{..} =
       in
         IdRec
           { idName     = assert (IM.member i names) (names IM.! i)
-          , idPos      = assert (IM.member i positions) (positions IM.! i)
+          , idPos      = assert (IM.member i positions) $
+                           Just (positions IM.! i)
           , idArgs     = as
-          , idBindings = assert (IM.member i bindings) (bindings IM.! i)
+          , idBindings = assert (IM.member i bindings) $
+                           Just (bindings IM.! i)
           , idType     = t
           , idDeps     = if
               | member i so -> case IM.lookup i oa of
@@ -300,8 +334,8 @@ symtable RD.Specification{..} =
                 | member i si -> Input
                 | predicate t -> Predicate
                 | otherwise   -> case t of
-                    TSignal {}                -> Constant
-                    _                         -> Function
+                    TSignal {} -> Constant
+                    _          -> Function
           }
 
     predicate = \case
@@ -335,7 +369,7 @@ extractInputs sc tt a e@Expr{..} = case expr of
   BaseId i -> case assert (IM.member i tt) (tt IM.! i) of
     TSignal {} -> case IM.lookup i sc of
       Nothing -> insert i a
-      Just ()  -> a
+      Just () -> a
     _          -> a
   _             -> foldl (extractInputs sc tt) a $ subExpressions e
 
@@ -345,8 +379,8 @@ extractOutputs
   :: Set Int -> Expr Int -> Set Int
 
 extractOutputs a e@Expr{..} = case expr of
-  BaseUpd _ x   -> insert x a
-  _             -> foldl extractOutputs a $ subExpressions e
+  BaseUpd _ x -> insert x a
+  _           -> foldl extractOutputs a $ subExpressions e
 
 -----------------------------------------------------------------------------
 

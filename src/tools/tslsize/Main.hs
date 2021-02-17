@@ -1,17 +1,13 @@
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Main
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- Returns the size of a TSL formula induced by a TSL specification.
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    RecordWildCards
-
-  #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -----------------------------------------------------------------------------
 
@@ -21,50 +17,17 @@ module Main
 
 -----------------------------------------------------------------------------
 
-import TSL
-  ( Specification(..)
-  , fromTSL
-  , tslSize
-  )
+import EncodingUtils (initEncoding)
 
-import System.Directory
-  ( doesFileExist
-  )
+import ArgParseUtils (parseMaybeFilePath)
 
-import System.Console.ANSI
-  ( SGR(..)
-  , ConsoleLayer(..)
-  , ColorIntensity(..)
-  , Color(..)
-  , setSGR
-  , hSetSGR
-  )
+import PrintUtils (Color(..), ColorIntensity(..), cPutOut, cPutOutLn)
 
-import System.Environment
-  ( getArgs
-  )
+import FileUtils (loadTSL)
 
-import System.IO
-  ( stderr
-  , hPrint
-  , hPutStr
-  , hPutStrLn
-  )
+import TSL (Specification(..), size, toFormula)
 
-import GHC.IO.Encoding
-  ( utf8
-  , setLocaleEncoding
-  , setFileSystemEncoding
-  , setForeignEncoding
-  )
-
-import System.FilePath.Posix
-  ( takeFileName
-  )
-
-import System.Exit
-  ( exitFailure
-  )
+import System.FilePath.Posix (takeFileName)
 
 -----------------------------------------------------------------------------
 
@@ -72,59 +35,20 @@ main
   :: IO ()
 
 main = do
-  setLocaleEncoding utf8
-  setFileSystemEncoding utf8
-  setForeignEncoding utf8
-  args <- getArgs
+  initEncoding
 
-  case args of
-    [file] -> do
-      exists <- doesFileExist file
+  input <- parseMaybeFilePath
+            ("tslsize", "Returns the size of a TSL formula induced by a TSL specification.")
 
-      if not exists then do
-        cError Yellow "File not found: "
-        cErrorLn White file
-        resetColors
-        exitFailure
-      else do
-        str <- readFile file
-        case fromTSL str of
-          Left err -> do
-            cPutStr Red "invalid: "
-            cPutStrLn White file
-            resetColors
-            hPrint stderr err
-            hPutStrLn stderr ""
-          Right Specification{..}  -> do
-            cPutStr Yellow $ takeFileName file
-            cPutStrLn White ":"
-            cPutStr White "  size:       "
-            cPutStrLn White $ show $ tslSize formula
-            resetColors
-    _ -> do
-      cError Yellow "Usage: "
-      cErrorLn White "tslsize <file>"
-      resetColors
-      exitFailure
+  Specification{..} <- loadTSL input
 
-  where
-    cPutStr c str = do
-      setSGR [ SetColor Foreground Vivid c ]
-      putStr str
+  case input of
+    Just file -> do
+      cPutOut Vivid Yellow $ takeFileName file
+      cPutOutLn Vivid White ":"
+    Nothing -> return ()
 
-    cPutStrLn c str = do
-      setSGR [ SetColor Foreground Vivid c ]
-      putStrLn str
-
-    cError c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
-      hPutStr stderr str
-
-    cErrorLn c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
-      hPutStrLn stderr str
-
-    resetColors =
-      hSetSGR stderr [ Reset ]
+  cPutOutLn Vivid White $
+    "size:     " ++ show (size $ toFormula assumptions guarantees)
 
 -----------------------------------------------------------------------------

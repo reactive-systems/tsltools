@@ -1,21 +1,17 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Writer.Applicative
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- Code generation for Applicative FRP.
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    RecordWildCards
-  , LambdaCase
-  , FlexibleContexts
-  , ViewPatterns
-  , MultiWayIf
-
-  #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE MultiWayIf       #-}
+{-# LANGUAGE RecordWildCards  #-}
+{-# LANGUAGE ViewPatterns     #-}
 
 -----------------------------------------------------------------------------
 
@@ -25,33 +21,28 @@ module TSL.Writer.Applicative
 
 -----------------------------------------------------------------------------
 
-import Control.Exception
-  ( assert
-  )
+import Control.Exception (assert)
 
 import TSL.CFM
-  ( Output
-  , Wire
+  ( CFM(..)
+  , Output
   , Term
   , Type(..)
-  , CFM(..)
+  , Wire
   , constants
-  , predicates
   , functions
-  , termType
   , prType
+  , predicates
+  , termType
   )
 
-import TSL.Aiger
-  ( Circuit(..)
-  , Invertible(..)
-  )
+import Data.Maybe (mapMaybe)
 
-import qualified TSL.Aiger as Circuit
-  ( Wire(..)
-  , inputs
-  , outputs
-  )
+import Data.Set (fromList, toList)
+
+import TSL.Aiger (Circuit(..), Invertible(..))
+
+import qualified TSL.Aiger as Circuit (Wire(..), inputs, outputs)
 
 -----------------------------------------------------------------------------
 
@@ -67,147 +58,204 @@ implement
   -> String
 
 implement mName fName cfm@CFM{..} =
-  unlines
-    [ replicate 77 '-'
-    , "-- |"
-    , "-- Module : " ++ mName
-    , "--"
-    , "-- Applicative Interface for " ++ fName ++ "."
-    , "--"
-    , replicate 77 '-'
-    , ""
-    , "{-# LANGUAGE Rank2Types #-}"
-    , ""
-    , replicate 77 '-'
-    , ""
-    , "module " ++ mName
-    , "  ( " ++ fName
-    , "  ) where"
-    , ""
-    , replicate 77 '-'
-    , ""
-    , fName
-    , "  :: Applicative signal"
-    , "     -- cell implementation"
-    , "  => (forall poly. poly -> signal poly -> signal poly)"
-    , concatMap prTermType (filter isPredicate (constants cfm)) ++
-      concatMap prTermType (predicates cfm) ++
-      concatMap prTermType (filter (not . isPredicate) (constants cfm)) ++
-      concatMap prTermType (functions cfm) ++
-      concatMap prInitType outputs ++
-      concatMap
-        prInputTypes
-        (filter (not . loopedInput) inputs) ++
-      prOutputType outputs
-    , ""
-    , fName
-    , "  cell"
-    , concatMap
-        ((++ "\n") . ("  p_" ++) . termName)
-        (filter isPredicate $ constants cfm)
-      ++
-      concatMap
-        ((++ "\n") . ("  p_" ++) . termName)
-        (predicates cfm)
-      ++
-      concatMap
-        ((++ "\n") . ("  f_" ++) . termName)
-        (filter (not . isPredicate) $ constants cfm)
-      ++
-      concatMap
-        ((++ "\n") . ("  f_" ++) . termName)
-        (functions cfm)
-      ++
-      concatMap
-        ((++ "\n") . ("  i_" ++) . outputName)
-        outputs
-      ++
-      concatMap
-        ((++ "\n") . ("  s_" ++) . inputName)
-        (filter (not . loopedInput) inputs)
-    , "  ="
-    , ""
-    , "  let"
-    , concatMap prOutputCell outputs
-    , concatMap (prTerm' cfm) terms
-    , "    " ++ prTuple (map (("cout" ++) . show) os) ++ " ="
-    , "      controlCircuit"
-    , "        cell"
-    , concatMap
-        ((++ "\n") . ("        " ++) . prWire cfm . controlInputWire)
-        is
-    , concatMap prSwitch outputs ++ "  in"
-    , "    " ++
-      prTuple (map (("o_" ++) . outputName) outputs)
-    , ""
-    , replicate 77 '-'
-    , concatMap (prSwitchImpl cfm) outputs
-    ]
-    ++
-    prCircuitImpl control
-    ++
-    replicate 77 '-'
+  let
+    directInputs =
+      filter (not . loopedInput) inputs
 
-  where
     is = Circuit.inputs control
     os = Circuit.outputs control
 
+    ts =
+      filter isPredicate (constants cfm)
+      ++ predicates cfm
+      ++ filter (not . isPredicate) (constants cfm)
+      ++ functions cfm
+  in
+    unlines
+      [ replicate 77 '-'
+      , "-- |"
+      , "-- Module : " ++ mName
+      , "--"
+      , "-- Applicative Interface for " ++ fName ++ "."
+      , "--"
+      , replicate 77 '-'
+      , ""
+      , "{-# LANGUAGE"
+      , ""
+      , "    Rank2Types"
+      , "  , RecordWildCards"
+      , "  , DuplicateRecordFields"
+      , ""
+      , "  #-}"
+      , ""
+      , replicate 77 '-'
+      , ""
+      , "module " ++ mName
+      , "  ( Input(..)"
+      , "  , Output(..)"
+      , "  , Functions(..)"
+      , "  , InitialState(..)"
+      , "  , " ++ fName
+      , "  ) where"
+      , ""
+      , replicate 77 '-'
+      , ""
+      , "data Input " ++
+        if null directInputs then "=" else
+          "signal " ++
+          prPTypes (map (wireType . inputWire) directInputs) ++
+          " ="
+      , "  Input"
+      , if null directInputs then "" else
+          "    { " ++ inputDecl (head directInputs) ++
+          concatMap (("\n    , " ++) . inputDecl) (tail directInputs) ++
+          "\n    }\n"
+      , replicate 77 '-'
+      , ""
+      , "data Output " ++
+        if null outputs then "=" else
+          "signal " ++
+          prPTypes (map (wireType . fst . head . outputSwitch) outputs) ++
+          " ="
+      , "  Output"
+      , if null outputs then "" else
+          "    { " ++ outputDecl (head outputs) ++
+          concatMap (("\n    , " ++) . outputDecl) (tail outputs) ++
+          "\n    }\n"
+      , replicate 77 '-'
+      , ""
+      , "data Functions " ++
+        if null ts then "=" else
+          prPTypes types ++ " ="
+      , "  Functions"
+      , if null ts then "" else
+          "    { " ++ functionDecl (head ts) ++
+          concatMap (("\n    , " ++) . functionDecl) (tail ts) ++
+          "\n    }\n"
+      , replicate 77 '-'
+      , ""
+      , "data InitialState " ++
+        if null outputs then "=" else
+          prPTypes (map (wireType . fst . head . outputSwitch) outputs) ++
+          " ="
+      , "  InitialState"
+      , if null outputs then "" else
+          "    { " ++ stateDecl (head outputs) ++
+          concatMap (("\n    , " ++) . stateDecl) (tail outputs) ++
+          "\n    }\n"
+      , replicate 77 '-'
+      , ""
+      , "data ControlIn signal ="
+      , "  ControlIn"
+      , if null is then "" else
+          "    { controlIn" ++ show (head is) ++ " :: signal Bool\n" ++
+          concatMap ((++ " :: signal Bool\n") .
+                     ("    , controlIn" ++) . show) (tail is) ++
+          "    }\n"
+      , replicate 77 '-'
+      , ""
+      , "data ControlOut signal ="
+      , "  ControlOut"
+      , if null is then "" else
+          "    { controlOut" ++ show (head os) ++ " :: signal Bool\n" ++
+          concatMap ((++ " :: signal Bool\n") .
+                     ("    , controlOut" ++) . show) (tail os) ++
+          "    }\n"
+      , replicate 77 '-'
+      , ""
+      , fName
+      , "  :: Applicative signal"
+      , "  => (forall poly. poly -> signal poly -> signal poly)"
+      , "  -> Functions" ++
+        if null ts then "" else " " ++ prPTypes types
+      , "  -> InitialState" ++
+        if null outputs then "" else " " ++
+          prPTypes (map (wireType . fst . head . outputSwitch) outputs)
+      , "  -> Input" ++
+        if null directInputs then "" else " signal " ++
+          prPTypes (map (wireType . inputWire) directInputs)
+      , "  -> " ++
+        if null outputs then "Output" else "Output signal " ++
+          prPTypes (map (wireType . fst . head . outputSwitch) outputs)
+      , ""
+      , fName ++ " cell Functions{..} InitialState{..} Input{..} ="
+      , "  let"
+      , concatMap prOutputCell outputs
+      , concatMap (prTerm' cfm) terms
+      , "    ControlOut{..} ="
+      , "      controlCircuit cell"
+      , "        ControlIn"
+      , if null is then "" else
+          "          { controlIn0 = " ++
+          prWire cfm (controlInputWire $ head is) ++
+          concatMap
+            (\(n,x) -> "\n          , controlIn" ++ show n ++
+                      " = " ++ prWire cfm (controlInputWire x))
+            (zip [1 :: Int,2..] $ tail is) ++
+          "\n          }\n" ++
+        concatMap prSwitch outputs ++ "  in"
+      , "    Output"
+      , if null outputs then "" else
+          "      { " ++ outputName (head outputs) ++ " = " ++
+          outputName (head outputs) ++ "Out\n" ++
+          concatMap
+            (\x -> "      , " ++ outputName x ++
+                  " = " ++ outputName x ++ "Out\n")
+            (tail outputs) ++
+          "      }\n"
+      , replicate 77 '-'
+      , concatMap (prSwitchImpl cfm) outputs
+      ]
+      ++
+      prCircuitImpl control
+      ++
+      replicate 77 '-'
+
+  where
+    inputDecl i =
+      inputName i ++ " :: signal "
+      ++ prT (wireType $ inputWire i)
+
+    outputDecl o =
+      outputName o ++ " :: signal "
+      ++ prT (wireType $ fst $ head $ outputSwitch o)
+
+    functionDecl f =
+      termName f ++ " :: " ++ prChain (termType cfm f)
+
+    stateDecl o =
+      outputName o ++ " :: "
+      ++ prT (wireType $ fst $ head $ outputSwitch o)
+
     prOutputCell o =
-      "    c_" ++ outputName o ++
-      " = cell i_" ++ outputName o ++
-      " o_" ++ outputName o ++ "\n"
-
-    prOutputType = \case
-      []     ->
-        "     -- no output\n" ++
-        "  -> signal ()"
-      [x]    ->
-        "     -- " ++ outputName x ++ " (output)\n" ++
-        "  -> signal " ++ prResultType x
-      (x:xr) ->
-        "     -- outputs\n" ++
-        "  -> ( -- " ++ outputName x ++ "\n" ++
-        "       signal " ++ prResultType x ++ "\n" ++
-        concatMap prO xr ++
-        "     )"
-
-    prO o =
-      "     , -- " ++ outputName o ++ "\n" ++
-      "       signal " ++ prResultType o ++ "\n"
-
-    prInputTypes i =
-      "     -- " ++ inputName i ++ " (input)\n" ++
-      "  -> signal " ++ prT (wireType $ inputWire i) ++ "\n"
-
-    prInitType o =
-      "     -- initial value: " ++
-      outputName o ++ "\n" ++
-      "  -> " ++ prResultType o ++ "\n"
-
-    prResultType =
-      prT . wireType . fst . head . outputSwitch
+      "    " ++ outputName o ++
+      "Cell = cell " ++ outputName o ++
+      " " ++ outputName o ++ "Out\n"
 
     prSwitch o =
-      "    o_" ++ outputName o ++ " =\n" ++
+      "\n    " ++ outputName o ++ "Out =\n" ++
       "      " ++ outputName o ++ "Switch\n" ++
       concatMap prChoice (outputSwitch o)
 
     prChoice (w,o) =
       "        " ++ prWire cfm w ++ "\n" ++
-      "        cout" ++ show o ++ "\n"
-
-    prTermType t =
-      "     -- " ++ termName t ++ "\n" ++
-      "  -> " ++ prChain (termType cfm t) ++ "\n"
+      "        controlOut" ++ show o ++ "\n"
 
     prChain = \case
       []   -> assert False undefined
       [t]  -> prT t
-      t:tr -> "(" ++ prT t ++ concatMap ((" -> " ++) . prT) tr ++ ")"
+      t:tr -> prT t ++ concatMap ((" -> " ++) . prT) tr
+
+    prPTypes =
+      unwords . map prT . toList . fromList . mapMaybe filterP
 
     prT = \case
       Boolean -> "Bool"
       t       -> prType t
+
+    filterP = \case
+      Boolean -> Nothing
+      t       -> Just t
 
 -----------------------------------------------------------------------------
 
@@ -254,118 +302,98 @@ prCircuitImpl
   :: Circuit ->  String
 
 prCircuitImpl Circuit{..} =
-  unlines
-    [ "controlCircuit"
-    , "  :: Applicative signal"
-    , "     -- cell implementation"
-    , "  => (Bool -> signal Bool -> signal Bool)"
-    , "     -- inputs"
-    , unlines
-        ( replicate
-            (length inputs)
-            "  -> signal Bool"
-        ) ++
-      "     -- outputs"
-    , "  -> ( signal Bool"
-    , unlines
-        ( replicate
-            (length outputs - 1)
-            "     , signal Bool"
-        ) ++
-      "     )"
-    , ""
-    , "controlCircuit cell" ++
-      concatMap ((" cin" ++) . show) inputs ++
-      " ="
-    , "  let"
-    , concatMap prLatch latches
-      ++ concatMap prGate gates
-      ++ prOutputs
-    , let
-        hasLatches   = not $ null $ latches
-        hasGates     = not $ null $ gates
-        hasInverters =
-            any isNeg (map outputWire outputs)
-          || any isNeg (map latchInput latches)
-          || any isNeg (map gateInputA gates)
-          || any isNeg (map gateInputB gates)
-      in
-        if hasLatches || hasGates || hasInverters
-        then
-          "\n  where" ++
-          (if hasLatches
-           then "\n    _lat_ = cell False"
-           else "") ++
-          (if hasGates
-           then "\n    _and_ x y = (&&) <$> x <*> y"
-           else "") ++
-          (if hasInverters
-           then "\n    _not_ = fmap not"
-           else "") ++
-          "\n"
-        else ""
-    ]
+  let
+    (ls, ls') = unzip $ map latchDecl latches
+    (os, os') = unzip $
+      map (\o -> polarized False o 'o' $ outputWire o) outputs
+    gs = concatMap gateDecl gates
+    ds = concat ls' ++ concat os' ++ gs
+  in
+    unlines
+      [ "controlCircuit"
+      , "  :: Applicative signal"
+      , "  => (Bool -> signal Bool -> signal Bool)"
+      , "  -> ControlIn signal -> ControlOut signal"
+      , ""
+      , "controlCircuit cell ControlIn{..} ="
+      , "  let" ++
+        (if null ls then "" else
+          concatMap ("\n    " ++) ls) ++
+        (if null ds then "" else
+          concatMap ("\n    " ++) ds ++ "\n  in")
+      , "    ControlOut"
+      , if null os then "" else
+          "      { controlOut0 = " ++ head os ++
+          concatMap
+            (\(i,x) -> "\n      , controlOut" ++ show i ++
+                      " = " ++ x) (zip [1 :: Int,2..] $ tail os) ++
+          "\n      }"
+      , let
+          hasLatches   = not $ null latches
+          hasGates     = not $ null gates
+          hasInverters =
+              any (isNeg . outputWire) outputs
+            || any (isNeg . latchInput) latches
+            || any (isNeg . gateInputA) gates
+            || any (isNeg . gateInputB) gates
+        in
+          if hasLatches || hasGates || hasInverters
+          then
+            "\n  where" ++
+            (if hasLatches
+             then "\n    _lat_ = cell False"
+             else "") ++
+            (if hasGates
+             then "\n    _and_ x y = (&&) <$> x <*> y"
+             else "") ++
+            (if hasInverters
+             then "\n    _not_ = fmap not"
+             else "") ++
+            "\n"
+          else ""
+      ]
 
   where
     isNeg = \case
-      Positive _                  -> False
+      Positive _                   -> False
       Negative (Circuit.wire -> 0) -> False
-      Negative _                  -> True
+      Negative _                   -> True
 
     prWire' x
-      | Circuit.wire x <= length inputs = "cin" ++ show (Circuit.wire x - 1)
+      | Circuit.wire x <= length inputs = "controlIn" ++ show (Circuit.wire x - 1)
       | otherwise                      = 'w' : show x
 
-    polarized i c = \case
+    polarized b i c = \case
       Positive (Circuit.wire -> 0) ->
-        ("(pure True)", "")
+        (if b then "(pure True)" else "pure True", [])
       Negative (Circuit.wire -> 0) ->
-        ("(pure False)", "")
+        (if b then "(pure False)" else "pure False", [])
       Positive w ->
-        ( prWire' w, "")
+        ( prWire' w, [])
       Negative w ->
         ( c : show i
-        , "    " ++ [c] ++ show i
-          ++ " = _not_ " ++ prWire' w ++ "\n"
+        , [[c] ++ show i ++ " = _not_ " ++ prWire' w]
         )
 
-    prLatch l =
+    latchDecl l =
       let
         iw = latchInput l :: Invertible Circuit.Wire
         ow = latchOutput l :: Circuit.Wire
 
-        (vx, x) = polarized ow 'x' iw
+        (vx, d) = polarized True ow 'x' iw
       in
-        x ++ "    " ++ prWire' ow ++ " = _lat_ " ++ vx ++ "\n"
+        (prWire' ow ++ " = _lat_ " ++ vx, d)
 
-    prGate g =
+    gateDecl g =
       let
         iwA = gateInputA g :: Invertible Circuit.Wire
         iwB = gateInputB g :: Invertible Circuit.Wire
         ow = gateOutput g :: Circuit.Wire
 
-        (va, a) = polarized ow 'a' iwA
-        (vb, b) = polarized ow 'b' iwB
+        (va, a) = polarized True ow 'a' iwA
+        (vb, b) = polarized True ow 'b' iwB
       in
-        a ++ b ++ "    " ++ prWire' ow
-        ++ " = _and_ " ++ va ++ " " ++ vb ++ "\n"
-
-    prOutputs =
-      let
-        (os, xs) =
-          unzip $ map (\o -> polarized o 'o' $ outputWire o) outputs
-      in
-        concat xs ++ "  in\n    " ++ prTuple os
-
------------------------------------------------------------------------------
-
-prTuple
-  :: [String] -> String
-
-prTuple = \case
-  []   -> "()"
-  [x]  -> x
-  x:xr -> "(" ++ x ++ concatMap ((',':) . (' ':)) xr ++ ")"
+        a ++ b ++ [prWire' ow ++ " = _and_ " ++ va ++ " " ++ vb]
 
 -----------------------------------------------------------------------------
 
@@ -380,10 +408,8 @@ prTerm' cfm@CFM{..} t =
        if
          | termName t == "true"  -> "True"
          | termName t == "false" -> "False"
-         | isPredicate t        -> "p_" ++ termName t
-         | otherwise            -> "f_" ++ termName t
+         | otherwise             -> termName t
      (x:xr) ->
-       (if isPredicate t then "p_" else "f_") ++
        termName t ++
        " <$> " ++
        prWire cfm x ++
@@ -398,8 +424,8 @@ prWire
 prWire CFM{..} w =
   case wireSource w of
     Left i
-      | loopedInput i -> "c_" ++ inputName i
-      | otherwise     -> "s_" ++ inputName i
+      | loopedInput i -> inputName i ++ "Cell"
+      | otherwise     -> inputName i
     Right t
       | isPredicate t -> 'b' : show w
       | otherwise     -> 'w' : show w

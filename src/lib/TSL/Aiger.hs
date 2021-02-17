@@ -1,17 +1,13 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Aiger
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- Aiger Circuit Representation.
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    LambdaCase
-
-  #-}
+{-# LANGUAGE LambdaCase #-}
 
 -----------------------------------------------------------------------------
 
@@ -28,57 +24,35 @@ module TSL.Aiger
 
 -----------------------------------------------------------------------------
 
-import Data.Array
-  ( array
-  , (!)
-  )
+import Data.Array (array, (!))
 
-import Data.Array.ST
-  ( newListArray
-  , writeArray
-  , runSTArray
-  )
+import Data.Array.ST (newListArray, runSTArray, writeArray)
 
-import TSL.Error
-  ( Error
-  , parseError
-  , errFormat
-  )
+import TSL.Error (Error, errFormat, parseError)
 
-import Control.Monad
-  ( unless
-  , void
-  )
+import Control.Monad (unless, void)
 
-import Control.Arrow
-  ( (>>>)
-  , second
-  )
+import Control.Arrow (second, (>>>))
 
-import Data.Graph
-  ( topSort
-  , buildG
-  )
+import Data.Graph (buildG, topSort)
 
-import Text.Parsec.String
-  ( Parser
-  )
+import Text.Parsec.String (Parser)
 
 import Text.Parsec
-  ( manyTill
+  ( anyChar
+  , char
+  , count
+  , digit
+  , eof
+  , lookAhead
   , many
   , many1
-  , count
-  , lookAhead
-  , try
-  , string
+  , manyTill
   , newline
-  , anyChar
-  , char
-  , digit
   , oneOf
   , parse
-  , eof
+  , string
+  , try
   )
 
 -----------------------------------------------------------------------------
@@ -395,7 +369,7 @@ aagParser = do
     pWire x
       | x == 0         = Negative $ Wire 0
       | x == 1         = Positive $ Wire 0
-      | x `mod` 2 == 0 = Positive $ Wire (x `div` 2)
+      | even x        = Positive $ Wire (x `div` 2)
       | otherwise     = Negative $ Wire (x `div` 2)
 
 -----------------------------------------------------------------------------
