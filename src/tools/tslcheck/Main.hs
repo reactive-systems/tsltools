@@ -1,10 +1,15 @@
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Main
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- Checks TSL specifications to be in a valid format.
 --
+-----------------------------------------------------------------------------
+
+{-# LANGUAGE LambdaCase     #-}
+{-# LANGUAGE NamedFieldPuns #-}
+
 -----------------------------------------------------------------------------
 
 module Main
@@ -13,44 +18,42 @@ module Main
 
 -----------------------------------------------------------------------------
 
-import TSL
-  ( fromTSL
-  )
+import EncodingUtils (initEncoding)
 
-import System.Directory
-  ( doesFileExist
-  , doesDirectoryExist
-  )
+import Data.Semigroup ((<>))
+import Options.Applicative
 
-import System.Console.ANSI
-  ( SGR(..)
-  , ConsoleLayer(..)
+import PrintUtils
+  ( Color(..)
   , ColorIntensity(..)
-  , Color(..)
-  , setSGR
-  , hSetSGR
+  , cPutMessageInput
+  , cPutOut
+  , cPutOutLn
+  , printErrLn
   )
 
-import System.Environment
-  ( getArgs
-  )
+import FileUtils (readContent)
 
-import System.IO
-  ( stderr
-  , hPrint
-  , hPutStr
-  , hPutStrLn
-  )
+import TSL (fromTSL)
 
-import GHC.IO.Encoding
-  ( utf8
-  , setLocaleEncoding
-  , setFileSystemEncoding
-  , setForeignEncoding
-  )
+import System.Directory (doesDirectoryExist, doesFileExist)
 
-import System.Exit
-  ( exitFailure
+import System.Exit (exitFailure, exitSuccess)
+
+-----------------------------------------------------------------------------
+
+newtype Configuration = Configuration
+  { input :: Maybe [FilePath]
+  } deriving (Eq, Ord)
+
+configParser :: Parser Configuration
+configParser = Configuration
+  <$> optional (some (strArgument (metavar "FILES...")))
+
+configParserInfo :: ParserInfo Configuration
+configParserInfo = info (configParser <**> helper)
+  (  fullDesc
+  <> header "tslcheck - checks TSL specifications to be in a valid format"
   )
 
 -----------------------------------------------------------------------------
@@ -59,70 +62,46 @@ main
   :: IO ()
 
 main = do
-  setLocaleEncoding utf8
-  setFileSystemEncoding utf8
-  setForeignEncoding utf8
-  args <- getArgs
+  initEncoding
 
-  if null args
-  then do
-    cError Yellow "Usage: "
-    cErrorLn White "tslcheck <files>"
-    resetColors
-    exitFailure
-  else
-    mapM_ checkFile args
+  Configuration{input} <- execParser configParserInfo
+
+  valid <- case input of
+    Nothing    -> checkInput Nothing
+    Just files -> and <$> mapM checkFile files
+
+  if valid
+  then exitSuccess
+  else exitFailure
 
   where
+    checkInput input =
+      readContent input
+      >>= fromTSL input
+      >>= \case
+        Left err -> do
+          cPutMessageInput Red "invalid" input
+          printErrLn err
+          return False
+        Right _  -> do
+          cPutMessageInput Green "valid" input
+          return True
+
     checkFile file = do
-
+      let input = Just file
       exists <- doesFileExist file
-
-      if not exists then do
-        dir <- doesDirectoryExist file
-
-        if dir
-        then do
-          cPutStr Yellow "directory: "
-          cPutStr White file
-          cPutStrLn Yellow " (skipping)"
+      if exists
+        then checkInput input
         else do
-          cError Red "Not found: "
-          cErrorLn White file
-
-        resetColors
-
-      else do
-        str <- readFile file
-        case fromTSL str of
-          Left err -> do
-            cPutStr Red "invalid: "
-            cPutStrLn White file
-            resetColors
-            hPrint stderr err
-            hPutStrLn stderr ""
-          Right _  -> do
-            cPutStr Green "valid: "
-            cPutStrLn White file
-            resetColors
-
-    cPutStr c str = do
-      setSGR [ SetColor Foreground Vivid c ]
-      putStr str
-
-    cPutStrLn c str = do
-      setSGR [ SetColor Foreground Vivid c ]
-      putStrLn str
-
-    cError c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
-      hPutStr stderr str
-
-    cErrorLn c str = do
-      hSetSGR stderr [ SetColor Foreground Vivid c ]
-      hPutStrLn stderr str
-
-    resetColors =
-      hSetSGR stderr [ Reset ]
+          dir <- doesDirectoryExist file
+          if dir
+            then do
+              cPutOut Vivid Yellow "directory: "
+              cPutOut Vivid White file
+              cPutOutLn Vivid Yellow " (skipping)"
+              return True
+            else do
+              cPutMessageInput Red "Not found" input
+              return False
 
 -----------------------------------------------------------------------------

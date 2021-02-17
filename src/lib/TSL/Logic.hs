@@ -1,83 +1,55 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Logic
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Module      :  TSL.Logic
+-- Maintainer  :  Felix Klein
 --
 -- TSL logic data type and utility functions.
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    LambdaCase
-
-  #-}
+{-# LANGUAGE LambdaCase #-}
 
 -----------------------------------------------------------------------------
 
 module TSL.Logic
-  ( SignalTerm(..)
+  ( Formula(..)
+  , SignalTerm(..)
   , FunctionTerm(..)
   , PredicateTerm(..)
-  , Formula(..)
+  , updates
+  , checks
+  , inputs
+  , outputs
+  , functions
+  , predicates
+  , symbols
+  , tslFormula
   , tlsfFormula
-  , tlsfPredicates
-  , tlsfUpdates
-  , readInput
-  , readOutput
-  , propInverseEscapeDescape
-  , propReadInput
-  , propReadOutput
+  , encodeInputAP
+  , encodeOutputAP
+  , decodeInputAP
+  , decodeOutputAP
   , exactlyOne
-  , tslSize
+  , size
   ) where
 
 -----------------------------------------------------------------------------
 
-import Data.Char
-  ( toLower
-  , isUpper
-  , toUpper
-  , chr
-  , ord
-  )
+import Data.Char (isUpper, toLower, toUpper)
 
-import Data.Set
-  ( empty
-  , elems
-  , insert
-  )
+import Data.Set (Set, difference, empty, insert, unions)
 
-import Control.Monad
-  ( void
-  )
+import qualified Data.Set as S (map)
 
-import TSL.Error
-  ( Error
-  , parseError
-  )
+import Control.Monad (void)
 
-import Text.Parsec
-  ( (<|>)
-  , eof
-  , parse
-  , char
-  , try
-  , string
-  , alphaNum
-  , lookAhead
-  )
+import TSL.Error (Error, parseError)
 
-import Text.Parsec.String
-  ( Parser
-  )
+import Text.Parsec (alphaNum, char, eof, lookAhead, parse, string, try, (<|>))
 
-import Test.QuickCheck
-  ( Arbitrary
-  , arbitrary
-  , choose
-  , listOf
-  )
+import Text.Parsec.String (Parser)
+
+import Test.QuickCheck (Arbitrary, arbitrary, choose)
 
 -----------------------------------------------------------------------------
 
@@ -190,77 +162,254 @@ data Formula a =
   | And [Formula a]
   | Or [Formula a]
   | Next (Formula a)
+  | Previous (Formula a)
   | Globally (Formula a)
   | Finally (Formula a)
+  | Historically (Formula a)
+  | Once (Formula a)
   | Until (Formula a) (Formula a)
   | Release (Formula a) (Formula a)
   | Weak (Formula a) (Formula a)
+  | Since (Formula a) (Formula a)
+  | Triggered (Formula a) (Formula a)
   deriving (Eq, Ord, Show)
 
 -----------------------------------------------------------------------------
 
 instance Functor Formula where
   fmap f = \case
-    TTrue       -> TTrue
-    FFalse      -> FFalse
-    Check t     -> Check $ fmap f t
-    Update s t  -> Update (f s) $ fmap f t
-    Not x       -> Not $ fmap f x
-    Implies x y -> Implies (fmap f x) $ fmap f y
-    Equiv x y   -> Equiv (fmap f x) $ fmap f y
-    And xs      -> And $ fmap (fmap f) xs
-    Or xs       -> Or $ fmap (fmap f) xs
-    Next x      -> Next $ fmap f x
-    Globally x  -> Globally $ fmap f x
-    Finally x   -> Finally $ fmap f x
-    Until x y   -> Until (fmap f x) $ fmap f y
-    Release x y -> Release (fmap f x) $ fmap f y
-    Weak x y    -> Weak (fmap f x) $ fmap f y
+    TTrue          -> TTrue
+    FFalse         -> FFalse
+    Check t        -> Check $ fmap f t
+    Update s t     -> Update (f s) $ fmap f t
+    Not x          -> Not $ fmap f x
+    Implies x y    -> Implies (fmap f x) $ fmap f y
+    Equiv x y      -> Equiv (fmap f x) $ fmap f y
+    And xs         -> And $ fmap (fmap f) xs
+    Or xs          -> Or $ fmap (fmap f) xs
+    Next x         -> Next $ fmap f x
+    Previous x     -> Previous $ fmap f x
+    Globally x     -> Globally $ fmap f x
+    Finally x      -> Finally $ fmap f x
+    Historically x -> Historically $ fmap f x
+    Once x         -> Once $ fmap f x
+    Until x y      -> Until (fmap f x) $ fmap f y
+    Release x y    -> Release (fmap f x) $ fmap f y
+    Weak x y       -> Weak (fmap f x) $ fmap f y
+    Since x y      -> Since (fmap f x) $ fmap f y
+    Triggered x y  -> Triggered (fmap f x) $ fmap f y
 
 instance Foldable Formula where
   foldr f a = \case
-    TTrue       -> a
-    FFalse      -> a
-    Check t     -> foldr f a t
-    Update s t  -> foldr f (f s a) t
-    Not x       -> foldr f a x
-    Implies x y -> foldr f (foldr f a x) y
-    Equiv x y   -> foldr f (foldr f a x) y
-    And xs      -> foldr (flip $ foldr f) a xs
-    Or xs       -> foldr (flip $ foldr f) a xs
-    Next x      -> foldr f a x
-    Globally x  -> foldr f a x
-    Finally x   -> foldr f a x
-    Until x y   -> foldr f (foldr f a x) y
-    Release x y -> foldr f (foldr f a x) y
-    Weak x y    -> foldr f (foldr f a x) y
+    TTrue          -> a
+    FFalse         -> a
+    Check t        -> foldr f a t
+    Update s t     -> foldr f (f s a) t
+    Not x          -> foldr f a x
+    Implies x y    -> foldr f (foldr f a x) y
+    Equiv x y      -> foldr f (foldr f a x) y
+    And xs         -> foldr (flip $ foldr f) a xs
+    Or xs          -> foldr (flip $ foldr f) a xs
+    Next x         -> foldr f a x
+    Previous x     -> foldr f a x
+    Globally x     -> foldr f a x
+    Finally x      -> foldr f a x
+    Historically x -> foldr f a x
+    Once x         -> foldr f a x
+    Until x y      -> foldr f (foldr f a x) y
+    Release x y    -> foldr f (foldr f a x) y
+    Weak x y       -> foldr f (foldr f a x) y
+    Since x y      -> foldr f (foldr f a x) y
+    Triggered x y  -> foldr f (foldr f a x) y
 
 -----------------------------------------------------------------------------
 
 -- | Returns the size of the given TSL formula.
 
-tslSize
+size
   :: Formula a -> Int
 
-tslSize = size' 0
+size = size' 0
 
   where
     size' a = \case
-      TTrue       -> a + 1
-      FFalse      -> a + 1
-      Check {}    -> a + 1
-      Update {}   -> a + 1
-      Not x       -> size' (a + 1) x
-      Implies x y -> size' (size' (a + 1) x) y
-      Equiv x y   -> size' (size' (a + 1) x) y
-      And xs      -> foldl size' (a + 1) xs
-      Or xs       -> foldl size' (a + 1) xs
-      Next x      -> size' (a + 1) x
-      Globally x  -> size' (a + 1) x
-      Finally x   -> size' (a + 1) x
-      Until x y   -> size' (size' (a + 1) x) y
-      Release x y -> size' (size' (a + 1) x) y
-      Weak x y    -> size' (size' (a + 1) x) y
+      TTrue          -> a + 1
+      FFalse         -> a + 1
+      Check {}       -> a + 1
+      Update {}      -> a + 1
+      Not x          -> size' (a + 1) x
+      Implies x y    -> size' (size' (a + 1) x) y
+      Equiv x y      -> size' (size' (a + 1) x) y
+      And xs         -> foldl size' (a + 1) xs
+      Or xs          -> foldl size' (a + 1) xs
+      Next x         -> size' (a + 1) x
+      Previous x     -> size' (a + 1) x
+      Globally x     -> size' (a + 1) x
+      Finally x      -> size' (a + 1) x
+      Historically x -> size' (a + 1) x
+      Once x         -> size' (a + 1) x
+      Until x y      -> size' (size' (a + 1) x) y
+      Release x y    -> size' (size' (a + 1) x) y
+      Weak x y       -> size' (size' (a + 1) x) y
+      Since x y      -> size' (size' (a + 1) x) y
+      Triggered x y  -> size' (size' (a + 1) x) y
+
+-----------------------------------------------------------------------------
+
+-- | Returns all predicate terms that are checked as part of the formula.
+
+checks
+  :: Ord a => Formula a -> Set (PredicateTerm a)
+
+checks = preds empty
+  where
+    preds s = \case
+      TTrue          -> s
+      FFalse         -> s
+      Update {}      -> s
+      Check p        -> insert p s
+      Not x          -> preds s x
+      Implies x y    -> preds (preds s x) y
+      Equiv x y      -> preds (preds s x) y
+      And xs         -> foldl preds s xs
+      Or xs          -> foldl preds s xs
+      Next x         -> preds s x
+      Previous x     -> preds s x
+      Globally x     -> preds s x
+      Finally x      -> preds s x
+      Historically x -> preds s x
+      Once x         -> preds s x
+      Until x y      -> preds (preds s x) y
+      Release x y    -> preds (preds s x) y
+      Weak x y       -> preds (preds s x) y
+      Since x y      -> preds (preds s x) y
+      Triggered x y  -> preds (preds s x) y
+
+-----------------------------------------------------------------------------
+
+-- | Returns all updates that appear in the formula
+
+updates
+  :: Ord a => Formula a -> Set (a, SignalTerm a)
+
+updates = upds empty
+  where
+    upds s = \case
+      TTrue          -> s
+      FFalse         -> s
+      Check {}       -> s
+      Update x t     -> insert (x,t) s
+      Not x          -> upds s x
+      Implies x y    -> upds (upds s x) y
+      Equiv x y      -> upds (upds s x) y
+      And xs         -> foldl upds s xs
+      Or xs          -> foldl upds s xs
+      Next x         -> upds s x
+      Previous x     -> upds s x
+      Globally x     -> upds s x
+      Finally x      -> upds s x
+      Historically x -> upds s x
+      Once x         -> upds s x
+      Until x y      -> upds (upds s x) y
+      Release x y    -> upds (upds s x) y
+      Weak x y       -> upds (upds s x) y
+      Since x y      -> upds (upds s x) y
+      Triggered x y  -> upds (upds s x) y
+
+-----------------------------------------------------------------------------
+
+outputs
+  :: Ord a => Formula a -> Set a
+
+outputs = S.map fst . updates
+
+-----------------------------------------------------------------------------
+
+inputs
+  :: Ord a => Formula a -> Set a
+
+inputs fml =
+  let
+    ps = checks fml
+    os = outputs fml
+    fs = S.map snd $ updates fml
+  in
+    difference (foldl sti (foldl pti empty ps) fs) os
+
+  where
+    pti a = \case
+      PApplied p s   -> sti (pti a p) s
+      BooleanInput x -> insert x a
+      _              -> a
+
+    fti a = \case
+      FApplied f s -> sti (fti a f) s
+      _            -> a
+
+    sti a = \case
+      PredicateTerm p -> pti a p
+      FunctionTerm f  -> fti a f
+      Signal x        -> insert x a
+
+-----------------------------------------------------------------------------
+
+functions
+  :: Ord a => Formula a -> Set a
+
+functions fml =
+  let
+    ps = checks fml
+    fs = S.map snd $ updates fml
+  in
+    foldl sti (foldl pti empty ps) fs
+
+  where
+    pti a = \case
+      PApplied p s      -> sti (pti a p) s
+      PredicateSymbol x -> insert x a
+      _                 -> a
+
+    fti a = \case
+      FApplied f s     -> sti (fti a f) s
+      FunctionSymbol x -> insert x a
+
+    sti a = \case
+      PredicateTerm p -> pti a p
+      FunctionTerm f  -> fti a f
+      _               -> a
+
+-----------------------------------------------------------------------------
+
+predicates
+  :: Ord a => Formula a -> Set a
+
+predicates fml =
+  let
+    ps = checks fml
+    fs = S.map snd $ updates fml
+  in
+    foldl sti (foldl pti empty ps) fs
+
+  where
+    pti a = \case
+      PApplied p s      -> sti (pti a p) s
+      PredicateSymbol x -> insert x a
+      _                 -> a
+
+    fti a = \case
+      FApplied f s -> sti (fti a f) s
+      _            -> a
+
+    sti a = \case
+      PredicateTerm p -> pti a p
+      FunctionTerm f  -> fti a f
+      _               -> a
+
+-----------------------------------------------------------------------------
+
+symbols
+  :: Ord a => Formula a -> Set a
+symbols = unions . ((<*>) [inputs, outputs, functions, predicates]) . pure
 
 -----------------------------------------------------------------------------
 
@@ -284,133 +433,160 @@ exactlyOne xs =
 
 -----------------------------------------------------------------------------
 
+-- | Converts a formula to TSL.
+
+tslFormula
+  :: (a -> String) -> Formula a -> String
+
+tslFormula sig = prFml
+  where
+    prFml = \case
+      TTrue          -> prT
+      FFalse         -> prF
+      Check p        -> prPT p
+      Update x s     -> "[" ++ sig x ++ " <- " ++ prST s ++ "]"
+      Not x          -> br $ "! " ++ prFml x
+      And xs         -> br $ concat $ insertInside " && " $ map prFml xs
+      Or xs          -> br $ concat $ insertInside " || " $ map prFml xs
+      Implies x y    -> br $ prFml x ++ " -> " ++ prFml y
+      Equiv x y      -> br $ prFml x ++ " <-> " ++ prFml y
+      Next x         -> br $ "X " ++ prFml x
+      Previous x     -> br $ "Y " ++ prFml x
+      Globally x     -> br $ "G " ++ prFml x
+      Finally x      -> br $ "F " ++ prFml x
+      Historically x -> br $ "H " ++ prFml x
+      Once x         -> br $ "O " ++ prFml x
+      Until x y      -> br $ prFml x ++ " U " ++ prFml y
+      Release x y    -> br $ prFml x ++ " R " ++ prFml y
+      Weak x y       -> br $ prFml x ++ " W " ++ prFml y
+      Since x y      -> br $ prFml x ++ " S " ++ prFml y
+      Triggered x y  -> br $ prFml x ++ " T " ++ prFml y
+
+    br = ('(':) . (++ ")")
+
+    insertInside a = \case
+      []   -> []
+      [x]  -> [x]
+      x:xr -> x : a : insertInside a xr
+
+    prT = "true"
+
+    prF = "false"
+
+    prPT = \case
+      BooleanTrue       -> prT
+      BooleanFalse      -> prF
+      BooleanInput x    -> sig x
+      PredicateSymbol x -> sig x
+      PApplied p s      -> br $ prPT p ++ " " ++ prST s
+
+    prST = \case
+      Signal x        -> sig x
+      PredicateTerm p -> prPT p
+      FunctionTerm f  -> case f of
+        FunctionSymbol x -> sig x ++ "()"
+        _                -> prFT f
+
+    prFT = \case
+      FunctionSymbol x -> sig x
+      FApplied f s     -> br $ prFT f ++ " " ++ prST s
+
+-----------------------------------------------------------------------------
+
 -- | Converts a formula to TLSF.
 
 tlsfFormula
-  :: Formula String -> String
+  :: (a -> String) -> Formula a -> String
 
-tlsfFormula = pr
+tlsfFormula f = pr
   where
     pr = \case
-      TTrue       -> "true"
-      FFalse      -> "false"
-      Check t     -> "p0" ++ tlsfPredicate t
-      Update s t  -> "u0" ++ escape s ++ "0" ++ tlsfSignal t
-      Not x       -> "! (" ++ pr x ++ ")"
-      Implies x y -> "(" ++ pr x ++ ") -> (" ++ pr y ++ ")"
-      Equiv x y   -> "(" ++ pr x ++ ") <-> (" ++ pr y ++ ")"
-      And []      -> "true"
-      And [x]     -> pr x
-      And (x:xr)  -> foldl (\a y -> "(" ++ a ++ ") && (" ++ pr y ++ ")") (pr x) xr
-      Or []       -> "false"
-      Or [x]      -> pr x
-      Or (x:xr)   -> foldl (\a y -> "(" ++ a ++ ") || (" ++ pr y ++ ")") (pr x) xr
-      Next x      -> "X (" ++ pr x ++ ")"
-      Globally x  -> "G (" ++ pr x ++ ")"
-      Finally x   -> "F (" ++ pr x ++ ")"
-      Until x y   -> "(" ++ pr x ++ ") U (" ++ pr y ++ ")"
-      Release x y -> "(" ++ pr x ++ ") R (" ++ pr y ++ ")"
-      Weak x y    -> "(" ++ pr x ++ ") W (" ++ pr y ++ ")"
+      TTrue          -> "true"
+      FFalse         -> "false"
+      Check t        -> encodeInputAP f t
+      Update s t     -> encodeOutputAP f s t
+      Not x          -> "! (" ++ pr x ++ ")"
+      Implies x y    -> "(" ++ pr x ++ ") -> (" ++ pr y ++ ")"
+      Equiv x y      -> "(" ++ pr x ++ ") <-> (" ++ pr y ++ ")"
+      And []         -> "true"
+      And [x]        -> pr x
+      And (x:xr)     -> foldl (\a y -> "(" ++ a ++ ") && (" ++ pr y ++ ")") (pr x) xr
+      Or []          -> "false"
+      Or [x]         -> pr x
+      Or (x:xr)      -> foldl (\a y -> "(" ++ a ++ ") || (" ++ pr y ++ ")") (pr x) xr
+      Next x         -> "X (" ++ pr x ++ ")"
+      Previous x     -> "Y (" ++ pr x ++ ")"
+      Globally x     -> "G (" ++ pr x ++ ")"
+      Finally x      -> "F (" ++ pr x ++ ")"
+      Historically x -> "H (" ++ pr x ++ ")"
+      Once x         -> "O (" ++ pr x ++ ")"
+      Until x y      -> "(" ++ pr x ++ ") U (" ++ pr y ++ ")"
+      Release x y    -> "(" ++ pr x ++ ") R (" ++ pr y ++ ")"
+      Weak x y       -> "(" ++ pr x ++ ") W (" ++ pr y ++ ")"
+      Since x y      -> "(" ++ pr x ++ ") S (" ++ pr y ++ ")"
+      Triggered x y  -> "(" ++ pr x ++ ") T (" ++ pr y ++ ")"
+
+-----------------------------------------------------------------------------
+
+encodeInputAP
+  :: (a -> String) -> PredicateTerm a -> String
+
+encodeInputAP f =
+  ("p0" ++) . encodePredicate f
+
+-----------------------------------------------------------------------------
+
+encodeOutputAP
+  :: (a -> String) -> a -> SignalTerm a -> String
+
+encodeOutputAP f s t =
+  "u0" ++ escape (f s) ++ "0" ++ encodeSignal f t
 
 -----------------------------------------------------------------------------
 
 -- | Converts a function term to a TLSF identifier.
 
-tlsfFunction
-  :: FunctionTerm String -> String
+encodeFunction
+  :: (a -> String) -> FunctionTerm a -> String
 
-tlsfFunction = \case
-  FunctionSymbol s -> escape s
-  FApplied t t'    -> tlsfFunction t ++ "0" ++ tlsfSignal t'
+encodeFunction f = \case
+  FunctionSymbol s -> escape (f s)
+  FApplied t t'    -> encodeFunction f t ++ "0" ++ encodeSignal f t'
 
 -----------------------------------------------------------------------------
 
 -- | Converts a predicate term to a TLSF identifier.
 
-tlsfPredicate
-  :: PredicateTerm String -> String
+encodePredicate
+  :: (a -> String) -> PredicateTerm a -> String
 
-tlsfPredicate = \case
+encodePredicate f = \case
   BooleanTrue       -> "bt"
   BooleanFalse      -> "bf"
-  BooleanInput s    -> "b0" ++ escape s
-  PredicateSymbol s -> "p0" ++ escape s
-  PApplied t t'     -> tlsfPredicate t ++ "0" ++ tlsfSignal t'
+  BooleanInput s    -> "b0" ++ escape (f s)
+  PredicateSymbol s -> "p0" ++ escape (f s)
+  PApplied t t'     -> encodePredicate f t ++ "0" ++ encodeSignal f t'
 
 -----------------------------------------------------------------------------
 
 -- | Conversts a signal term to a TLSF identifier.
 
-tlsfSignal
-  :: SignalTerm String -> String
+encodeSignal
+  :: (a -> String) -> SignalTerm a -> String
 
-tlsfSignal = \case
-  Signal s        -> escape s
-  FunctionTerm t  -> "f1d" ++ tlsfFunction t ++ "1b"
-  PredicateTerm t -> "p1d" ++ tlsfPredicate t ++ "1b"
-
------------------------------------------------------------------------------
-
--- | Adds all TLSF inputs, generated from a TSL formula, to the given
--- accumulator.
-
-tlsfPredicates
-  :: Ord a => Formula a -> [PredicateTerm a]
-
-tlsfPredicates = elems . tlsfPredicates' empty
-  where
-    tlsfPredicates' s = \case
-      TTrue       -> s
-      FFalse      -> s
-      Update {}   -> s
-      Check p     -> insert p s
-      Not x       -> tlsfPredicates' s x
-      Implies x y -> tlsfPredicates' (tlsfPredicates' s x) y
-      Equiv x y   -> tlsfPredicates' (tlsfPredicates' s x) y
-      And xs      -> foldl tlsfPredicates' s xs
-      Or xs       -> foldl tlsfPredicates' s xs
-      Next x      -> tlsfPredicates' s x
-      Globally x  -> tlsfPredicates' s x
-      Finally x   -> tlsfPredicates' s x
-      Until x y   -> tlsfPredicates' (tlsfPredicates' s x) y
-      Release x y -> tlsfPredicates' (tlsfPredicates' s x) y
-      Weak x y    -> tlsfPredicates' (tlsfPredicates' s x) y
-
------------------------------------------------------------------------------
-
--- | Adds all TLSF outputs, generated from a TSL formula, to the given
--- accumulator.
-
-tlsfUpdates
-  :: Ord a => Formula a -> [(a, SignalTerm a)]
-
-tlsfUpdates = elems . tlsfUpdates' empty
-  where
-    tlsfUpdates' s = \case
-      TTrue       -> s
-      FFalse      -> s
-      Check {}    -> s
-      Update x t  -> insert (x,t) s
-      Not x       -> tlsfUpdates' s x
-      Implies x y -> tlsfUpdates' (tlsfUpdates' s x) y
-      Equiv x y   -> tlsfUpdates' (tlsfUpdates' s x) y
-      And xs      -> foldl tlsfUpdates' s xs
-      Or xs       -> foldl tlsfUpdates' s xs
-      Next x      -> tlsfUpdates' s x
-      Globally x  -> tlsfUpdates' s x
-      Finally x   -> tlsfUpdates' s x
-      Until x y   -> tlsfUpdates' (tlsfUpdates' s x) y
-      Release x y -> tlsfUpdates' (tlsfUpdates' s x) y
-      Weak x y    -> tlsfUpdates' (tlsfUpdates' s x) y
+encodeSignal f = \case
+  Signal s        -> escape (f s)
+  FunctionTerm t  -> "f1d" ++ encodeFunction f t ++ "1b"
+  PredicateTerm t -> "p1d" ++ encodePredicate f t ++ "1b"
 
 -----------------------------------------------------------------------------
 
 -- | Parses the term structure from a generated TSLF input.
 
-readInput
+decodeInputAP
   :: String -> Either Error (PredicateTerm String)
 
-readInput str =
+decodeInputAP str =
   case parse (string "p0" >> predicateParser) "Format Error" str of
     Left err -> parseError err
     Right x  -> return x
@@ -419,10 +595,10 @@ readInput str =
 
 -- | Parses the term structure from a generated TSLF output.
 
-readOutput
+decodeOutputAP
   :: String -> Either Error (String, SignalTerm String)
 
-readOutput str =
+decodeOutputAP str =
   case parse outputParser "Format Error" str of
     Left err -> parseError err
     Right x  -> return x
@@ -518,6 +694,7 @@ identParser = ident ""
           '6' -> ident ('_' : a)
           '7' -> ident ('@' : a)
           '8' -> ident ('\'' : a)
+          '9' -> ident ('.' : a)
           c   -> ident (toUpper c : a)
         c   -> alphaNum >> ident (c:a)
 
@@ -539,82 +716,9 @@ escape = escape' []
         '_'  -> escape' ('6' : '2' : a) cr
         '@'  -> escape' ('7' : '2' : a) cr
         '\'' -> escape' ('8' : '2' : a) cr
+        '.'  -> escape' ('9' : '2' : a) cr
         _
           | isUpper c -> escape' (toLower c : '2' : a) cr
           | otherwise -> escape' (c : a) cr
-
------------------------------------------------------------------------------
-
-
-
------------------------------------------------------------------------------
------------------------------------------------------------------------------
--- Quick Check Properties
------------------------------------------------------------------------------
------------------------------------------------------------------------------
-
--- | String wrapper to create special arbitrary instance for identifiers.
-
-newtype Identifier = Identifier { identifier :: String }
-  deriving (Show, Ord, Eq)
-
------------------------------------------------------------------------------
-
--- | Arbitrary instance for identifiers.
-
-instance Arbitrary Identifier where
-  arbitrary = do
-    x <- choose (10 :: Int, 61 :: Int)
-    xr <- listOf $ choose (0 :: Int, 64 :: Int)
-    return $ Identifier $ map toC $ x : xr
-
-    where
-      toC c
-        | c < 10          = chr (ord '0' + c)
-        | c >= 10 && c < 36 = chr (ord 'a' + (c - 10))
-        | c >= 36 && c < 62 = chr (ord 'A' + (c - 36))
-        | c == 62          = '_'
-        | c == 63          = '@'
-        | otherwise       = '\''
-
------------------------------------------------------------------------------
-
--- | The functions 'escape' and 'descape' are inverse of each other.
-
-propInverseEscapeDescape
-  :: Identifier -> Bool
-
-propInverseEscapeDescape s =
-  case parse identParser "check" $ escape $ identifier s of
-    Right x -> x == identifier s
-    Left _  -> False
-
------------------------------------------------------------------------------
-
--- | The printer or TSL predicates to TLSF inputs and the corresponing
--- reader are compatible with each other.
-
-propReadInput
-  :: PredicateTerm Identifier -> Bool
-
-propReadInput p =
-  case readInput $ tlsfFormula $
-       Check $ fmap identifier p of
-    Right x -> x == fmap identifier p
-    Left _  -> False
-
------------------------------------------------------------------------------
-
--- | The printer or TSL updates to TLSF outputs and the corresponing
--- reader are compatible with each other.
-
-propReadOutput
-  :: (Identifier, SignalTerm Identifier) -> Bool
-
-propReadOutput (o,s) =
-  case readOutput $ tlsfFormula $
-       Update (identifier o) (fmap identifier s) of
-    Right x -> x == (identifier o, fmap identifier s)
-    Left _  -> False
 
 -----------------------------------------------------------------------------

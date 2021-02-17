@@ -1,17 +1,13 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  TLSF
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Module      :  TSL.TLSF
+-- Maintainer  :  Felix Klein
 --
 -- TLSF writer, which transforms a TSL formula into TLSF.
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    RecordWildCards
-
-  #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -----------------------------------------------------------------------------
 
@@ -21,36 +17,27 @@ module TSL.TLSF
 
 -----------------------------------------------------------------------------
 
-import TSL.SymbolTable
-  ( stName
-  )
+import TSL.SymbolTable (stName)
 
-import TSL.Specification
-  ( Specification(..)
-  )
+import TSL.Specification (Specification(..), toFormula)
 
 import TSL.Logic
   ( Formula(..)
   , SignalTerm(..)
-  , tlsfFormula
-  , tlsfPredicates
-  , tlsfUpdates
+  , checks
   , exactlyOne
+  , outputs
+  , tlsfFormula
+  , updates
   )
 
-import Data.Set
-  ( elems
-  , fromList
-  , union
-  )
+import Data.Set (elems, toList, union)
 
-import Data.List
-  ( groupBy
-  )
+import qualified Data.Set as S (map)
 
-import Data.Function
-  ( on
-  )
+import Data.List (groupBy)
+
+import Data.Function (on)
 
 -----------------------------------------------------------------------------
 
@@ -68,39 +55,47 @@ toTLSF name Specification{..} = unlines
   , "  TARGET:      Mealy"
   , "}"
   , "MAIN {"
-  , if null inputs
+  , if null ins
     then ""
     else unlines
       [ "  INPUTS {"
-      , concatMap ((++ ";\n") . ("    " ++)) inputs ++  "  }"
+      , concatMap ((++ ";\n") . ("    " ++)) ins ++  "  }"
       ]
-  , if null outputs
+  , if null outs
     then ""
     else unlines
       [ "  OUTPUTS {"
-      , concatMap ((++ ";\n") . ("    " ++)) outputs ++ "  }"
+      , concatMap ((++ ";\n") . ("    " ++)) outs ++ "  }"
       ]
   , "  GUARANTEE {"
-  , "    " ++ tlsfFormula (And [Globally mutual, fml])  ++ ";"
+  , "    " ++ toTLSF (And [Globally mutual, formula])  ++ ";"
   , "  }"
   , "}"
   ]
 
   where
-    fml = fmap (stName symboltable) formula
+    formula = toFormula assumptions guarantees
 
-    updates =
-      elems $ union (fromList $ tlsfUpdates fml) $
-      fromList $ map ((\x -> (x, Signal x)) . fst) $
-      tlsfUpdates fml
+    toTLSF =
+      tlsfFormula (stName symboltable)
 
-    inputs = map (tlsfFormula . Check) $ tlsfPredicates fml
+    ins =
+        map (toTLSF . Check)
+      $ toList
+      $ checks formula
 
-    outputs = map (tlsfFormula . uncurry Update) updates
+    outs =
+      map (toTLSF . uncurry Update) upds
+
+    upds =
+        elems
+      $ union (updates formula)
+      $ S.map (\x -> (x, Signal x))
+      $ outputs formula
 
     mutual =
-      And
-        $ map (exactlyOne . map (uncurry Update))
-        $ groupBy ((==) `on` fst) updates
+        And
+      $ map (exactlyOne . map (uncurry Update))
+      $ groupBy ((==) `on` fst) upds
 
 -----------------------------------------------------------------------------

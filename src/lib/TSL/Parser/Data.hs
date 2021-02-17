@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.Parser.Data
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- Common data used by the parser module.
 --
@@ -14,33 +14,17 @@ module TSL.Parser.Data
 
 -----------------------------------------------------------------------------
 
-import TSL.Expression
-  ( Expr
-  )
+import TSL.Expression (Expr, ExprPos)
 
-import TSL.Types
-  ( SectionType
-  )
+import TSL.Types (SectionType)
 
-import TSL.Binding
-  ( Binding
-  )
+import TSL.Binding (Binding)
 
-import Text.Parsec
-  ( (<|>)
-  , char
-  , letter
-  , alphaNum
-  )
+import Text.Parsec (alphaNum, char, letter, (<|>))
 
-import Text.Parsec.Token
-  ( LanguageDef
-  , GenLanguageDef(..)
-  )
+import Text.Parsec.Token (GenLanguageDef(..), LanguageDef)
 
-import Text.Parsec.Language
-  ( emptyDef
-  )
+import Text.Parsec.Language (emptyDef)
 
 -----------------------------------------------------------------------------
 
@@ -49,7 +33,9 @@ import Text.Parsec.Language
 
 data Specification =
   Specification
-  { definitions :: [Binding String]
+  { imports :: [(FilePath, String, ExprPos, ExprPos)]
+    -- ^ list of imports
+  , definitions :: [Binding String]
     -- ^ The list of bindings of an identifier to any other
     -- expression.
   , sections :: [(SectionType, Expr String)]
@@ -67,7 +53,8 @@ globalDef
 globalDef =
   emptyDef
   { identStart     = letter <|> char '_' <|> char '@'
-  , identLetter    = alphaNum <|> char '_' <|> char '@' <|> char '\''
+  , identLetter    = alphaNum <|> char '_' <|> char '@' <|>
+                     char '\'' <|> char '.'
   , commentLine    = "//"
   , commentStart   = "/*"
   , commentEnd     = "*/"

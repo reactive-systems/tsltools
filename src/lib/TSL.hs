@@ -1,97 +1,127 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
+--                Philippe Heim
+--                Gideon Geier
+--                Marvin Stenger
+--
 --
 -- TSL tools library interface.
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    LambdaCase
-
-  #-}
+{-# LANGUAGE LambdaCase #-}
 
 -----------------------------------------------------------------------------
 
 module TSL
-  ( -- * Data Structures
-    Error
-  , Formula
+  ( -- * Formula Structure
+    Formula(..)
+  , SignalTerm(..)
+  , FunctionTerm(..)
+  , PredicateTerm(..)
+  , updates
+  , checks
+  , inputs
+  , outputs
+  , functions
+  , predicates
+  , encodeInputAP
+  , encodeOutputAP
+  , decodeInputAP
+  , decodeOutputAP
+  , size
+    -- * TSL Utilities
+  , DependencyRepresentation(..)
   , Specification(..)
-  , CodeTarget(..)    
+  , fromTSL
+  , tslFormula
+  , toFormula
+  , toTSL
+  , toTLSF
+  , toTOML
+  , split
+  , specifications2dependencies
+    -- * CFM Utilities
+  , CodeTarget(..)
   , CFM
-  , SymbolTable
   , ModuleName
   , FunctionName
-    -- * TSL Utilties
-  , fromTSL
-  , tslSize
-  , st2csv
-  , toTLSF
-    -- * CFM Utilities  
   , fromCFM
   , statistics
-  , csvSymbolTable
+  , symbolTable
   , implement
+    -- * Symbol Table
+  , SymbolTable
+  , Kind(..)
+  , stName
+  , stArgs
+  , stDeps
+  , stKind
+  , toCSV
+    -- * Simulation
+  , simulate
+    -- * Error Handling
+  , Error
   ) where
 
 -----------------------------------------------------------------------------
 
 import TSL.Logic
-  ( Formula
-  , tslSize
+  ( Formula(..)
+  , FunctionTerm(..)
+  , PredicateTerm(..)
+  , SignalTerm(..)
+  , checks
+  , decodeInputAP
+  , decodeOutputAP
+  , encodeInputAP
+  , encodeOutputAP
+  , functions
+  , inputs
+  , outputs
+  , predicates
+  , size
+  , tslFormula
+  , updates
   )
 
-import TSL.Error
-  ( Error
+import TSL.Error (Error)
+
+import TSL.SymbolTable (Kind(..), SymbolTable(..), toCSV)
+
+import TSL.Specification (Specification(..), toFormula, toTSL)
+
+import TSL.Reader (fromTSL)
+
+import TSL.TLSF (toTLSF)
+
+import TSL.Splitter (split)
+
+import TSL.Dependency
+  ( DependencyRepresentation(..)
+  , specifications2dependencies
   )
 
-import TSL.SymbolTable
-  ( SymbolTable
-  , st2csv
-  )
+import TSL.Simulation (simulate)
 
-import TSL.Specification
-  ( Specification(..)
-  )
+import TSL.TOML (toTOML)
 
-import TSL.Reader
-  ( fromTSL
-  )
+import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
 
-import TSL.TLSF
-  ( toTLSF
-  )
+import qualified TSL.Writer.Clash as Clash (implement)
 
-import TSL.CFM
-  ( CFM
-  , fromCFM
-  , csvSymbolTable
-  , statistics
-  )
+import qualified TSL.Writer.Applicative as Applicative (implement)
 
-import qualified TSL.Writer.Clash as Clash
-  ( implement
-  )
+import qualified TSL.Writer.Arrow as Arrow (implement)
 
-import qualified TSL.Writer.Applicative as Applicative
-  ( implement
-  )
-
-import qualified TSL.Writer.Arrow as Arrow
-  ( implement
-  )
-
-import qualified TSL.Writer.Monadic as Monadic
-  ( implement
-  )
+import qualified TSL.Writer.Monadic as Monadic (implement)
 
 -----------------------------------------------------------------------------
 
-data CodeTarget =
-    Applicative
+data CodeTarget
+  = Applicative
   | Monadic
   | Arrow
   | Clash

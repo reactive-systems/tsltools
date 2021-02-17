@@ -1,19 +1,15 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.SymbolTable
--- Maintainer  :  Felix Klein (klein@react.uni-saarland.de)
+-- Maintainer  :  Felix Klein
 --
 -- Data type to store all identifier specific content.
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE
-
-    ViewPatterns
-  , LambdaCase
-  , RecordWildCards
-
-  #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ViewPatterns    #-}
 
 -----------------------------------------------------------------------------
 
@@ -21,80 +17,40 @@ module TSL.SymbolTable
   ( SymbolTable(..)
   , IdRec(..)
   , Kind(..)
-  , stBounds
-  , stName
-  , stPos
-  , stArgs
-  , stBindings
-  , stType
-  , stDeps
-  , stKind
-  , st2csv
+  , toCSV
+  , symbolTable
   , csvFormat
   ) where
 
 -----------------------------------------------------------------------------
 
-import Data.List
-  ( transpose
-  , sortBy
-  )
+import Data.List (sortBy, transpose)
 
-import TSL.Types
-  ( ExprType(..)
-  , prType
-  )
+import TSL.Types (ExprType(..), prType)
 
-import TSL.Expression
-  ( ExprPos(..)
-  , SrcPos(..)
-  )
+import TSL.Expression (ExprPos(..), SrcPos(..))
 
-import TSL.Binding
-  ( BoundExpr
-  )
+import TSL.Binding (BoundExpr)
 
-import Data.Char
-  ( toLower
-  )
+import Data.Char (toLower)
 
-import Data.Array
-  ( Array
-  , (!)
-  , assocs
-  , bounds
-  )
+import Data.Array (Array, assocs, bounds, (!))
 
-import Control.Monad.ST
-  ( ST
-  , runST
-  )
+import Control.Monad.ST (ST, runST)
 
-import qualified Data.IntMap.Strict as IM
-  ( (!)
-  , fromList
-  , member
-  )
+import qualified Data.IntMap.Strict as IM (fromList, member, (!))
 
-import Control.Exception
-  ( assert
-  )
+import Control.Exception (assert)
 
-import Data.Array.ST
-  ( STArray
-  , newArray
-  , readArray
-  , writeArray
-  )
+import Data.Array.ST (STArray, newArray, readArray, writeArray)
 
-import Data.Set
-  ( toList
-  , fromList
-  )
+import Data.Set (fromList, toList)
+
+import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 
 -----------------------------------------------------------------------------
 
-newtype SymbolTable = SymbolTable { symtable :: Array Int IdRec }
+type Id = Int
 
 -----------------------------------------------------------------------------
 
@@ -104,101 +60,90 @@ data Kind =
 
 -----------------------------------------------------------------------------
 
+data SymbolTable =
+  SymbolTable
+    { symtable :: Array Id IdRec
+    , stBounds :: (Id, Id)
+    , stName :: Id -> String
+    , stPos :: Id -> Maybe ExprPos
+    , stArgs ::  Id -> [Id]
+    , stBindings :: Id -> Maybe (BoundExpr Id)
+    , stType :: Id -> ExprType
+    , stDeps :: Id -> [Id]
+    , stKind :: Id -> Kind
+    }
+
+-----------------------------------------------------------------------------
+
+symbolTable
+  :: Array Int IdRec -> SymbolTable
+
+symbolTable a =
+  SymbolTable
+    { symtable = a
+    , stBounds = bounds a
+    , stName = idName . (a !)
+    , stPos = idPos . (a !)
+    , stArgs = idArgs . (a !)
+    , stBindings = idBindings . (a !)
+    , stType = idType . (a !)
+    , stDeps = idDeps . (a !)
+    , stKind = idKind . (a !)
+    }
+
+-----------------------------------------------------------------------------
+
 -- | Data type representing a single entry in the symbol table.
 
 data IdRec =
   IdRec
     { -- | The name of the identifier.
       idName :: String
-    , -- | The position of the identifer definition in the source file.
-      idPos :: ExprPos
-    , -- | The arguemnts, in case the identifier describes a function.
-      idArgs :: [Int]
-    , -- | The expression, the identifier is bound to.
-      idBindings :: BoundExpr Int
     , -- | The type of the identifier.
       idType :: ExprType
-    , -- | The list of identifiers, which have to be evaluated first
-      -- to evaluate this identifier.
-      idDeps :: [Int]
     , -- | Categorization to distinguish between globally or locally
       -- bound indentifiers and functions, predicates, input or output
       -- signals.
       idKind :: Kind
+    , -- | The list of identifiers, which have to be evaluated first
+      -- to evaluate this identifier.
+      idDeps :: [Id]
+    , -- | The arguemnts, in case the identifier describes a function.
+      idArgs :: [Id]
+    , -- | The position of the identifer definition in the source file.
+      idPos :: Maybe ExprPos
+    , -- | The expression, the identifier is bound to.
+      idBindings :: Maybe (BoundExpr Id)
     }
-
------------------------------------------------------------------------------
-
-stBounds :: SymbolTable -> (Int, Int)
-
-stBounds = bounds . symtable
-
------------------------------------------------------------------------------
-
-stName :: SymbolTable -> Int -> String
-
-stName SymbolTable{..} x = idName (symtable ! x)
-
------------------------------------------------------------------------------
-
-stPos :: SymbolTable -> Int -> ExprPos
-
-stPos SymbolTable{..} x = idPos (symtable ! x)
-
------------------------------------------------------------------------------
-
-stArgs :: SymbolTable -> Int -> [Int]
-
-stArgs SymbolTable{..} x = idArgs (symtable ! x)
-
------------------------------------------------------------------------------
-
-stBindings :: SymbolTable -> Int -> BoundExpr Int
-
-stBindings SymbolTable{..} x = idBindings (symtable ! x)
-
------------------------------------------------------------------------------
-
-stType :: SymbolTable -> Int -> ExprType
-
-stType SymbolTable{..} x = idType (symtable ! x)
-
------------------------------------------------------------------------------
-
-stDeps :: SymbolTable -> Int -> [Int]
-
-stDeps SymbolTable{..} x = idDeps (symtable ! x)
-
------------------------------------------------------------------------------
-
-stKind :: SymbolTable -> Int -> Kind
-
-stKind SymbolTable{..} x = idKind (symtable ! x)
 
 -----------------------------------------------------------------------------
 
 -- | Prints the symbol table in the CVS format.
 
-st2csv
+toCSV
   :: SymbolTable -> String
 
-st2csv SymbolTable{..} =
+toCSV SymbolTable{..} =
   let
     es = sortBy cmp $ assocs symtable
     ts = rmDouble $ concatMap polyType es
     im = IM.fromList $ zip ts [0,1..length ts-1]
     ir = IM.fromList $ zip (map fst es) [0,1..length es-1]
+    sc = not $ null $ mapMaybe srcPath $ mapMaybe (idPos . snd) es
   in
     csvFormat
-    $ ([ "Id"
-       , "Name"
-       , "Type"
-       , "Kind"
-       , "Depends"
-       , "Position"
-       , "Arguments"
-       ] :)
-    $ map (printEntry
+    $ ( filter (/="")
+          [ "Id"
+          , "Name"
+          , "Type"
+          , "Kind"
+          , "Depends"
+          , "Position"
+          , if sc then "Source" else ""
+          , "Arguments"
+          ]
+      :)
+    $ map (printEntry sc
             (\i -> assert (IM.member i ir) (ir IM.! i))
             (\i -> assert (IM.member i im) (im IM.! i))) es
 
@@ -207,16 +152,17 @@ st2csv SymbolTable{..} =
       | k1 /= k2   = compare k1 k2
       | otherwise = compare (idName ir1) (idName ir2)
 
-
-    printEntry g f (i,IdRec{..}) =
-      [ show (g i)
-      , idName
-      , prType f idType
-      , map toLower $ show idKind
-      , commasepxs $ toList $ fromList $ map g idDeps
-      , prExprPos idPos
-      , commasepxs idArgs
-      ]
+    printEntry sc g f (i, IdRec{..}) =
+      catMaybes
+        [ Just $ show (g i)
+        , Just idName
+        , Just $ prType f idType
+        , Just $ map toLower $ show idKind
+        , Just $ commasepxs $ toList $ fromList $ map g idDeps
+        , Just $ prExprPos idPos
+        , if sc then Just $ prSource idPos else Nothing
+        , Just $ commasepxs idArgs
+        ]
 
     polyType (_,IdRec{..}) =
       pType [] idType
@@ -231,18 +177,20 @@ st2csv SymbolTable{..} =
       (x:xr) -> show x ++ concatMap ((',':) . (' ':) . show) xr
       []     -> ""
 
-    prExprPos pos =
-      let
-        bl = srcLine $ srcBegin pos
-        bc = srcColumn $ srcBegin pos
-        el = srcLine $ srcEnd pos
-        ec = srcColumn $ srcEnd pos
-      in
-        "(" ++ show bl ++ "," ++ show bc ++
-        if bl == el then
-          "-" ++ show ec ++ ")"
-        else
-          show el ++ ":" ++ show ec ++ ")"
+    prSource = \case
+      Nothing          -> ""
+      Just ExprPos{..} ->
+        fromMaybe "" srcPath
+
+    prExprPos = \case
+      Nothing          -> ""
+      Just ExprPos{..} ->
+        show (srcLine srcBegin) ++ "," ++ show (srcColumn srcBegin) ++
+        ( if srcLine srcBegin == srcLine srcEnd
+          then "-"
+          else show (srcLine srcEnd) ++ ","
+        ) ++
+        show (srcColumn srcEnd)
 
 -----------------------------------------------------------------------------
 
