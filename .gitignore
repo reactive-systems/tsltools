@@ -1,4 +1,4 @@
-istdist
+dist
 dist-newstyle
 cabal-dev
 *.o
