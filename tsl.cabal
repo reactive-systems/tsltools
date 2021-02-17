@@ -1,27 +1,26 @@
-name:                tsl
-version:             1.2.3.0
-synopsis:            Library and tools for the TSL specification format
-description:         Library and tools for the TSL specification format
-license:             OtherLicense
-license-file:        LICENSE
-author:              Felix Klein <felix.klein@cispa.de>
-                     Mark Santolucito <mark.santolucito@yale.edu>
-                     Philippe Heim <philippe.heim@cispa.de>
-                     Gideon Geier <gideon.geier@cispa.de>
-                     Marvin Stenger <marvin.stenger@cispa.de>
-
-maintainer:          Felix Klein <felix.klein@cispa.de>
-                     Philippe Heim <philippe.heim@cispa.de>
-                     Gideon Geier <gideon.geier@cispa.de>
-                     Marvin Stenger <marvin.stenger@cispa.de>
-category:            Synthesis
-build-type:          Simple
-cabal-version:       >=1.10
+name:          tsl
+version:       1.3.0.0
+synopsis:      Library and tools for the TSL specification format
+description:   Library and tools for the TSL specification format
+license:       OtherLicense
+license-file:  LICENSE
+author:        Felix Klein <felix.klein@cispa.de>
+               Mark Santolucito <mark.santolucito@yale.edu>
+               Philippe Heim <philippe.heim@cispa.de>
+               Gideon Geier <gideon.geier@cispa.de>
+               Marvin Stenger <marvin.stenger@cispa.de>
+maintainer:    Felix Klein <felix.klein@cispa.de>
+               Mark Santolucito <mark.santolucito@yale.edu>
+               Philippe Heim <philippe.heim@cispa.de>
+               Gideon Geier <gideon.geier@cispa.de>
+               Marvin Stenger <marvin.stenger@cispa.de>
+category:      Synthesis
+build-type:    Simple
+cabal-version: >=1.10
 
 source-repository head
   type:     git
-  location: https://gitlab.projectjarvis.de/tools/tsltools
-
+  location: https://github.com/reactive-systems/tsltools.git
 
 library
 
@@ -90,15 +89,12 @@ library
     CoreGeneration.UnrealizabilityCores
     CoreGeneration.MinimalAssumptionCores
     CoreGeneration.FindFirstConcurrent
-    
 
   hs-source-dirs:
     src/lib
 
   default-language:
     Haskell2010
-
-
 
 executable tslcoregen
 
@@ -113,7 +109,7 @@ executable tslcoregen
     , directory >= 1.3
     , filepath >= 1.4
     , ansi-terminal >= 0.6
-    , process 
+    , process
     , optparse-applicative
 
   main-is:
@@ -132,7 +128,6 @@ executable tslcoregen
     src/tools/tslcoregen
     src/tool-utilities
 
-
 executable tslminrealizable
 
   ghc-options:
@@ -146,7 +141,7 @@ executable tslminrealizable
     , directory >= 1.3
     , filepath >= 1.4
     , ansi-terminal >= 0.6
-    , process 
+    , process
     , optparse-applicative
 
   main-is:
@@ -164,7 +159,6 @@ executable tslminrealizable
   hs-source-dirs:
     src/tools/tslminrealizable
     src/tool-utilities
-
 
 executable tslresolve
 
@@ -198,7 +192,6 @@ executable tslresolve
   default-language:
     Haskell2010
 
-
 executable tsl2tlsf
 
   main-is:
@@ -231,7 +224,6 @@ executable tsl2tlsf
   default-language:
     Haskell2010
 
-
 executable tsl2toml
 
   main-is:
@@ -261,7 +253,6 @@ executable tsl2toml
 
   default-language:
     Haskell2010
-
 
 executable tslsplit
 
@@ -295,7 +286,6 @@ executable tslsplit
   default-language:
     Haskell2010
 
-
 executable tslsym
 
   ghc-options:
@@ -326,7 +316,6 @@ executable tslsym
   default-language:
     Haskell2010
 
-
 executable tslcheck
 
   ghc-options:
@@ -355,7 +344,6 @@ executable tslcheck
 
   default-language:
     Haskell2010
-
 
 executable tslsize
 
@@ -388,7 +376,6 @@ executable tslsize
   default-language:
     Haskell2010
 
-
 executable cfmcheck
 
   ghc-options:
@@ -417,7 +404,6 @@ executable cfmcheck
 
   default-language:
     Haskell2010
-
 
 executable cfminfo
 
@@ -449,7 +435,6 @@ executable cfminfo
 
   default-language:
     Haskell2010
-
 
 executable cfmsym
 
@@ -513,7 +498,6 @@ executable cfm2code
   default-language:
     Haskell2010
 
-
 executable tslplay
 
   ghc-options:
@@ -575,7 +559,6 @@ test-suite default
     , filepath >= 1.4
     , directory >= 1.3
     , ansi-terminal >= 0.6
-
 
   default-language:
     Haskell2010
