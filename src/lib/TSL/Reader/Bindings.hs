@@ -306,7 +306,7 @@ checkCircularDeps s@Specification{..} = do
   where
     isunary (x,_) = case IM.lookup x arguments of
       Just xs -> null xs
-      Nothing -> assert False undefined
+      Nothing -> True
 
     check = \case
       []     -> return ()
