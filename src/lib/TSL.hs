@@ -36,6 +36,7 @@ module TSL
   , DependencyRepresentation(..)
   , Specification(..)
   , fromTSL
+  , fromString
   , tslFormula
   , toFormula
   , toTSL
@@ -93,7 +94,7 @@ import TSL.SymbolTable (Kind(..), SymbolTable(..), toCSV)
 
 import TSL.Specification (Specification(..), toFormula, toTSL)
 
-import TSL.Reader (fromTSL)
+import TSL.Reader (fromTSL, fromString)
 
 import TSL.TLSF (toTLSF)
 

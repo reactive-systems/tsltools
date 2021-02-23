@@ -16,6 +16,7 @@
 
 module TSL.Reader
   ( fromTSL
+  , fromString
   ) where
 
 -----------------------------------------------------------------------------
@@ -102,6 +103,10 @@ fromTSL specPath =
   resolveImports specPath [] >=> return . (>>= process)
 
 -----------------------------------------------------------------------------
+
+fromString
+  :: String -> Either Error Specification
+fromString = parse >=> process
 
 process
   :: PD.Specification -> Either Error Specification
