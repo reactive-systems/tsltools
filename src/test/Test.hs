@@ -32,7 +32,9 @@ import TSL
   , decodeOutputAP
   , encodeInputAP
   , encodeOutputAP
+  , fromString
   )
+
 
 import qualified SplitTests (tests)
 
@@ -44,10 +46,11 @@ import Test.QuickCheck
   , arbitrary
   , choose
   , listOf
-  , quickCheckResult
+  , quickCheckResult, Gen, oneof, vector
   )
 
 import Data.Char (chr, ord)
+import Data.List (intercalate)
 
 -----------------------------------------------------------------------------
 
@@ -62,7 +65,8 @@ newtype Identifier = Identifier { identifier :: String }
 
 instance Arbitrary Identifier where
   arbitrary = do
-    x <- choose (10 :: Int, 61 :: Int)
+    -- TODO this is very hacky and should be changed
+    x <- oneof [choose (10 :: Int, 35 :: Int), choose (37 :: Int, 40 :: Int), choose (44 :: Int, 49 :: Int), choose (51 :: Int, 52 :: Int), return (57 :: Int), return (61 :: Int)]
     xr <- listOf $ choose (0 :: Int, 65 :: Int)
     return $ Identifier $ map toC $ x : xr
 
@@ -75,6 +79,57 @@ instance Arbitrary Identifier where
         | c == 63          = '@'
         | c == 64          = '.'
         | otherwise       = '\''
+
+-----------------------------------------------------------------------------
+
+-- | 
+
+updateGenerator
+  :: Gen String
+updateGenerator = do
+  a <- arbitrary
+  b <- arbitrary 
+  return ("[ " ++ identifier a ++ " <- " ++ identifier b ++ " ]")
+
+formulaGenerator
+  :: Gen Formula
+formulaGenerator = do
+  f <- oneof  [updateGenerator] -- TODO add more kinds of grammar constructs
+  return Formula { formula = f }
+
+newtype Formula = Formula { formula :: String }
+  deriving (Show, Ord, Eq)
+  
+instance Arbitrary Formula where
+  arbitrary = formulaGenerator
+
+specGenerator
+  :: Gen Specification 
+specGenerator = do
+  i <- choose (1::Int, 10::Int)
+  guarantees <- vector i
+  return Specification { spec =
+       "guarantee {\n"
+    ++ intercalate ";\n" (map formula guarantees)
+    ++ "\n}" 
+    }
+
+newtype Specification = Specification  { spec :: String }
+  deriving (Ord, Eq)
+  
+instance Show Specification where
+  show = spec
+  
+instance Arbitrary Specification  where
+  arbitrary = specGenerator
+
+
+propParse
+  :: Specification -> Bool
+propParse s = 
+  case fromString (spec s) of
+    Right _ -> True
+    Left _ -> False
 
 -----------------------------------------------------------------------------
 
@@ -110,6 +165,7 @@ tests
 tests = return $
   [ test "QuickCheck: Read Input" qc01
   , test "QuickCheck: Read Output" qc02
+  , test "QuickCheck: Parse Spec" qc03
   ]
   ++ SplitTests.tests
   ++ DependencyTests.tests
@@ -124,6 +180,12 @@ tests = return $
       quickCheckResult propReadOutput >>= \case
         Success{..} -> return $ Finished Pass
         x           -> return $ Finished $ Fail $ show x
+
+    qc03 =
+      quickCheckResult propParse >>= \case
+        Success{..} -> return $ Finished Pass
+        x           -> return $ Finished $ Fail $ show x
+
 
     test testname run =
       let
