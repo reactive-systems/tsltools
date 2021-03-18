@@ -214,7 +214,7 @@ exprParser = (~~) >> buildExpressionParser table term
       <|> parOp "EXISTS" manyExprParser BlnROr
 
     parentheses = do
-      notFollowedBy $ ch '(' >> oneOf "+-*/"
+      notFollowedBy $ ch '(' >> oneOf "+-*\\"
       between' '(' ')' $ fmap expr exprParser
 
     keyword x c = do
