@@ -196,8 +196,8 @@ resolveImports specPath ls str = case parse str of
       let combinedPath = case specPath of
             Nothing -> path
             Just specPath ->
-              if isAbsolute specPath
-              then specPath
+              if isAbsolute path
+              then path
               else combine (takeDirectory specPath) path
       exists <- doesPathExist combinedPath
       if exists
