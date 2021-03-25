@@ -126,7 +126,7 @@ split spec@Specification{assumptions, guarantees} =
     splitGuars = splitFormulas guarantees connComp
     splitAssumptions  = splitFormulas boundAssumptions connComp
   in
-    fmap cleanSymboltable $ buildSpecs $ addFreeAssumptions freeAssumptions $ zip splitAssumptions splitGuars
+    fmap cleanSymboltable $ buildSpecs $ addFreeAssumptions freeAssumptions $ filter (not . null . snd) $ zip (splitAssumptions ++ repeat []) splitGuars
   where
     buildSpecs  = map (\(a,g) -> spec{assumptions = a, guarantees = g})
 
