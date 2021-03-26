@@ -271,6 +271,7 @@ executable tslsplit
     EncodingUtils
     FileUtils
     ArgParseUtils
+    Config
 
   build-depends:
       tsl
