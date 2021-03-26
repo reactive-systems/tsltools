@@ -42,6 +42,7 @@ module TSL
   , toTLSF
   , toTOML
   , split
+  , splitAssumptions
   , specifications2dependencies
     -- * CFM Utilities
   , CodeTarget(..)
@@ -97,7 +98,7 @@ import TSL.Reader (fromTSL)
 
 import TSL.TLSF (toTLSF)
 
-import TSL.Splitter (split)
+import TSL.Splitter (split, splitAssumptions)
 
 import TSL.Dependency
   ( DependencyRepresentation(..)
@@ -118,13 +119,9 @@ import qualified TSL.Writer.Arrow as Arrow (implement)
 
 import qualified TSL.Writer.Monadic as Monadic (implement)
 
-import qualified TSL.Writer.JavaScript as JavaScript
-  ( implement
-  )
+import qualified TSL.Writer.JavaScript as JavaScript (implement)
 
-import qualified TSL.Writer.WebAudio as WebAudio
-  ( implement
-  )
+import qualified TSL.Writer.WebAudio as WebAudio (implement)
 
 -----------------------------------------------------------------------------
 

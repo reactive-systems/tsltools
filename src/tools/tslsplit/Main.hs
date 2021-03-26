@@ -19,15 +19,17 @@ module Main
 
 import EncodingUtils (initEncoding)
 
-import ArgParseUtils (parseMaybeFilePath)
-
 import FileUtils (loadTSL)
 
-import TSL (split, toTSL)
+import TSL (split, splitAssumptions, toTSL)
 
 import System.Directory (getCurrentDirectory)
 
 import System.FilePath (takeBaseName, (<.>), (</>))
+
+import Config (Configuration(..), parseArguments)
+
+import Data.Maybe (fromMaybe)
 
 -----------------------------------------------------------------------------
 
@@ -37,22 +39,26 @@ main
 main = do
   initEncoding
 
-  input <- parseMaybeFilePath
-            ("tslsplit", "Splits TSL specifications into many TSL specifications (if possible).")
+  Configuration{input, assumptions} <- parseArguments
 
   spec <- loadTSL input
-
   path <- getCurrentDirectory
 
   let
-    specs = split spec
+    specs
+      | assumptions = splitAssumptions spec
+      | otherwise   = split spec
 
-    filepathN n =
-      path </> (maybe "SPLIT" takeBaseName input) ++
-      "_" ++ show n <.> "tsl"
+    identifier
+      | assumptions = "a"
+      | otherwise   = "s"
+
+    filepathN n i =
+      path </> takeBaseName (fromMaybe "TSLSplitFromSTDIN" input) ++
+      "_" ++ i ++ show n <.> "tsl"
 
   mapM_
-    (\(s,n) -> writeFile (filepathN n) (toTSL s))
+    (\(s,n) -> writeFile (filepathN n identifier) (toTSL s))
     (zip specs [1::Int,2..])
 
 -----------------------------------------------------------------------------

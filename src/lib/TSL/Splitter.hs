@@ -16,6 +16,7 @@
 
 module TSL.Splitter
   ( split
+  , splitAssumptions
   ) where
 
 -----------------------------------------------------------------------------
@@ -121,14 +122,33 @@ split spec@Specification{assumptions, guarantees} =
     decRelProps = decompRelProps spec
     graph = buildGraph (elems decRelProps) preEdges
     preEdges = map (elems . (intersection decRelProps) . getInOutputs) (assumptions ++ guarantees)
-    connComp = map Set.fromList $ components graph
+    connectedComponents = map Set.fromList $ components graph
     (freeAssumptions, boundAssumptions) = partition (null . (intersection decRelProps) . getInOutputs) assumptions
-    splitGuars = splitFormulas guarantees connComp
-    splitAssumptions  = splitFormulas boundAssumptions connComp
+    splittedGuarantees = splitFormulas guarantees connectedComponents
+    splittedAssumptions  = splitFormulas boundAssumptions connectedComponents
   in
-    fmap cleanSymboltable $ buildSpecs $ addFreeAssumptions freeAssumptions $ filter (not . null . snd) $ zip (splitAssumptions ++ repeat []) splitGuars
+    fmap cleanSymboltable $ buildSpecs $ addFreeAssumptions freeAssumptions $ filter (not . null . snd) $ zip (splittedAssumptions ++ repeat []) splittedGuarantees
   where
     buildSpecs  = map (\(a,g) -> spec{assumptions = a, guarantees = g})
+
+
+-----------------------------------------------------------------------------
+
+-- | 'splitAssumptions' splits assumptions into specifications of the form
+-- (a1 /\ a2) -> false, such that if any of the subspecifications is realizable
+-- the whole specification is realizable by assumption violation.
+
+splitAssumptions :: Specification -> [Specification]
+splitAssumptions spec@Specification{assumptions} =
+  let
+    graph = buildGraph ((elems . inputs) (And assumptions)) preEdges
+    preEdges = map (elems . inputs) assumptions
+    connectedComponents = map Set.fromList $ components graph
+    splittedAssumptions  = splitFormulas assumptions connectedComponents
+  in
+    cleanSymboltable <$> buildSpecs splittedAssumptions
+  where
+    buildSpecs  = map (\a -> spec{assumptions = a, guarantees = [FFalse]})
 
 
 -----------------------------------------------------------------------------
@@ -144,8 +164,8 @@ addFreeAssumptions freeAssumptions specs =
     assumptionsInputs = map inputs freeAssumptions
     preEdges = map elems assumptionsInputs
     graph = buildGraph (elems (Set.unions assumptionsInputs)) preEdges
-    assParts = Set.fromList <$> components graph
-    freeAssumptionsSplit = splitFormulas freeAssumptions assParts
+    assumptionParts = Set.fromList <$> components graph
+    freeAssumptionsSplit = splitFormulas freeAssumptions assumptionParts
   in
     map (addFreeAssumpt freeAssumptionsSplit) specs
   where
