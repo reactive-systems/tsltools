@@ -1,3 +1,7 @@
 resolver: lts-14.17
 packages:
 - .
+extra-deps:
+- github: reactive-systems/hanoi
+  commit: c17bfc2033fe54e0dcdc8648abe9d44679ee88a9
+- finite-1.4.1.2@sha256:9e41353b5ab053b5c937c13ec2ded6dcddb70e1f29204be4dd6bf683bb2b47c7,1931
