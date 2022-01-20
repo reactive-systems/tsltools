@@ -113,8 +113,6 @@ printHOALines hoa@HOA {..} =
         [strInd s]
         ++ [") :"]
         ++
-        maybeToList (stateName s)
-        ++
         (case stateAcceptance s of
           Just aSets -> [brCurly $ unwords (map strInd $ elems aSets)]
           Nothing    -> []
@@ -181,9 +179,9 @@ translateToTSL t =
   then generateTSLString T.Check decodeInputAP t
   else generateTSLString (uncurry T.Update) decodeOutputAP t
 
-generateTSLString :: forall a b. _ -> (String -> Either a b) -> String -> String
+generateTSLString :: forall a b. Show a => _ -> (String -> Either a b) -> String -> String
 generateTSLString tslType decoder x =
-  either (const "ERR") (\t -> (tslFormula id $ tslType t)) $
+  either (show) (\t -> (tslFormula id $ tslType t)) $
     (decoder) x
 -----------------------------------------------------------------------------
 -- | 'printFormula' prints a 'Formula' as a 'String'. Note that the way

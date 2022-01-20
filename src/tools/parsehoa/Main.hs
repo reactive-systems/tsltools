@@ -91,3 +91,4 @@ generateTSLString :: forall a b. _ -> (String -> Either a b) -> String -> String
 generateTSLString tslType decoder x =
   either (const "ERR") (\t -> (tslFormula id $ tslType t)) $
     (decoder) x
+
