@@ -3,10 +3,10 @@ name: build
 jobs:
   runhaskell:
     name: Hello World
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-latest # or macOS-latest, or windows-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-haskell@v1.1
+      - uses: haskell/actions/setup@v1
         with:
           enable-stack: true
           stack-version: 'latest'
