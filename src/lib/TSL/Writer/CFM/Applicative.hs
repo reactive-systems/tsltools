@@ -1,14 +1,13 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  TSL.Writer.Monadic
+-- Module      :  TSL.Writer.CFM.Applicative
 -- Maintainer  :  Felix Klein
 --
--- Code generation for Monadic FRP.
+-- Code generation for Applicative FRP.
 --
 -----------------------------------------------------------------------------
 
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ImplicitParams   #-}
 {-# LANGUAGE LambdaCase       #-}
 {-# LANGUAGE MultiWayIf       #-}
 {-# LANGUAGE RecordWildCards  #-}
@@ -16,7 +15,7 @@
 
 -----------------------------------------------------------------------------
 
-module TSL.Writer.Monadic
+module TSL.Writer.CFM.Applicative
   ( implement
   ) where
 
@@ -37,11 +36,11 @@ import TSL.CFM
   , termType
   )
 
-import TSL.Aiger (Circuit(..), Invertible(..))
-
 import Data.Maybe (mapMaybe)
 
 import Data.Set (fromList, toList)
+
+import TSL.Aiger (Circuit(..), Invertible(..))
 
 import qualified TSL.Aiger as Circuit (Wire(..), inputs, outputs)
 
@@ -59,7 +58,6 @@ implement
   -> String
 
 implement mName fName cfm@CFM{..} =
-  let ?bounds = cfm in
   let
     directInputs =
       filter (not . loopedInput) inputs
@@ -85,7 +83,6 @@ implement mName fName cfm@CFM{..} =
       , "{-# LANGUAGE"
       , ""
       , "    Rank2Types"
-      , "  , RecursiveDo"
       , "  , RecordWildCards"
       , "  , DuplicateRecordFields"
       , ""
@@ -100,12 +97,6 @@ implement mName fName cfm@CFM{..} =
       , "  , InitialState(..)"
       , "  , " ++ fName
       , "  ) where"
-      , ""
-      , replicate 77 '-'
-      , ""
-      , "import Control.Monad.Fix"
-      , "  ( MonadFix"
-      , "  )"
       , ""
       , replicate 77 '-'
       , ""
@@ -173,8 +164,8 @@ implement mName fName cfm@CFM{..} =
       , replicate 77 '-'
       , ""
       , fName
-      , "  :: (MonadFix m, Applicative signal)"
-      , "  => (forall poly. poly -> signal poly -> m (signal poly))"
+      , "  :: Applicative signal"
+      , "  => (forall poly. poly -> signal poly -> signal poly)"
       , "  -> Functions" ++
         if null ts then "" else " " ++ prPTypes types
       , "  -> InitialState" ++
@@ -183,17 +174,15 @@ implement mName fName cfm@CFM{..} =
       , "  -> Input" ++
         if null directInputs then "" else " signal " ++
           prPTypes (map (wireType . inputWire) directInputs)
-      , "  -> m " ++
-        if null outputs then "Output" else "(Output signal " ++
-          prPTypes (map (wireType . fst . head . outputSwitch) outputs) ++
-          ")"
+      , "  -> " ++
+        if null outputs then "Output" else "Output signal " ++
+          prPTypes (map (wireType . fst . head . outputSwitch) outputs)
       , ""
-      , fName ++ " cell Functions{..} InitialState{..} Input{..} = do"
-      , "  rec"
+      , fName ++ " cell Functions{..} InitialState{..} Input{..} ="
+      , "  let"
       , concatMap prOutputCell outputs
-      , if null terms then "" else
-          "    let\n" ++ concatMap (prTerm' cfm) terms
-      , "    ControlOut{..} <-"
+      , concatMap (prTerm' cfm) terms
+      , "    ControlOut{..} ="
       , "      controlCircuit cell"
       , "        ControlIn"
       , if null is then "" else
@@ -203,9 +192,8 @@ implement mName fName cfm@CFM{..} =
             (\(n,x) -> "\n          , controlIn" ++ show n ++
                       " = " ++ prWire cfm (controlInputWire x))
             (zip [1 :: Int,2..] $ tail is) ++
-          "\n          }\n"
-      , if null outputs then "  return" else
-          "    let\n" ++ concatMap prSwitch outputs ++ "  return"
+          "\n          }\n" ++
+        concatMap prSwitch outputs ++ "  in"
       , "    Output"
       , if null outputs then "" else
           "      { " ++ outputName (head outputs) ++ " = " ++
@@ -224,11 +212,6 @@ implement mName fName cfm@CFM{..} =
       replicate 77 '-'
 
   where
-    prOutputCell o =
-      "    " ++ outputName o ++
-      "Cell <- cell " ++ outputName o ++
-      " " ++ outputName o ++ "Out\n"
-
     inputDecl i =
       inputName i ++ " :: signal "
       ++ prT (wireType $ inputWire i)
@@ -244,14 +227,19 @@ implement mName fName cfm@CFM{..} =
       outputName o ++ " :: "
       ++ prT (wireType $ fst $ head $ outputSwitch o)
 
+    prOutputCell o =
+      "    " ++ outputName o ++
+      "Cell = cell " ++ outputName o ++
+      " " ++ outputName o ++ "Out\n"
+
     prSwitch o =
-      "      " ++ outputName o ++ "Out =\n" ++
-      "        " ++ outputName o ++ "Switch\n" ++
-      concatMap prChoice (outputSwitch o) ++ "\n"
+      "\n    " ++ outputName o ++ "Out =\n" ++
+      "      " ++ outputName o ++ "Switch\n" ++
+      concatMap prChoice (outputSwitch o)
 
     prChoice (w,o) =
-      "          " ++ prWire cfm w ++ "\n" ++
-      "          controlOut" ++ show o ++ "\n"
+      "        " ++ prWire cfm w ++ "\n" ++
+      "        controlOut" ++ show o ++ "\n"
 
     prChain = \case
       []   -> assert False undefined
@@ -311,7 +299,7 @@ prSwitchImpl CFM{..} o =
 -----------------------------------------------------------------------------
 
 prCircuitImpl
-  :: Circuit -> String
+  :: Circuit ->  String
 
 prCircuitImpl Circuit{..} =
   let
@@ -323,23 +311,23 @@ prCircuitImpl Circuit{..} =
   in
     unlines
       [ "controlCircuit"
-      , "  :: (MonadFix m, Applicative signal)"
-      , "  => (Bool -> signal Bool -> m (signal Bool))"
-      , "  -> ControlIn signal -> m (ControlOut signal)"
+      , "  :: Applicative signal"
+      , "  => (Bool -> signal Bool -> signal Bool)"
+      , "  -> ControlIn signal -> ControlOut signal"
       , ""
-      , "controlCircuit cell ControlIn{..} = do"
-      , "  rec" ++
-        if null ls then "" else concatMap ("\n    " ++) ls ++ "\n"
-      , if null ds then "" else
-          "    let" ++ concatMap ("\n      " ++) ds ++ "\n"
-      , "  return"
+      , "controlCircuit cell ControlIn{..} ="
+      , "  let" ++
+        (if null ls then "" else
+          concatMap ("\n    " ++) ls) ++
+        (if null ds then "" else
+          concatMap ("\n    " ++) ds ++ "\n  in")
       , "    ControlOut"
       , if null os then "" else
           "      { controlOut0 = " ++ head os ++
           concatMap
             (\(i,x) -> "\n      , controlOut" ++ show i ++
                       " = " ++ x) (zip [1 :: Int,2..] $ tail os) ++
-          "\n     ( }"
+          "\n      }"
       , let
           hasLatches   = not $ null latches
           hasGates     = not $ null gates
@@ -372,8 +360,7 @@ prCircuitImpl Circuit{..} =
       Negative _                   -> True
 
     prWire' x
-      | Circuit.wire x <= length inputs = "controlIn" ++
-                                         show (Circuit.wire x - 1)
+      | Circuit.wire x <= length inputs = "controlIn" ++ show (Circuit.wire x - 1)
       | otherwise                      = 'w' : show x
 
     polarized b i c = \case
@@ -395,7 +382,7 @@ prCircuitImpl Circuit{..} =
 
         (vx, d) = polarized True ow 'x' iw
       in
-        (prWire' ow ++ " <- _lat_ " ++ vx, d)
+        (prWire' ow ++ " = _lat_ " ++ vx, d)
 
     gateDecl g =
       let
@@ -414,7 +401,7 @@ prTerm'
   :: CFM -> Term -> String
 
 prTerm' cfm@CFM{..} t =
-  "      " ++ prWire cfm (termOutputWire t) ++ " = " ++
+  "    " ++ prWire cfm (termOutputWire t) ++ " = " ++
   (case reverse $ termInputWires t of
      []     ->
        ("pure " ++) $ (++ "\n") $

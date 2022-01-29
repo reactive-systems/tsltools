@@ -53,6 +53,7 @@ module TSL
   , statistics
   , symbolTable
   , implement
+  , implementHoa
     -- * Symbol Table
   , SymbolTable
   , Kind(..)
@@ -111,17 +112,16 @@ import TSL.TOML (toTOML)
 
 import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
 
-import qualified TSL.Writer.Clash as Clash (implement)
+import qualified TSL.Writer.CFM.Clash as Clash (implement)
+import qualified TSL.Writer.CFM.Applicative as Applicative (implement)
+import qualified TSL.Writer.CFM.Arrow as Arrow (implement)
+import qualified TSL.Writer.CFM.Monadic as Monadic (implement)
+import qualified TSL.Writer.CFM.JavaScript as JavaScript (implement)
+import qualified TSL.Writer.CFM.WebAudio as WebAudio (implement)
 
-import qualified TSL.Writer.Applicative as Applicative (implement)
-
-import qualified TSL.Writer.Arrow as Arrow (implement)
-
-import qualified TSL.Writer.Monadic as Monadic (implement)
-
-import qualified TSL.Writer.JavaScript as JavaScript (implement)
-
-import qualified TSL.Writer.WebAudio as WebAudio (implement)
+import qualified Hanoi as H (HOA(..))
+import Data.Maybe ( fromJust, maybeToList )
+import qualified TSL.Writer.HOA.Python as Python (implementHoa)
 
 -----------------------------------------------------------------------------
 
@@ -132,6 +132,7 @@ data CodeTarget
   | Clash
   | JavaScript
   | WebAudio
+  | Python
   deriving (Show, Ord, Eq)
 
 -----------------------------------------------------------------------------
@@ -141,10 +142,16 @@ type FunctionName = String
 
 -----------------------------------------------------------------------------
 
+
+implementHoa
+  :: CodeTarget -> H.HOA -> String
+implementHoa = \case
+  Python      -> Python.implementHoa
+  _           -> error "Unsupported language target for given format"
+
 -- | Generates code for a specific target from a CFM. The function
 -- uses the given module name to generate a module that exports a
 -- single function with the given function name.
-
 implement
   :: CodeTarget -> ModuleName -> FunctionName -> CFM -> String
 
@@ -155,5 +162,6 @@ implement = \case
   Monadic     -> Monadic.implement
   JavaScript  -> JavaScript.implement
   WebAudio    -> WebAudio.implement
+  _           -> error "Unsupported language target for given format"
 
 -----------------------------------------------------------------------------

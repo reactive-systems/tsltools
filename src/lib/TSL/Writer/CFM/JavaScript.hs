@@ -11,7 +11,7 @@
 
 -----------------------------------------------------------------------------
 
-module TSL.Writer.JavaScript
+module TSL.Writer.CFM.JavaScript
   ( implement
   ) where
 

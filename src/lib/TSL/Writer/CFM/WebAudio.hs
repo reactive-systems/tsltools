@@ -11,7 +11,7 @@
 
 -----------------------------------------------------------------------------
 
-module TSL.Writer.WebAudio
+module TSL.Writer.CFM.WebAudio
   ( implement
   ) where
 

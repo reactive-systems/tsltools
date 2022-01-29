@@ -77,6 +77,7 @@ configParser = Configuration
     <|> flag' Clash       (long "clash"       <> help "generates code for the hardware description language 'ClaSH'")
     <|> flag' JavaScript  (long "javascript"  <> help "generates code for Javascript")
     <|> flag' WebAudio    (long "webaudio"    <> help "generates code for JS+WebAudio backend")
+    <|> flag' Python      (long "python"      <> help "generates code for python backend")
     )
   <*> option str
       (  long "module-name"

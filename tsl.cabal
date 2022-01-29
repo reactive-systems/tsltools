@@ -41,6 +41,8 @@ library
     , process >= 1.6.3.0
     , ansi-terminal >= 0.6
     , fgl >= 5.6.0.0
+    , hanoi
+    , finite
 
   exposed-modules:
     TSL
@@ -67,12 +69,13 @@ library
     TSL.Reader.InferType
     TSL.Reader.Sugar
     TSL.Splitter
-    TSL.Writer.Clash
-    TSL.Writer.Applicative
-    TSL.Writer.Arrow
-    TSL.Writer.Monadic
-    TSL.Writer.JavaScript
-    TSL.Writer.WebAudio
+    TSL.Writer.CFM.Clash
+    TSL.Writer.CFM.Applicative
+    TSL.Writer.CFM.Arrow
+    TSL.Writer.CFM.Monadic
+    TSL.Writer.CFM.JavaScript
+    TSL.Writer.CFM.WebAudio
+    TSL.Writer.HOA.Python
     TSL.Aiger
     TSL.Logic
     TSL.Eval
