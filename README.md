@@ -102,6 +102,12 @@ installation. After `stack` is installed just type
 
 in the main directory to build TSL tools.
 
+You will also need to install an LTL synthesis engine.
+A good option is SPOT https://spot.lrde.epita.fr/install.html
+
+If you use spot, you will then also need the syfco tool.
+Clone the repo here: https://github.com/reactive-systems/syfco and ```stack install```.
+
 # Research and Documentation
 
 * [The original paper](https://www.react.uni-saarland.de/publications/FKPS19a.html)
