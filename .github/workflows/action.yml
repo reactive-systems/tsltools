@@ -11,3 +11,4 @@ jobs:
           enable-stack: true
           stack-version: 'latest'
       - run: make
+      - run: stack test
