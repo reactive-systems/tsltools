@@ -1,3 +1,5 @@
+[![build](https://github.com/Barnard-PL-Labs/tsltools/actions/workflows/action.yml/badge.svg)](https://github.com/Barnard-PL-Labs/tsltools/actions/workflows/action.yml)
+
 # TSL Tools
 
 A tool set and library for developing and processing [Temporal Stream Logic
