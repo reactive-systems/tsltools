@@ -1,0 +1,13 @@
+on: [push]
+name: build
+jobs:
+  runhaskell:
+    name: Hello World
+    runs-on: ubuntu-latest 
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-haskell@v1.1
+        with:
+          enable-stack: true
+          stack-version: 'latest'
+      - run: make
