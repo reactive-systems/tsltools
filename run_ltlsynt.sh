@@ -1,9 +1,10 @@
 filename=$(basename -- "$1")
 extension="${filename##*.}"
 filename="${filename%.*}"
-LTL=$(syfco $1 -f ltlxba -m fully)
-IN=$(syfco $1 --print-input-signals)
-OUT=$(syfco $1 --print-output-signals)
+./tsl2tlsf $1 > $filename.tlsf
+LTL=$(syfco $filename.tlsf -f ltlxba -m fully)
+IN=$(syfco $filename.tlsf --print-input-signals)
+OUT=$(syfco $filename.tlsf --print-output-signals)
 ltlsynt --formula="$LTL" --ins="$IN" --outs="$OUT" > $filename.hoa
 sed -i 1d $filename.hoa
 ./hoa2code $filename.hoa --arrow > $filename.code
