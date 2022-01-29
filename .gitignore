@@ -30,6 +30,8 @@ cfmsym
 cstratsim
 tslcoregen
 tslminrealizable
+hoa2code
+parsehoa
 .commit
 .stack-work
 local_testing
