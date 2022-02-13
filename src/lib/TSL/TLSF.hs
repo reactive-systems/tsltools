@@ -8,11 +8,15 @@
 -----------------------------------------------------------------------------
 
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+
 
 -----------------------------------------------------------------------------
 
 module TSL.TLSF
   ( toTLSF
+  , tlsfToTslTerm 
   ) where
 
 -----------------------------------------------------------------------------
@@ -28,6 +32,9 @@ import TSL.Logic
   , exactlyOne
   , outputs
   , tlsfFormula
+  , tslFormula
+  , decodeOutputAP
+  , decodeInputAP
   , updates
   )
 
@@ -35,7 +42,10 @@ import Data.Set (elems, toList, union)
 
 import qualified Data.Set as S (map)
 
-import Data.List (groupBy)
+import Data.List 
+  ( groupBy
+  , isPrefixOf
+  )
 
 import Data.Function (on)
 
@@ -99,3 +109,19 @@ toTLSF name Specification{..} = unlines
       $ groupBy ((==) `on` fst) upds
 
 -----------------------------------------------------------------------------
+
+
+-- | Translates tlsf term back into a TSL predicate or update term
+--   only works on tslf generated from a TSL spec
+
+tlsfToTslTerm :: String -> String
+tlsfToTslTerm t = 
+  if isPrefixOf "p0" t
+  then generateTSLString Check decodeInputAP t
+  else generateTSLString (uncurry Update) decodeOutputAP t
+
+generateTSLString :: forall a b. _ -> (String -> Either a b) -> String -> String
+generateTSLString tslType decoder x =
+  either (const "ERR") (\t -> (tslFormula id $ tslType t)) $
+    (decoder) x
+

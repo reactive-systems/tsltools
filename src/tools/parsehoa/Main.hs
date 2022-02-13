@@ -31,7 +31,7 @@ import TSL (implement)
 import TSL (decodeOutputAP) 
 import TSL (decodeInputAP)
 import TSL (tslFormula)
-import qualified TSL as T (Formula(..))
+import TSL (tlsfToTslTerm)
 import Data.Either 
 import Data.Char 
 import Data.List 
@@ -79,16 +79,4 @@ main = do
 
 translateEdges :: HOA -> HOA
 translateEdges hoa@HOA {..} =
-  hoa {atomicPropositionName = translateToTSL . atomicPropositionName} 
-
-translateToTSL :: String -> String
-translateToTSL t = 
-  if isPrefixOf "p0" t
-  then generateTSLString T.Check decodeInputAP t
-  else generateTSLString (uncurry T.Update) decodeOutputAP t
-
-generateTSLString :: forall a b. _ -> (String -> Either a b) -> String -> String
-generateTSLString tslType decoder x =
-  either (const "ERR") (\t -> (tslFormula id $ tslType t)) $
-    (decoder) x
-
+  hoa {atomicPropositionName = tlsfToTslTerm . atomicPropositionName} 

@@ -44,6 +44,7 @@ module TSL
   , split
   , splitAssumptions
   , specifications2dependencies
+  , tlsfToTslTerm
     -- * CFM Utilities
   , CodeTarget(..)
   , CFM
@@ -97,7 +98,10 @@ import TSL.Specification (Specification(..), toFormula, toTSL)
 
 import TSL.Reader (fromTSL)
 
-import TSL.TLSF (toTLSF)
+import TSL.TLSF 
+  ( toTLSF
+  , tlsfToTslTerm 
+  )
 
 import TSL.Splitter (split, splitAssumptions)
 
