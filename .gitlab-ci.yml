@@ -3,3 +3,4 @@ image: "registry.intelligent-conception.de/container_registry/container_registry
 testing:
   script:
     - stack build --test
+    - make && /tslsynth src/test/res/specs/Heating.tsl --python

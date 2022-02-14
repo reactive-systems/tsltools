@@ -19,19 +19,18 @@ synthesis.
 
 # Tool Overview
 
+To run full pipeline synthesis, use the `tslsynth` tool.
+This takes a TSL spec and generates a .code file in the specified target language.
+For a quick test, you can run:
+
+```./tslsynth src/test/res/specs/Heating.tsl --python```
+
 The precise usage and arguments for each tool are describe by 
 `<toolname> --help`. Note that most tools will try to read some file 
 from `STDIN` when they get no specific input.
 
-Note that you will still need a LTL synthesis engine. 
-Recommended options are ltlsynt (https://spot.lrde.epita.fr/ltlsynt.html)
-or Strix (https://strix.model.in.tum.de/).
-`ltlsynt` is packaged with `spot` (https://spot.lrde.epita.fr/), which also includes `autfilt`, 
-a required dependency for visualizing generated systems.
-
-To run full pipeline synthesis, use the `run_ltlsynt.sh` script.
-This takes a TSL spec and generates a number of output files, including a .code file 
-and a .png of the system.
+Note that you will still need an LTL synthesis engine. 
+See [Installation](#installation) for further instructions.
 
 ## Analyzing TSL Specifications
 
@@ -50,6 +49,7 @@ and a .png of the system.
 
 ## Processing TSL Specifications
 
+* `tslsynt` runs full-pipeline synthesis, from spec to code.
 * `tsl2tlsf` under-approximates a TSL specification by a weaker LTL 
   specification that is given in the [TLSF](https://arxiv.org/abs/1604.02284)
   format.
@@ -107,10 +107,14 @@ installation. After `stack` is installed just type
 in the main directory to build TSL tools.
 
 You will also need to install an LTL synthesis engine.
-A good option is `SPOT` https://spot.lrde.epita.fr/install.html
+Recommended options are ltlsynt (https://spot.lrde.epita.fr/ltlsynt.html)
+or Strix (https://strix.model.in.tum.de/).
+`ltlsynt` is packaged with `spot` (https://spot.lrde.epita.fr/), which also includes `autfilt`, 
+a required dependency for visualizing generated systems (that have been postprocessed with `parsehoa`.
 
-If you use `spot`, you will then also need the `syfco` tool.
-Clone the repo here: https://github.com/reactive-systems/syfco and ```stack install```.
+If you use `autfilt` from the `spot` package to visualize code, you will then also need the `syfco` tool.
+To install, follow the directions at the repo here: https://github.com/reactive-systems/syfco and ```stack install```.
+Visualization will soon be replaced so that this is not necessary.
 
 # Research and Documentation
 
