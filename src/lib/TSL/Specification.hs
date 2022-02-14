@@ -38,6 +38,9 @@ data Specification =
 -----------------------------------------------------------------------------
 
 -- | Create one formula out of assumptions and guarantees.
+--   TODO, look into this. 
+--   it seems to not work, so new code in TLSF.hs was need
+--   which directly generates a seperate ASSUME block
 
 toFormula
   :: [Formula Int] -> [Formula Int] -> Formula Int

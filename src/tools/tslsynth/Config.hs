@@ -55,6 +55,7 @@ data Configuration =
     -- | Name of the synthesized signal function that is exported by
     -- the module.
   , functionName :: String
+  , writeHoa :: FilePath
   } deriving (Eq, Ord)
 
 configParser :: Parser Configuration
@@ -91,6 +92,13 @@ configParser = Configuration
       <> short 'f'
       <> help "overwrites the name of the exported function; if not set, the filename of the passed input file is used; if reading from STDIN, the default 'cfm' is used"
       <> metavar "FUNC"
+      <> value ""
+      )
+  <*> option str
+      (  long "write-hoa"
+      <> short 'h'
+      <> help "Writes the inermediate HOA file that was generated to the given filepath "
+      <> metavar "HOA"
       <> value ""
       )
 

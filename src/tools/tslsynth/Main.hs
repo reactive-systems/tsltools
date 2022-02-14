@@ -28,7 +28,8 @@ import Data.List (isPrefixOf)
 
 import System.FilePath.Posix (takeBaseName)
 
-import System.Process (readProcess)
+import System.Process (readProcessWithExitCode)
+import System.Exit 
 
 import qualified Syfco as S
 -----------------------------------------------------------------------------
@@ -39,13 +40,14 @@ main
 main = do
   initEncoding
 
-  Configuration{input, output, codeTarget, moduleName, functionName} <- parseArguments
+  Configuration{input, output, codeTarget, moduleName, functionName, writeHoa} <- parseArguments
   let fileBasename = takeBaseName $ fromJust input
 
   -- tsl2tlsf
   spec <- loadTSL input
   let tlsfSpec = toTLSF fileBasename spec
-  
+  writeFile "test.tlsf" tlsfSpec
+ 
   -- call ltlSynt
   hoaOutput <- callLtlsynt tlsfSpec
 
@@ -54,9 +56,12 @@ main = do
     then do
       return $ unlines $ tail $ lines $ hoaOutput
     else 
-      print hoaOutput >>
       error "unrealizable spec"
       --error $ tslCoreGen $ fromJust input
+
+  if writeHoa /= ""
+  then writeFile writeHoa hoaContents
+  else return ()
 
   let hoa = parse hoaContents
   putStrLn $ either id (implementHoa codeTarget) hoa
@@ -83,8 +88,13 @@ callLtlsynt tlsfContents = do
     ltlOuts     = prOutputs S.defaultCfg tlsfSpec
     ltlFormulae = prFormulae S.defaultCfg{ S.outputMode = S.Fully, S.outputFormat = S.LTLXBA } tlsfSpec
     ltlCommandArgs = [ltlFormulae, ltlIns, ltlOuts]
-  r <- readProcess "./tlsfSynt.sh" ltlCommandArgs []
-  return r
+  (exitCode, stdout, stderr) <- readProcessWithExitCode "./tlsfSynt.sh" ltlCommandArgs []
+  if exitCode /= ExitSuccess
+  then
+    print "TSL spec UNREALIZABLE" >>
+    return "UNREALIZABLE"
+  else
+    return stdout
 
 
 prFormulae 
