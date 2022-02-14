@@ -414,22 +414,10 @@ symbols = unions . ((<*>) [inputs, outputs, functions, predicates]) . pure
 -----------------------------------------------------------------------------
 
 exactlyOne
-  :: [Formula a ] -> Formula a
+  :: Eq a => [Formula a] -> Formula a
 
 exactlyOne xs =
-  case split ([],[]) xs of
-    ( [], []) -> FFalse
-    ( [],[x]) -> x
-    ([x], []) -> x
-    ( ys, zs) ->
-      Not $ Equiv
-        (And [exactlyOne ys, Not $ Or zs])
-        (And [exactlyOne zs, Not $ Or ys])
-
-  where
-    split (a,b) = \case
-      (x:xr) -> split (b,x:a) xr
-      []     -> (a,b)
+  Or $ map (\x -> And ([x] ++ map Not (filter (/= x) xs))) xs
 
 -----------------------------------------------------------------------------
 
