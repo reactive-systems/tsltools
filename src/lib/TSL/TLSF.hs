@@ -77,8 +77,11 @@ toTLSF name Specification{..} = unlines
       [ "  OUTPUTS {"
       , concatMap ((++ ";\n") . ("    " ++)) outs ++ "  }"
       ]
+  , "  ASSUME {"
+  , unlines $ map (\x -> "    " ++ toTLSF x ++ ";") assumptions
+  , "  }\n"
   , "  GUARANTEE {"
-  , "    " ++ toTLSF (And [Globally mutual, formula])  ++ ";"
+  , unlines $ map (\x -> "    " ++ toTLSF x ++ ";") (mutual ++ [formula])
   , "  }"
   , "}"
   ]
@@ -86,6 +89,7 @@ toTLSF name Specification{..} = unlines
   where
     formula = toFormula assumptions guarantees
 
+    toTLSF :: Formula Int -> String
     toTLSF =
       tlsfFormula (stName symboltable)
 
@@ -104,8 +108,7 @@ toTLSF name Specification{..} = unlines
       $ outputs formula
 
     mutual =
-        And
-      $ map (exactlyOne . map (uncurry Update))
+        map (Globally. exactlyOne . map (uncurry Update))
       $ groupBy ((==) `on` fst) upds
 
 -----------------------------------------------------------------------------
