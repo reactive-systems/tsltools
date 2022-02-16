@@ -113,6 +113,7 @@ prInputs
 
 prInputs c s = case S.inputs c s of
   Left err     -> show err
+  Right ([])   -> ""
   Right (x:xr) -> x ++ concatMap ((:) ',' . (:) ' ') xr
 
 -----------------------------------------------------------------------------

@@ -1,0 +1,7 @@
+always assume {
+
+}
+always guarantee {
+   F ([x <- y]);
+   F ([x <- z]);
+}
