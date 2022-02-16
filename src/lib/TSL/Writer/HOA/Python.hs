@@ -15,6 +15,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 
 module TSL.Writer.HOA.Python
@@ -24,6 +25,8 @@ module TSL.Writer.HOA.Python
 import qualified TSL.Logic as T (Formula(..), decodeOutputAP, decodeInputAP, tslFormula ) 
 import Data.List ( isPrefixOf, isInfixOf )
 import Data.Tuple ( swap )
+
+import Data.Text(pack, unpack, replace)
 
 import Hanoi
     ( HOA(..), parse, AcceptanceSet, Label, State, Formula(..) )
@@ -53,7 +56,7 @@ printHOALines hoa@HOA {..} =
         ++
         [strInd s]
         ++
-        ["):", indent 1]
+        ["):"]
       )
       :
       map printEdge (toList $ edges s)
@@ -76,8 +79,8 @@ printHOALines hoa@HOA {..} =
         termStringList = map (map (printTSLFormula strInd2)) splitFormulas :: [[String]]
         predUpds = splitPredUpdates termStringList
         predUpdToCode (preds, upds) = let
-            conditional =  intercalate (" and"++ indent 3) preds
-            body = indent 4 ++ intercalate (indent 4) (upds ++ [stateUpdate])
+            conditional =  if preds == [] then "True" else intercalate (" and"++ indent 3) preds
+            body = indent 4 ++ intercalate (indent 4) ((map updateToAssignment upds) ++ [stateUpdate])
           in
             "if (" ++ conditional ++ "):" ++ body
       in
@@ -92,6 +95,13 @@ printHOALines hoa@HOA {..} =
 
 -----------------------------------------------------------------------------
 -- | Different library related printing methods
+
+updateToAssignment :: String -> String
+updateToAssignment = 
+  filter (\c -> c /= '[' && c /= ']'). replaceUpdate
+
+replaceUpdate :: String -> String
+replaceUpdate = unpack . replace "<-" "=" . pack
 
 negationSymbol :: String
 negationSymbol = "not"
