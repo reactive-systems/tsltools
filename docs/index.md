@@ -1,4 +1,4 @@
-Code - https://github.com/Barnard-PL-Labs/tsltools
+Code - [https://github.com/Barnard-PL-Labs/tsltools](https://github.com/Barnard-PL-Labs/tsltools)
 
 # Basic usage
 
@@ -30,4 +30,4 @@ if (currentState ==  1 ):
         currentState = 0
 ```
 
-You can save this in a file called simple.py, and run it as you would hand written python code.
+You can save this in a file called simple.py (e.g. by running `./tslsynth Simple.tsl --python > simple.py`), and run it as you would hand-written python code (e.g. `python simple.py`).
