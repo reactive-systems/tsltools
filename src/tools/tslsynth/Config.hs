@@ -79,6 +79,7 @@ configParser = Configuration
     <|> flag' JavaScript  (long "javascript"  <> help "generates code for Javascript")
     <|> flag' WebAudio    (long "webaudio"    <> help "generates code for JS+WebAudio backend")
     <|> flag' Python      (long "python"      <> help "generates code for Python")
+    <|> flag' XState      (long "xstate"      <> help "generates code for xstate diagrams")
     )
   <*> option str
       (  long "module-name"
