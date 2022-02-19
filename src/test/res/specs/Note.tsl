@@ -1,0 +1,8 @@
+always assume {
+  
+}
+always guarantee {
+    G [play <- noteG]
+
+}
+

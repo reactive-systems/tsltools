@@ -1,0 +1,9 @@
+always assume {
+    G (p1);
+}
+
+always guarantee {
+    F ([play <- noteE]);
+    F ([play <- noteG]);
+}
+
