@@ -52,11 +52,9 @@ printHOALines hoa@HOA {..} =
     printState :: FiniteBounds HOA => State -> [String]
     printState s =
       unwords (
-        ["\nif (currentState == "]
-        ++
         [strInd s]
         ++
-        ["):"]
+        [": {"]
       )
       :
       map printEdge (toList $ edges s)
@@ -82,7 +80,7 @@ printHOALines hoa@HOA {..} =
             conditional =  if preds == [] then "True" else intercalate (" and"++ indent 3) preds
             body = indent 4 ++ intercalate (indent 4) ((map updateToAssignment upds) ++ [stateUpdate])
           in
-            "if (" ++ conditional ++ "):" ++ body
+            "cond: \'" ++ conditional ++ "\'," ++ body
       in
         concatMap (\x -> indent 2 ++ predUpdToCode x) predUpds
 
