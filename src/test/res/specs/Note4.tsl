@@ -1,6 +1,6 @@
 always assume {
-    G (p1);
 }
+
 always guarantee {
     F [play <- noteE];
     [play <- noteE] -> X [play <- noteG];
