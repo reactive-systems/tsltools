@@ -100,7 +100,7 @@ Guarantee Block: The guarantee block is a system that we can control through our
 
 ```
   1 always assume {
-  2     G (p1);
+  2    
   3 }
   4 always guarantee {
   5     G [play <- noteG];
@@ -114,7 +114,7 @@ This first example plays the note G only. Line 5 is the main logic of the code, 
 
 ```
   1 always assume {
-  2     G (p1);
+  2     
   3 }
   4 
   5 always guarantee {
@@ -129,7 +129,7 @@ The next example generates code that produces a random sequence of Gs and Es. In
 
 ```
   1 always assume {
-  2     G (p1);
+  2     
   3 }
   4 
   5 always guarantee {
@@ -144,7 +144,7 @@ The third example plays an unspecified number of Gs – can be zero – before p
 
 ```
   1 always assume {
-  2     G (p1);
+  2    
   3 }
   4 always guarantee {
   5     F [play <- noteE];
