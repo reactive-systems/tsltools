@@ -99,14 +99,13 @@ Guarantee Block: The guarantee block is a system that we can control through our
 ## Example 1:
 
 ```
-always assume {
-        G(p1) ;
- }
-always guarantee {
-
-        F([play <- noteE]) ;
-        F([play <- noteG]) ;
- }
+  1 always assume {
+  2     G (p1);
+  3 }
+  4 always guarantee {
+  5     G [play <- noteG];
+  6 }
+  7 
 ```
 
 This first example plays the note G only. Line 5 is the main logic of the code, which guarantees – represented by the symbol “G” – that we will play note G. Based on this specification, corresponding code will be generated from our logic that will produce a string of notes such as “GGGGGGGG…”.					
@@ -114,14 +113,14 @@ This first example plays the note G only. Line 5 is the main logic of the code, 
 ## Example 2: 
 
 ```
-always assume {
-    G (p1);
-}
-
-always guarantee {
-    F ([play <- noteE]);
-    F ([play <- noteG]);
-}
+  1 always assume {
+  2     G (p1);
+  3 }
+  4 
+  5 always guarantee {
+  6     F ([play <- noteE]);
+  7     F ([play <- noteG]);
+  8 }
 ```
 
 The next example generates code that produces a random sequence of Gs and Es. In the TSL specification on lines 6 and 7, we say that the system should always finally play an E or a G. This means once a G is played, after some amount of continuous Gs, there will be an E that is played. And vice versa, after some amount Es being continuously played, there will be a G that is played. This results in a loop of random Gs and Es being played, such as a string of notes “GGGEEEEGEEGGGGGE…” or “EGEGEGEEEEEEG…”.
@@ -129,14 +128,14 @@ The next example generates code that produces a random sequence of Gs and Es. In
 ## Example 3:
 
 ```
-always assume {
-    G (p1);
-}
-
-always guarantee {
-    F [play <- noteE];
-    [play <- noteE] -> X [play <- noteG];
-}
+  1 always assume {
+  2     G (p1);
+  3 }
+  4 
+  5 always guarantee {
+  6     F [play <- noteE];
+  7     [play <- noteE] -> X [play <- noteG];
+  8 }
 ```
 
 The third example plays an unspecified number of Gs – can be zero – before playing exactly one E, then repeats the unspecified amount of sequence of Gs followed by 1 E exactly. The logic in line 6 says that finally – represented by the symbol “F” – we will play an E after some time. On line 7, it specifies that as soon as a note E is played, next – represented by the symbol “X” – we need to play note G until we again play a single note E as specified on line 6. This logic will produce code that generates a series of notes such as “EGEGEGGGGE”, “GGGGGEGEGE”, or “EGGGGEGGGE”.
@@ -144,14 +143,14 @@ The third example plays an unspecified number of Gs – can be zero – before p
 ## Example 4: 
 
 ```
-always assume {
-    G (p1);
-}
-always guarantee {
-    F [play <- noteE];
-    [play <- noteE] -> X [play <- noteG];
-    [play <- noteG] -> X [play <- noteE];
-}
+  1 always assume {
+  2     G (p1);
+  3 }
+  4 always guarantee {
+  5     F [play <- noteE];
+  6     [play <- noteE] -> X [play <- noteG];
+  7     [play <- noteG] -> X [play <- noteE];
+  8 }
 ```
 
 The final example specifies that we should start with either note G or E and alternate 1 note at a time between G and E, but always end on an E. Lines 5-7 represent the TSL specifications for the system. On line 5, it guarantees that we will finally play note E at the end of the series of notes. Lines 6 and 7 specify that as soon as we play note E, the next note we should play is note G, and as soon as we play note G, the following note to be played should be note E. Some possible sequences of notes that can generated from the code are “GEGEGEGEGEGEGE” and “EGEGEGEGE”.
