@@ -106,7 +106,6 @@ Guarantee Block: The guarantee block is a system that we can control through our
 <tr>
 <td>
 <pre>
-```
   1 always assume {
   2    
   3 }
@@ -114,7 +113,6 @@ Guarantee Block: The guarantee block is a system that we can control through our
   5     G [play <- noteG];
   6 }
   7
-```
 </pre>
 </td>
 <td>
@@ -137,7 +135,14 @@ This first example plays the note G only. Line 5 is the main logic of the code, 
 
 ## Example 2: 
 
-```
+<table>
+<tr>
+<th>TSL Specification</th>
+<th>Generated Code</th>
+</tr>
+<tr>
+<td>
+<pre>
   1 always assume {
   2     
   3 }
@@ -146,13 +151,63 @@ This first example plays the note G only. Line 5 is the main logic of the code, 
   6     F ([play <- noteE]);
   7     F ([play <- noteG]);
   8 }
+</pre>
+</td>
+<td>
+
+``` 
+if (currentState ==  0 ): 
+  
+
+    if (not(p1)):
+        [play <- play]
+        currentState = 1
+    if (not(p1)):
+        [play <- noteE]
+        currentState = 1
+
+    if (p1):
+        [play <- noteG]
+        currentState = 2
+
+if (currentState ==  1 ): 
+  
+
+    if ():
+        [play <- play]
+        currentState = 1
+    if ():
+        [play <- noteE]
+        currentState = 1
+
+if (currentState ==  2 ): 
+  
+
+    if (p1):
+        [play <- noteE]
+        currentState = 0
+
+    if (not(p1)):
+        [play <- noteE]
+        currentState = 1
 ```
+
+</td>
+</tr>
+</table>
 
 The next example generates code that produces a random sequence of Gs and Es. In the TSL specification on lines 6 and 7, we say that the system should always finally play an E or a G. This means once a G is played, after some amount of continuous Gs, there will be an E that is played. And vice versa, after some amount Es being continuously played, there will be a G that is played. This results in a loop of random Gs and Es being played, such as a string of notes “GGGEEEEGEEGGGGGE…” or “EGEGEGEEEEEEG…”.
 
 ## Example 3:
 
-```
+<table>
+<tr>
+<th>TSL Specification</th>
+<th>Generated Code</th>
+</tr>
+<tr>
+<td>
+<pre>
   1 always assume {
   2     
   3 }
@@ -161,13 +216,63 @@ The next example generates code that produces a random sequence of Gs and Es. In
   6     F [play <- noteE];
   7     [play <- noteE] -> X [play <- noteG];
   8 }
+</pre>
+</td>
+<td>
+
+``` 
+if (currentState ==  0 ): 
+  
+
+    if (not(p1)):
+        [play <- play]
+        currentState = 1
+    if (not(p1)):
+        [play <- noteG]
+        currentState = 1
+
+    if (p1):
+        [play <- noteE]
+        currentState = 2
+
+if (currentState ==  1 ): 
+  
+
+    if ():
+        [play <- noteE]
+        currentState = 1
+
+if (currentState ==  2 ): 
+  
+
+    if (p1):
+        [play <- noteG]
+        currentState = 0
+
+    if (not(p1)):
+        [play <- play]
+        currentState = 1
+    if (not(p1)):
+        [play <- noteE]
+        currentState = 1
 ```
+
+</td>
+</tr>
+</table>
 
 The third example plays an unspecified number of Gs – can be zero – before playing exactly one E, then repeats the unspecified amount of sequence of Gs followed by 1 E exactly. The logic in line 6 says that finally – represented by the symbol “F” – we will play an E after some time. On line 7, it specifies that as soon as a note E is played, next – represented by the symbol “X” – we need to play note G until we again play a single note E as specified on line 6. This logic will produce code that generates a series of notes such as “EGEGEGGGGE”, “GGGGGEGEGE”, or “EGGGGEGGGE”.
 
 ## Example 4: 
 
-```
+<table>
+<tr>
+<th>TSL Specification</th>
+<th>Generated Code</th>
+</tr>
+<tr>
+<td>
+<pre>
   1 always assume {
   2    
   3 }
@@ -176,7 +281,43 @@ The third example plays an unspecified number of Gs – can be zero – before p
   6     [play <- noteE] -> X [play <- noteG];
   7     [play <- noteG] -> X [play <- noteE];
   8 }
+</pre>
+</td>
+<td>
+
+``` 
+if (currentState ==  0 ): 
+  
+
+    if (not(p1)):
+        [play <- play]
+        currentState = 1
+    if (not(p1)):
+        [play <- noteG]
+        currentState = 1
+
+    if (p1):
+        [play <- noteE]
+        currentState = 1
+
+if (currentState ==  1 ): 
+  
+
+    if (p1):
+        [play <- noteG]
+        currentState = 0
+
+    if (not(p1)):
+        [play <- play]
+        currentState = 1
+    if (not(p1)):
+        [play <- noteE]
+        currentState = 1
 ```
+
+</td>
+</tr>
+</table>
 
 The final example specifies that we should start with either note G or E and alternate 1 note at a time between G and E, but always end on an E. Lines 5-7 represent the TSL specifications for the system. On line 5, it guarantees that we will finally play note E at the end of the series of notes. Lines 6 and 7 specify that as soon as we play note E, the next note we should play is note G, and as soon as we play note G, the following note to be played should be note E. Some possible sequences of notes that can generated from the code are “GEGEGEGEGEGEGE” and “EGEGEGEGE”.
 
