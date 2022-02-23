@@ -1,4 +1,4 @@
-# TSL for Dummies
+# Introduction to TSL
 
 ## What is TSL? 
 
@@ -98,6 +98,14 @@ Guarantee Block: The guarantee block is a system that we can control through our
 
 ## Example 1:
 
+<table>
+<tr>
+<th>TSL Specification</th>
+<th>Generated Code</th>
+</tr>
+<tr>
+<td>
+<pre>
 ```
   1 always assume {
   2    
@@ -105,8 +113,25 @@ Guarantee Block: The guarantee block is a system that we can control through our
   4 always guarantee {
   5     G [play <- noteG];
   6 }
-  7 
+  7
 ```
+</pre>
+</td>
+<td>
+
+``` 
+  1 if (currentState ==  0 ):
+  2 
+  3 
+  4     if ():
+  5         [play <- noteG]
+  6         currentState = 0
+  7
+```
+
+</td>
+</tr>
+</table>
 
 This first example plays the note G only. Line 5 is the main logic of the code, which guarantees – represented by the symbol “G” – that we will play note G. Based on this specification, corresponding code will be generated from our logic that will produce a string of notes such as “GGGGGGGG…”.					
 
