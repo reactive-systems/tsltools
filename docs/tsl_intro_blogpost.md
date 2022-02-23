@@ -3,7 +3,8 @@
 ## What is TSL? 
 
 TSL stands for Temporal Stream Logic. It is a type of temporal logic, which is a logical system containing rules that are propositions of time. Words like “always”, “eventually”, and “until” are common drivers of temporal logic (see [this wikipedia page](https://en.wikipedia.org/wiki/Temporal_logic) for more information on temporal logic). 
-Temporal Stream Logic allows for the separation of “control” and “data” (Finkbeiner, Klein, Piskac, Santolucito). The term control refers to the temporal logic of a given environment - for example, the rules for turning on and off heat in a room environment. The term data refers to a specific instance of a room environment with a specific set of parameters that need to be handled by these rules.
+
+Temporal Stream Logic allows for the separation of “control” and “data” ([Finkbeiner et al. 2019](https://arxiv.org/abs/1712.00246)). The term control refers to the temporal logic of a given environment - for example, the rules for turning on and off heat in a room environment. The term data refers to a specific instance that the TSL specification was created to handle. 
 
 Separating control and data means you can write a high-level specification for any logical system that you want, like the heating example, without having to worry about handling real data for a specific instance of this environment. A synthesis tool can then be used to translate this TSL specification into code, by generating a program for a specific instance of incoming data for the environment (note: there could be multiple possibilities for the instantiation of this environment. The synthesis tool will generate only one of these valid possibilities when the TSL specification is synthesized). 
 
@@ -24,31 +25,6 @@ If we were to directly write out the code handling all cases for our heating exa
       not(room.heating.on)):
         [room.heating.ctrl <- turnOn()]
         currentState = 1
-
-    if (not(room.heating.off) and
-      not(room.heating.on)):
-        [room.heating.ctrl <- turnOn()]
-        currentState = 2
-    if (room.heating.off and
-      room.heating.on):
-        [room.heating.ctrl <- turnOn()]
-        currentState = 2
-    if (not(room.heating.off) and
-      not(room.heating.on)):
-        [room.heating.ctrl <- room.heating.ctrl]
-        currentState = 2
-    if (room.heating.off and
-      room.heating.on):
-        [room.heating.ctrl <- room.heating.ctrl]
-        currentState = 2
-    if (not(room.heating.off) and
-      not(room.heating.on)):
-        [room.heating.ctrl <- turnOff()]
-        currentState = 2
-    if (room.heating.off and
-      room.heating.on):
-        [room.heating.ctrl <- turnOff()]
-        currentState = 2
 
     if (not(room.heating.off) and
       room.heating.on and
