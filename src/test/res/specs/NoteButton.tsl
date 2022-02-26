@@ -1,0 +1,10 @@
+always assume {
+    F ! buttonPressed(userActivity);
+}
+
+always guarantee {
+    buttonPressed(userActivity) -> [play <- noteE];
+    F [play <- noteE];
+    F [play <- noteG];
+}
+
