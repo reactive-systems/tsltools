@@ -60,16 +60,16 @@ The best way to understand TSL better is to look at examples. Here are four basi
 
 Before we dive into these examples, let’s go over some basic terminology in TSL:
 
-G: The symbol for always, as in “always play note G”.
-F: The symbol for finally, as in “finally play note G”. This is the equivalent of “eventually” – so your logic will always eventually play note G.
-U: The symbol for until, as in “play note G until play note E”.
-X: The symbol for next, as in “next play note G”.
+**G**: The symbol for always, as in “always play note `G`”.\
+**F**: The symbol for finally, as in “finally play note `G`”. This is the equivalent of “eventually” – so your logic will always eventually play note `G`.\
+**U**: The symbol for until, as in “play note `G` until play note `E`”.\
+**X**: The symbol for next, as in “next play note `G`”.
 
 You can refer to [this page](https://en.wikipedia.org/wiki/Linear_temporal_logic) on linear temporal logic for more symbols and more background information.
 
-Assume Block: The assumption block represents the input we get from our environment (e.g. we assume that a note is always played).
+*Assume Block*: The assumption block represents the input we get from our environment (e.g. we assume that a note is always played).
 
-Guarantee Block: The guarantee block is a system that we can control through our logic. 
+*Guarantee Block*: The guarantee block is a system that we can control through our logic. 
 
 
 ## Example 1:
@@ -93,20 +93,20 @@ Guarantee Block: The guarantee block is a system that we can control through our
 </td>
 <td>
 
-``` 
+<pre>
   1 if (currentState ==  0 ):
   2
   3     if (True):
   4         play = noteG
   5         currentState = 0
   6
-```
+</pre>
 
 </td>
 </tr>
 </table>
 
-This first example plays the note G only. Line 5 is the main logic of the code, which guarantees – represented by the symbol “G” – that we will play note G. Based on this specification, corresponding code will be generated from our logic that will produce a string of notes such as “GGGGGGGG…”.					
+This first example plays the note `G` only. Line 5 is the main logic of the code, which guarantees – represented by the symbol “**G**” – that we will play note `G`. Based on this specification, corresponding code will be generated from our logic that will produce a string of notes such as “GGGGGGGG…”.					
 
 ## Example 2: 
 
@@ -131,7 +131,7 @@ This first example plays the note G only. Line 5 is the main logic of the code, 
 </td>
 <td>
 
-``` 
+<pre>
   1 if (currentState ==  0 ):
   2
   3     if (True):
@@ -144,14 +144,13 @@ This first example plays the note G only. Line 5 is the main logic of the code, 
   10        play = noteE
   11        currentState = 0
   12
-
-```
+</pre>
 
 </td>
 </tr>
 </table>
 
-The next example generates code that produces a random sequence of Gs and Es. In the TSL specification on lines 6 and 7, we say that the system should always finally play an E or a G. This means once a G is played, after some amount of continuous Gs, there will be an E that is played. And vice versa, after some amount Es being continuously played, there will be a G that is played. This results in a loop of random Gs and Es being played, such as a string of notes “GGGEEEEGEEGGGGGE…”, “EGEGEGEEEEEEG…”, "GEGEGEGE...".
+The next example generates code that produces a random sequence of `G`s and `E`s. In the TSL specification on lines 6 and 7, we say that the system should always finally play an `E` or a `G`. This means once a `G` is played, after some amount of continuous `G`s, there will be an `E` that is played. And vice versa, after some amount `E`s being continuously played, there will be a `G` that is played. This results in a loop of random `G`s and `E`s being played, such as a string of notes “GGGEEEEGEEGGGGGE…”, “EGEGEGEEEEEEG…”, "GEGEGEGE...".
 
 ## Example 3:
 
@@ -176,7 +175,7 @@ The next example generates code that produces a random sequence of Gs and Es. In
 </td>
 <td>
 
-``` 
+<pre>
   1 if (currentState ==  0 ):
   2
   3     if (True):
@@ -189,13 +188,13 @@ The next example generates code that produces a random sequence of Gs and Es. In
   10        play = noteG
   11        currentState = 0
   12
-```
+</pre>
 
 </td>
 </tr>
 </table>
 
-The third example plays an unspecified number of Gs – can be zero – before playing exactly one E, then repeats the unspecified amount of sequence of Gs followed by 1 E exactly. The logic in line 6 says that finally – represented by the symbol “F” – we will play an E after some time. On line 7, it specifies that as soon as a note E is played, next – represented by the symbol “X” – we need to play note G until we again play a single note E as specified on line 6. This logic will produce code that generates a series of notes such as “EGEGEGGGGE”, “GGGGGEGEGE”, or “GEGEGEGE”.
+The third example plays an unspecified number of `G`s – can be zero – before playing exactly one `E`, then repeats the unspecified amount of sequence of `G`s followed by 1 `E` exactly. The logic in line 6 says that finally – represented by the symbol “**F**” – we will play an `E` after some time. On line 7, it specifies that as soon as a note `E` is played, next – represented by the symbol “**X**” – we need to play note `G` until we again play a single note `E` as specified on line 6. This logic will produce code that generates a series of notes such as “EGEGEGGGGE”, “GGGGGEGEGE”, or “GEGEGEGE”.
 
 ## Example 4: 
 
@@ -219,7 +218,7 @@ The third example plays an unspecified number of Gs – can be zero – before p
 </td>
 <td>
 
-``` 
+<pre>
   1 if (currentState ==  0 ):
   2
   3     if (True):
@@ -232,13 +231,13 @@ The third example plays an unspecified number of Gs – can be zero – before p
   10        play = noteG
   11        currentState = 0
   12
-```
+</pre>
 
 </td>
 </tr>
 </table>
 
-The final example specifies that we should start with either note G or E and alternate 1 note at a time between G and E, but always end on an E. Lines 5-7 represent the TSL specifications for the system. On line 5, it guarantees that we will finally play note E at the end of the series of notes. Lines 6 and 7 specify that as soon as we play note E, the next note we should play is note G, and as soon as we play note G, the following note to be played should be note E. Some possible sequences of notes that can generated from the code are “GEGEGEGEGEGEGE” and “EGEGEGEGE”.
+The final example specifies that we should start with either note `G` or `E` and alternate 1 note at a time between `G` and `E`, but always end on an `E`. Lines 5-7 represent the TSL specifications for the system. On line 5, it guarantees that we will finally play note `E` at the end of the series of notes. Lines 6 and 7 specify that as soon as we play note `E`, the next note we should play is note `G`, and as soon as we play note `G`, the following note to be played should be note `E`. Some possible sequences of notes that can generated from the code are “GEGEGEGEGEGEGE” and “EGEGEGEGE”.
 
 It is interesting to note that the generated code from the two-note specifications are identical across examples 2-4 because "GEGEGE" and "EGEGEGE" – produced by the generated code – are valid realizable sequences of notes for all three TSL specifications. 
 
