@@ -37,3 +37,12 @@ if (currentState ==  1 ):
 ```
 
 You can save this in a file called noteButton.py (e.g. by running `./tslsynth NoteButton.tsl --python > noteButton.py`), and run it as you would hand-written python code (e.g. `python noteButton.py`).
+
+To generate a visualization of this code as a state machine, run `./tslsynth NoteButton.tsl --xstate`. 
+You will get `xstate` code that can be visualized as follows:
+
+<iframe src="https://stately.ai/viz/embed/d3cae950-e307-4e9b-b0fa-a6917207fb96?mode=viz&panel=code&showOriginalLink=1&readOnly=1&pan=0&zoom=0&controls=0"
+allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
+sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
+></iframe>
+
