@@ -8,9 +8,9 @@ Temporal Stream Logic allows for the separation of “control” and “data” 
 
 Separating control and data means you can write a high-level specification for any logical system that you want, like the heating example, without having to worry about handling real data for a specific instance of this environment. A synthesis tool can then be used to translate this TSL specification into code, by generating a program for a specific instance of incoming data for the environment (note: there could be multiple possibilities for the instantiation of this environment. The synthesis tool will generate only one of these valid possibilities when the TSL specification is synthesized). 
 
-This means that we as creators of this system only have to worry about writing out a set of general rules for an environment - we leave the data processing and code generation to the synthesis tool. This workflow makes editing the logic much easier. 
+This means that we as creators of this system only have to worry about writing out a set of general rules for an environment - we leave the data processing and code generation to the synthesis tool. This setup does not only make editing code more accessible, but it also demonstrates how TSL can ultimately be a more intuitive language to learn and create logical systems with.
 
-If we were to directly write out the code handling all cases for our heating example, it would look something like this: 
+For example: if we were to directly write out the code handling all cases for our heating example, it would look something like this: 
 
 ```
  if (currentState ==  0 ): 
@@ -33,9 +33,9 @@ If we were to directly write out the code handling all cases for our heating exa
         currentState = 2
 ```
 
-This is the code for just one state - there are actually four states in total, resulting in four times the lines of code shown. The program needs to have many conditional statements to handle all possible instances of the room environment. Making changes to the code is therefore tedious and susceptible to error. 
+This is the code for just one state - there are actually four states in total, resulting in four times the lines of code shown. Just trying to think about this system in terms of the logic in this code feels less accessible and more prone to error. It is a way of thinking that is further from what most people naturally do. 
 
-In a TSL specification, we only have to focus on making sure the logic for a general set of rules is correct, so making changes to our environment is much easier. This is the TSL specification for our heating example:
+This would be the corresponding TSL specification for the logic above:
 
 ```
 always assume {
@@ -52,7 +52,7 @@ always guarantee {
     -> F room.heating.off
 ```
 
-The file is much shorter, and therefore easier to modify. 
+Even if you don't understand TSL yet, the main takeaway is that the logic is framed temporally - the general rules for heating in this environment are thought about in terms of _when_ heating should be turned on or off. This way of thinking arguably aligns better with how we create logical systems by default; most people would not think in terms of a lower-level state machine to capture the rules of a system. We more naturally think in terms of time, and which factors in a given scenario need to be taken into account over the course of time. TSL therefore serves as a language that more closely mirrors the way we construct logical systems in our minds, and gives synthesis tools the task of translating to relatively lower-level, executable code - so that we don't have to.
 
 ## Now let’s look at some examples:
 
