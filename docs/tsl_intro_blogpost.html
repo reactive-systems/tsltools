@@ -80,6 +80,10 @@ always guarantee {
 </tr>
 </table>
 
+<script src="https://unpkg.com/tone"></script>
+<button id="play-button">Play/Pause</button>
+<script src="tonejs/music3.js"></script>
+
 <p>This first example plays the note <code>G</code> only. Line 5 is the main logic of the code, which guarantees – represented by the symbol “<strong>G</strong>” – that we will play note <code>G</code>. Based on this specification, corresponding code will be generated from our logic that will produce a string of notes such as “GGGGGGGG…”.                    </p>
 <h2 id="example-2-">Example 2:</h2>
 <table>
@@ -165,6 +169,10 @@ always guarantee {
 </tr>
 </table>
 
+<script src="https://unpkg.com/tone"></script>
+<button id="play-button">Play/Pause</button>
+<script src="tonejs/music2.js"></script>
+
 <p>The third example plays an unspecified number of <code>G</code>s – can be zero – before playing exactly one <code>E</code>, then repeats the unspecified amount of sequence of <code>G</code>s followed by 1 <code>E</code> exactly. The logic in line 6 says that finally – represented by the symbol “<strong>F</strong>” – we will play an <code>E</code> after some time. On line 7, it specifies that as soon as a note <code>E</code> is played, next – represented by the symbol “<strong>X</strong>” – we need to play note <code>G</code> until we again play a single note <code>E</code> as specified on line 6. This logic will produce code that generates a series of notes such as “EGEGEGGGGE”, “GGGGGEGEGE”, or “GEGEGEGE”.</p>
 <h2 id="example-4-">Example 4:</h2>
 <table>
@@ -204,6 +212,10 @@ always guarantee {
 </td>
 </tr>
 </table>
+
+<script src="https://unpkg.com/tone"></script>
+<button id="play-button">Play/Pause</button>
+<script src="tonejs/music2.js"></script>
 
 <p>The final example specifies that we should start with either note <code>G</code> or <code>E</code> and alternate 1 note at a time between <code>G</code> and <code>E</code>, but always end on an <code>E</code>. Lines 5-7 represent the TSL specifications for the system. On line 5, it guarantees that we will finally play note <code>E</code> at the end of the series of notes. Lines 6 and 7 specify that as soon as we play note <code>E</code>, the next note we should play is note <code>G</code>, and as soon as we play note <code>G</code>, the following note to be played should be note <code>E</code>. Some possible sequences of notes that can generated from the code are “GEGEGEGEGEGEGE” and “EGEGEGEGE”.</p>
 <p>It is interesting to note that the generated code from the two-note specifications are identical across examples 2-4 because &quot;GEGEGE&quot; and &quot;EGEGEGE&quot; – produced by the generated code – are valid realizable sequences of notes for all three TSL specifications. </p>
