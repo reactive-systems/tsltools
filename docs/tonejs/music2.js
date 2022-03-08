@@ -1,6 +1,6 @@
+var first = true;
 document.getElementById("play-button").addEventListener("click", function() {
-  if (Tone.Transport.state !== 'started') {
-    
+  if (first) {
       const synthA = new Tone.Synth().toDestination();
       
       //play a note every quarter-note
@@ -9,6 +9,11 @@ document.getElementById("play-button").addEventListener("click", function() {
 	synthA.triggerAttackRelease(noteToPlay, "8n", time);
       }, "4n").start(0);
 
+      first = false;
+
+  }
+  if (Tone.Transport.state !== 'started') {
+    
       // the loop starts when the Transport is started
       Tone.Transport.start()
 
