@@ -1,4 +1,4 @@
-document.getElementById("play-button").addEventListener("click", function() {
+document.getElementById("play-button1").addEventListener("click", function() {
   
   if (Tone.Transport.state !== 'started') {
     const synthA = new Tone.Synth().toDestination();
