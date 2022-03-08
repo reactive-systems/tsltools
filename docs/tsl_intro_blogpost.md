@@ -3,6 +3,9 @@ title: All repos
 layout: default
 ---
 
+    <![CDATA[<script src="tonejs/music2.js">]]>
+    <![CDATA[</script>]]>
+
 # Introduction to TSL
 
 ## What is TSL? 
