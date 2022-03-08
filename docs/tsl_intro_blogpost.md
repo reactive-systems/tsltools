@@ -3,8 +3,12 @@ title: All repos
 layout: default
 ---
 
+<div style="display: none">
+
     <![CDATA[<script src="tonejs/music2.js">]]>
     <![CDATA[</script>]]>
+</div>
+
 
 # Introduction to TSL
 
