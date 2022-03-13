@@ -1,0 +1,12 @@
+always assume {
+   [response <- callAPI(query)] -> X ! cacheStale(query);
+   F !authedUser(query);
+}
+always guarantee {
+   (authedUser(query) -> ([response <- callAPI(query)]));
+   (!authedUser(query) -> ([response <- callAPI(query)] || [response <- cachedData]));
+   ([response <- callAPI(query)] -> [cachedData <- callAPI(query)]);
+   (cacheStale(query) -> (! [response <- cachedData] W [response <- callAPI(query)]));
+   F [response <- cachedData];
+
+}

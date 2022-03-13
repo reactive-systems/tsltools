@@ -1,0 +1,8 @@
+always assume {
+}
+
+always guarantee {
+    F [play <- noteE];
+    [play <- noteE] -> X [play <- noteG];
+}
+
