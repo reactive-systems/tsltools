@@ -80,7 +80,7 @@ printHOALines hoa@HOA {..} =
             conditional =  if preds == [] then "True" else intercalate (" and"++ indent 3) preds
             body = indent 4 ++ intercalate (indent 4) ((map updateToAssignment upds) ++ [stateUpdate])
           in
-            "cond: \'" ++ conditional ++ "\'," ++ body
+            "on: {" ++ "UPDATE: [\n"  ++ conditional ++ "]" ++ "}" ++ body
       in
         concatMap (\x -> indent 2 ++ predUpdToCode x) predUpds
 
