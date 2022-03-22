@@ -12,6 +12,8 @@ layout: default
 
 # Introduction to TSL
 
+### Authors: Danielle Cai (SEAS '22), Rhea Kothari (CC '22)
+
 ## What is TSL? 
 
 TSL stands for Temporal Stream Logic. It is a type of temporal logic, which is a logical system containing rules that are propositions of time. Words like “always”, “eventually”, and “until” are common drivers of temporal logic (see [this wikipedia page](https://en.wikipedia.org/wiki/Temporal_logic) for more information on temporal logic). 
