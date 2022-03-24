@@ -40,7 +40,7 @@ import Data.Set as Set (Set, elems, toList)
 import qualified Data.Bifunctor
 
 implementHoa :: HOA -> String
-implementHoa = unlines . printHOALines
+implementHoa = (unlines . printHOALines)
 
 printHOALines :: HOA -> [String]
 printHOALines hoa@HOA {..} =
@@ -55,9 +55,13 @@ printHOALines hoa@HOA {..} =
         [strInd s]
         ++
         [": {"]
+        ++
+        ["\n on: {"]
+        ++
+        ["\n UPDATE: ["]
       )
       :
-      map printEdge (toList $ edges s)
+      (map printEdge (toList $ edges (s))) ++ ["]"] ++ ["}"] ++ ["},"]
 
     printEdge ::
           FiniteBounds HOA
@@ -66,7 +70,7 @@ printHOALines hoa@HOA {..} =
     printEdge edge =
       let
         (target, label, _) = edge
-        stateUpdate = "target: " ++ printStateConj target
+        stateUpdate = "target: " ++ printStateConj target ++ ",\n},"
       in
         printLabel (fromJust label) stateUpdate
 
@@ -78,9 +82,9 @@ printHOALines hoa@HOA {..} =
         predUpds = splitPredUpdates termStringList
         predUpdToCode (preds, upds) = let
             conditional =  if preds == [] then "True" else intercalate (" and"++ indent 3) preds
-            body = indent 4 ++ intercalate (indent 4) ((map updateToAssignment upds) ++ [stateUpdate])
+            body = indent 4 ++ intercalate (indent 4) (((["actions: ["] ++ map updateToAssignment (upds ) ++ ["],"]) ++ [stateUpdate]))
           in
-            "on: {" ++ "UPDATE: [\n"  ++ conditional ++ "]" ++ "}" ++ body
+             "{cond: \'" ++ conditional ++ "\'," ++ body
       in
         concatMap (\x -> indent 2 ++ predUpdToCode x) predUpds
 
@@ -89,7 +93,7 @@ printHOALines hoa@HOA {..} =
 
     strInd2 = strIndWithMap apNamesMap
   in
-    concatMap printState values
+     ["states: {"] ++ concatMap printState values ++ ["}"]
 
 -----------------------------------------------------------------------------
 -- | Different library related printing methods
@@ -100,6 +104,10 @@ updateToAssignment =
 
 replaceUpdate :: String -> String
 replaceUpdate = unpack . replace "<-" "=" . pack
+
+actionMake :: String -> String
+actionMake = 
+  filter (\c -> c /= '[' && c /= ']'). replaceUpdate
 
 negationSymbol :: String
 negationSymbol = "not"
