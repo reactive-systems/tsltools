@@ -57,11 +57,9 @@ printHOALines hoa@HOA {..} =
         [": {"]
         ++
         ["\n on: {"]
-        ++
-        ["\n UPDATE: ["]
       )
       :
-      (map printEdge (toList $ edges (s))) ++ ["]"] ++ ["}"] ++ ["},"]
+      (map printEdge (toList $ edges (s))) ++ ["}"] ++ ["},"]
 
     printEdge ::
           FiniteBounds HOA
@@ -81,10 +79,10 @@ printHOALines hoa@HOA {..} =
         termStringList = map (map (printTSLFormula strInd2)) splitFormulas :: [[String]]
         predUpds = splitPredUpdates termStringList
         predUpdToCode (preds, upds) = let
-            conditional =  if preds == [] then "True" else intercalate (" and"++ indent 3) preds
+            conditional =  if preds == [] then "True" else intercalate (" and" ++ indent 3) preds
             body = indent 4 ++ intercalate (indent 4) (((["actions: ["] ++ map updateToAssignment (upds ) ++ ["],"]) ++ [stateUpdate]))
           in
-             "{cond: \'" ++ conditional ++ "\'," ++ body
+             "t:\n {description: \'" ++ conditional ++ "\'," ++ body
       in
         concatMap (\x -> indent 2 ++ predUpdToCode x) predUpds
 
