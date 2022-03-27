@@ -1,15 +1,3 @@
----
-title: All repos
-layout: default
----
-
-<div style="display: none">
-
-    <![CDATA[<script src="tonejs/music2.js">]]>
-    <![CDATA[</script>]]>
-</div>
-
-
 # Introduction to TSL
 
 ### Authors: Danielle Cai (SEAS '22), Rhea Kothari (CC '22)
@@ -120,6 +108,8 @@ You can refer to [this page](https://en.wikipedia.org/wiki/Linear_temporal_logic
 </tr>
 </table>
 
+[Play Example 1](https://barnard-pl-labs.github.io/tsltools/music.html)
+
 This first example plays the note `G` only. Line 5 is the main logic of the code, which guarantees – represented by the symbol “**G**” – that we will play note `G`. Based on this specification, corresponding code will be generated from our logic that will produce a string of notes such as “GGGGGGGG…”.					
 
 ## Example 2: 
@@ -163,6 +153,8 @@ This first example plays the note `G` only. Line 5 is the main logic of the code
 </td>
 </tr>
 </table>
+
+[Play Example 2](https://barnard-pl-labs.github.io/tsltools/music2.html)
 
 The next example generates code that produces a random sequence of `G`s and `E`s. In the TSL specification on lines 6 and 7, we say that the system should always finally play an `E` or a `G`. This means once a `G` is played, after some amount of continuous `G`s, there will be an `E` that is played. And vice versa, after some amount `E`s being continuously played, there will be a `G` that is played. This results in a loop of random `G`s and `E`s being played, such as a string of notes “GGGEEEEGEEGGGGGE…”, “EGEGEGEEEEEEG…”, "GEGEGEGE...".
 
@@ -208,6 +200,8 @@ The next example generates code that produces a random sequence of `G`s and `E`s
 </tr>
 </table>
 
+[Play Example 3](https://barnard-pl-labs.github.io/tsltools/music2.html)
+
 The third example plays an unspecified number of `G`s – can be zero – before playing exactly one `E`, then repeats the unspecified amount of sequence of `G`s followed by 1 `E` exactly. The logic in line 6 says that finally – represented by the symbol “**F**” – we will play an `E` after some time. On line 7, it specifies that as soon as a note `E` is played, next – represented by the symbol “**X**” – we need to play note `G` until we again play a single note `E` as specified on line 6. This logic will produce code that generates a series of notes such as “EGEGEGGGGE”, “GGGGGEGEGE”, or “GEGEGEGE”.
 
 ## Example 4: 
@@ -250,6 +244,8 @@ The third example plays an unspecified number of `G`s – can be zero – before
 </td>
 </tr>
 </table>
+
+[Play Example 4](https://barnard-pl-labs.github.io/tsltools/music2.html)
 
 The final example specifies that we should start with either note `G` or `E` and alternate 1 note at a time between `G` and `E`, but always end on an `E`. Lines 5-7 represent the TSL specifications for the system. On line 5, it guarantees that we will finally play note `E` at the end of the series of notes. Lines 6 and 7 specify that as soon as we play note `E`, the next note we should play is note `G`, and as soon as we play note `G`, the following note to be played should be note `E`. Some possible sequences of notes that can generated from the code are “GEGEGEGEGEGEGE” and “EGEGEGEGE”.
 
