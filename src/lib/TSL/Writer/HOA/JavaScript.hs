@@ -58,7 +58,7 @@ printHOALines hoa@HOA {..} =
         ++
         [strInd s]
         ++
-        ["):"]
+        ["){"]
       )
       :
       map printEdge (toList $ edges s)
@@ -71,7 +71,7 @@ printHOALines hoa@HOA {..} =
       let
         (target, label, _) = edge
         -- we should only ever had one target state in TSL models (I think), so `head` works
-        stateUpdate = "currentState = " ++ strInd (head target) 
+        stateUpdate = "currentState = " ++ strInd (head target) ++ ";" 
       in
         printLabel (fromJust label) stateUpdate
 
@@ -82,13 +82,12 @@ printHOALines hoa@HOA {..} =
         termStringList = map (map (printTSLFormula (strIndWithMap apNamesMap))) splitFormulas :: [[String]]
         predUpds = splitPredUpdates termStringList
         predUpdToCode (preds, upds) = let
-            conditional =  if preds == [] then "True" else intercalate (" and"++ indent 3) preds
-            body = indent 4 ++ intercalate (indent 4) (map updateToAssignment upds ++ [stateUpdate])
+            conditional =  if preds == [] then "true" else intercalate (" &&"++ indent 3) preds
+            body = indent 4 ++ intercalate (indent 4) (map updateToAssignment upds ++ [stateUpdate]) ++ "\n}"
           in
-            "if (" ++ conditional ++ "):" ++ body
+            "if (" ++ conditional ++ "){" ++ body ++ "\n}"
       in
         concatMap (\x -> indent 2 ++ predUpdToCode x) predUpds
-
   in
     concatMap printState values
 
@@ -103,10 +102,10 @@ replaceUpdate :: String -> String
 replaceUpdate = unpack . replace "<-" assignmentOperator . pack
 
 negationOperator :: String
-negationOperator = "not"
+negationOperator = "!"
 
 assignmentOperator :: Text
-assignmentOperator = "not"
+assignmentOperator = "="
 
 -----------------------------------------------------------------------------
 -- | Language specific functions
