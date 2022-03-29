@@ -78,6 +78,7 @@ library
     TSL.Writer.CFM.WebAudio
     TSL.Writer.HOA.Python
     TSL.Writer.HOA.XState
+    TSL.Writer.HOA.JavaScript
     TSL.Writer.HOA.Utils
     TSL.Aiger
     TSL.Logic
