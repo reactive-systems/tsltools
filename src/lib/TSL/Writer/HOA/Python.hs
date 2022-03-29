@@ -106,7 +106,7 @@ negationOperator :: String
 negationOperator = "not"
 
 assignmentOperator :: Text
-assignmentOperator = "not"
+assignmentOperator = "="
 
 -----------------------------------------------------------------------------
 -- | Language specific functions
