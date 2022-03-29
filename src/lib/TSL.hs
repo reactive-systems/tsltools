@@ -126,6 +126,7 @@ import qualified TSL.Writer.CFM.WebAudio as WebAudio (implement)
 import qualified Hanoi as H (HOA(..))
 import Data.Maybe ( fromJust, maybeToList )
 import qualified TSL.Writer.HOA.Python as Python (implementHoa)
+import qualified TSL.Writer.HOA.JavaScript as JS (implementHoa)
 import qualified TSL.Writer.HOA.XState as XState (implementHoa)
 
 -----------------------------------------------------------------------------
@@ -138,6 +139,7 @@ data CodeTarget
   | JavaScript
   | WebAudio
   | Python
+  | JS
   | XState
   deriving (Show, Ord, Eq)
 
@@ -154,6 +156,7 @@ implementHoa
 implementHoa = \case
   Python      -> Python.implementHoa
   XState      -> XState.implementHoa
+  JS  	      -> JS.implementHoa
   _           -> error "Unsupported language target for given format"
 
 -- | Generates code for a specific target from a CFM. The function
