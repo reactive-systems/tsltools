@@ -68,7 +68,7 @@ printHOALines hoa@HOA {..} =
     printEdge edge =
       let
         (target, label, _) = edge
-        stateUpdate = "target: " ++ printStateConj target ++ ",\n},"
+        stateUpdate = "target: \'" ++ printStateConj target ++ "\',\n},"
       in
         printLabel (fromJust label) stateUpdate
 
@@ -80,7 +80,7 @@ printHOALines hoa@HOA {..} =
         predUpds = splitPredUpdates termStringList
         predUpdToCode (preds, upds) = let
             conditional =  if preds == [] then "True" else intercalate (" and" ++ indent 3) preds
-            body = indent 4 ++ intercalate (indent 4) (((["actions: ["] ++ map updateToAssignment (upds ) ++ ["],"]) ++ [stateUpdate]))
+            body = indent 4 ++ intercalate (indent 4) (((["actions: ["] ++ map (wrap "\'" "\',") (map updateToAssignment (upds )) ++ ["],"]) ++ [stateUpdate]))
           in
              "t:\n {description: \'" ++ conditional ++ "\'," ++ body
       in
