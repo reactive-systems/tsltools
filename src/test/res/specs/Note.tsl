@@ -2,6 +2,6 @@ always assume {
 }
 
 always guarantee {
-    G [play <- noteG];
+    G [noteToPlay <- G4];
 }
 

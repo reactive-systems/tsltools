@@ -2,7 +2,7 @@ always assume {
 }
 
 always guarantee {
-    F [play <- noteE];
-    [play <- noteE] -> X [play <- noteG];
+    F [noteToPlay <- E4];
+    [noteToPlay <- E4] -> X [noteToPlay <- G4];
 }
 
