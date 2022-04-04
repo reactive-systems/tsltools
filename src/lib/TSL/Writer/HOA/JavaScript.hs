@@ -96,10 +96,13 @@ printHOALines hoa@HOA {..} =
 
 updateToAssignment :: String -> String
 updateToAssignment =
-  filter (\c -> c /= '[' && c /= ']'). replaceUpdate
+  filter (\c -> c /= '[' && c /= ']'). (replaceUpdate (++ myStringInput))
 
-replaceUpdate :: String -> String
-replaceUpdate = unpack . replace "<-" assignmentOperator . pack
+replaceUpdate :: (String -> String) -> String -> String
+replaceUpdate myStringInput = unpack . replace "<-" assignmentOperator . pack
+
+myStringInput :: String
+myStringInput = ";"
 
 negationOperator :: String
 negationOperator = "!"
