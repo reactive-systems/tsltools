@@ -88,7 +88,7 @@ You can refer to [this page](https://en.wikipedia.org/wiki/Linear_temporal_logic
   2    
   3 }
   4 always guarantee {
-  5     G [play <- noteG];
+  5     G [noteToPlay <- G4];
   6 }
   7
 </pre>
@@ -96,12 +96,15 @@ You can refer to [this page](https://en.wikipedia.org/wiki/Linear_temporal_logic
 <td>
 
 <pre>
-  1 if (currentState ==  0 ):
+  1 if (state ==  0){
   2
-  3     if (True):
-  4         play = noteG
-  5         currentState = 0
-  6
+  3     if (true){
+  4         noteToPlay = G4;
+  5         nextState = 0;
+  6     }
+  7 }
+  8 state = nextState;
+  9
 </pre>
 
 </td>
@@ -127,8 +130,8 @@ This first example plays the note `G` only. Line 5 is the main logic of the code
   3 }
   4 
   5 always guarantee {
-  6     F ([play <- noteE]);
-  7     F ([play <- noteG]);
+  6     F ([noteToPlay <- E4]);
+  7     F ([noteToPlay <- G4]);
   8 }
   9
 </pre>
@@ -136,18 +139,23 @@ This first example plays the note `G` only. Line 5 is the main logic of the code
 <td>
 
 <pre>
-  1 if (currentState ==  0 ):
+  1 if (state ==  0 ){
   2
-  3     if (True):
-  4         play = noteG
-  5         currentState = 1
-  6
-  7 if (currentState ==  1 ):
-  8 
-  9     if (True):
-  10        play = noteE
-  11        currentState = 0
-  12
+  3     if (true){
+  4         noteToPlay = G4;
+  5         nextState = 1;
+  6     }
+  7 }
+  8
+  9 if (state ==  1 ){
+  10 
+  11    if (true){
+  12        noteToPlay = E4;
+  13        nextState = 0;
+  14    }
+  15 }
+  16 state = nextState;
+  17
 </pre>
 
 </td>
@@ -173,8 +181,8 @@ The next example generates code that produces a random sequence of `G`s and `E`s
   3 }
   4 
   5 always guarantee {
-  6     F [play <- noteE];
-  7     [play <- noteE] -> X [play <- noteG];
+  6     F [noteToPlay <- E4];
+  7     [noteToPlay <- E4] -> X [noteToPlay <- G4];
   8 }
   9 
 </pre>
@@ -182,18 +190,23 @@ The next example generates code that produces a random sequence of `G`s and `E`s
 <td>
 
 <pre>
-  1 if (currentState ==  0 ):
+  1 if (state ==  0 ){
   2
-  3     if (True):
-  4        play = noteE
-  5        currentState = 1
-  6
-  7 if (currentState ==  1 ):
+  3     if (true){
+  4         noteToPlay = E4;
+  5         nextState = 1;
+  6     }
+  7 }
   8
-  9     if (True):
-  10        play = noteG
-  11        currentState = 0
-  12
+  9 if (state ==  1 ){
+  10 
+  11    if (true){
+  12        noteToPlay = G4;
+  13        nextState = 0;
+  14    }
+  15 }
+  16 state = nextState;
+  17
 </pre>
 
 </td>
@@ -218,27 +231,32 @@ The third example plays an unspecified number of `G`s – can be zero – before
   2    
   3 }
   4 always guarantee {
-  5     F [play <- noteE];
-  6     [play <- noteE] -> X [play <- noteG];
-  7     [play <- noteG] -> X [play <- noteE];
+  5     F [noteToPlay <- E4];
+  6     [noteToPlay <- E4] -> X [noteToPlay <- G4];
+  7     [noteToPlay <- G4] -> X [noteToPlay <- E4];
   8 }
 </pre>
 </td>
 <td>
 
 <pre>
-  1 if (currentState ==  0 ):
+  1 if (state ==  0 ){
   2
-  3     if (True):
-  4         play = noteE
-  5         currentState = 1
-  6
-  7 if (currentState ==  1 ):
-  8 
-  9     if (True):
-  10        play = noteG
-  11        currentState = 0
-  12
+  3     if (true){
+  4         noteToPlay = E4;
+  5         nextState = 1;
+  6     }
+  7 }
+  8
+  9 if (state ==  1 ){
+  10 
+  11    if (true){
+  12        noteToPlay = G4;
+  13        nextState = 0;
+  14    }
+  15 }
+  16 state = nextState;
+  17
 </pre>
 
 </td>
