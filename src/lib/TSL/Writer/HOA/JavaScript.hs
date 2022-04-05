@@ -95,14 +95,11 @@ printHOALines hoa@HOA {..} =
 -- | Language specific functions
 
 updateToAssignment :: String -> String
-updateToAssignment =
-  filter (\c -> c /= '[' && c /= ']'). (replaceUpdate (myStringInput ++) ";")
+updateToAssignment x =
+  filter (\c -> c /= '[' && c /= ']') (replaceUpdate x ++ ";")
 
-myStringInput :: String -> String
-myStringInput = unpack . replace "<-" assignmentOperator . pack
-
-replaceUpdate :: ([Char] -> [Char]) -> [Char] -> [Char]
-replaceUpdate f x = (f x)
+replaceUpdate :: String -> String
+replaceUpdate = unpack . replace "<-" assignmentOperator . pack
 
 negationOperator :: String
 negationOperator = "!"
