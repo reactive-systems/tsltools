@@ -59,32 +59,34 @@ printHOALines hoa@HOA {..} =
         ["\n on: {"]
       )
       :
-      (map printEdge (toList $ edges (s))) ++ ["}"] ++ ["},"]
+      (map printEdge (zip (toList $ edges (s)) [1..])) ++ ["}"] ++ ["},"]
 
     printEdge ::
           FiniteBounds HOA
-      => ([State], Maybe Label, Maybe (Set AcceptanceSet))
+      => (([State], Maybe Label, Maybe (Set AcceptanceSet)), Integer)
       -> String
     printEdge edge =
       let
-        (target, label, _) = edge
+        ((target, label, _), nlab) = edge
         stateUpdate = "target: \'" ++ printStateConj target ++ "\',\n},"
       in
-        printLabel (fromJust label) stateUpdate
+        printLabel (fromJust label) stateUpdate nlab
 
-    printLabel :: FiniteBounds HOA => Label -> String -> String
-    printLabel label stateUpdate = let
+    printLabel :: FiniteBounds HOA => Label -> String -> Integer -> String
+    printLabel label stateUpdate n = let
 
         splitFormulas = formulaToList label
         termStringList = map (map (printTSLFormula strInd2)) splitFormulas :: [[String]]
         predUpds = splitPredUpdates termStringList
-        predUpdToCode (preds, upds) = let
+        predUpdToCode (predsupds, num) = let
+            (preds,upds)=predsupds
             conditional =  if preds == [] then "True" else intercalate (" and" ++ indent 3) preds
             body = indent 4 ++ intercalate (indent 4) (((["actions: ["] ++ map (wrap "\'" "\',") (map updateToAssignment (upds )) ++ ["],"]) ++ [stateUpdate]))
           in
-             "t:\n {description: \'" ++ conditional ++ "\'," ++ body
+             "t" ++ show n ++ show num  ++ ":\n {description: \'" ++ conditional ++ "\'," ++ body
       in
-        concatMap (\x -> indent 2 ++ predUpdToCode x) predUpds
+      --add zip below
+        concatMap (\x -> indent 2 ++ predUpdToCode x) (zip predUpds [1..])
 
     printStateConj :: FiniteBounds HOA => [State] -> String
     printStateConj = intercalate " & " . map strInd
