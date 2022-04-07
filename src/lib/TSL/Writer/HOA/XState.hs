@@ -80,7 +80,7 @@ printHOALines hoa@HOA {..} =
         predUpds = splitPredUpdates termStringList
         predUpdToCode (predsupds, num) = let
             (preds,upds)=predsupds
-            conditional =  if preds == [] then "True" else intercalate (" and" ++ indent 3) preds
+            conditional =  if preds == [] then "True" else intercalate (" and ") preds
             body = indent 4 ++ intercalate (indent 4) (((["actions: ["] ++ map (wrap "\'" "\',") (map updateToAssignment (upds )) ++ ["],"]) ++ [stateUpdate]))
           in
              "t" ++ show n ++ show num  ++ ":\n {description: \'" ++ conditional ++ "\'," ++ body
