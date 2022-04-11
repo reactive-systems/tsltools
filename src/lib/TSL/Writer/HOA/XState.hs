@@ -25,18 +25,17 @@ module TSL.Writer.HOA.XState
 import qualified TSL.Logic as T (Formula(..), decodeOutputAP, decodeInputAP, tslFormula ) 
 import Data.List ( isPrefixOf, isInfixOf )
 import Data.Tuple ( swap )
-
 import Data.Text(pack, unpack, replace)
 
 import Hanoi
-    ( HOA(..), parse, AcceptanceSet, Label, State, Formula(..) )
-import Data.Maybe ( fromJust, maybeToList )
+    ( HOA(..), AcceptanceSet, Label, State, Formula(..) )
+import Data.Maybe ( fromJust )
 import Data.List as List (intercalate, sortOn)
 
 import Finite (Finite, FiniteBounds, index, offset, v2t, values)
 
 import qualified Data.Map as M
-import Data.Set as Set (Set, elems, toList)
+import Data.Set as Set (Set, toList)
 import qualified Data.Bifunctor
 
 implementHoa :: HOA -> String
@@ -93,7 +92,7 @@ printHOALines hoa@HOA {..} =
 
     strInd2 = strIndWithMap apNamesMap
   in
-     ["states: {"] ++ concatMap printState values ++ ["}"]
+     ["import { createMachine } from 'xstate';"]++ ["const musicMachine = createMachine("]++["{"]++["id: 'music',"] ++["initial: '0',"]++ ["states: {"] ++ concatMap printState values ++ ["}"] ++["}"] ++ [");"]
 
 -----------------------------------------------------------------------------
 -- | Different library related printing methods
@@ -105,9 +104,6 @@ updateToAssignment =
 replaceUpdate :: String -> String
 replaceUpdate = unpack . replace "<-" "=" . pack
 
-actionMake :: String -> String
-actionMake = 
-  filter (\c -> c /= '[' && c /= ']'). replaceUpdate
 
 negationSymbol :: String
 negationSymbol = "not"
