@@ -54,7 +54,7 @@ printHOALines hoa@HOA {..} =
     printState :: FiniteBounds HOA => State -> [String]
     printState s =
       unwords (
-        ["\nif (currentState == "]
+        ["\nif (state == "]
         ++
         [strInd s]
         ++
@@ -71,7 +71,7 @@ printHOALines hoa@HOA {..} =
       let
         (target, label, _) = edge
         -- we should only ever had one target state in TSL models (I think), so `head` works
-        stateUpdate = "currentState = " ++ strInd (head target) ++ ";" 
+        stateUpdate = "nextState = " ++ strInd (head target) ++ ";" 
       in
         printLabel (fromJust label) stateUpdate
 
@@ -85,7 +85,7 @@ printHOALines hoa@HOA {..} =
             conditional =  if preds == [] then "true" else intercalate (" &&"++ indent 3) preds
             body = indent 4 ++ intercalate (indent 4) (map updateToAssignment upds ++ [stateUpdate]) ++ "\n}"
           in
-            "if (" ++ conditional ++ "){" ++ body ++ "\n}"
+            "if (" ++ conditional ++ "){" ++ body ++ "\n}" ++ "\nstate = nextState;"
       in
         concatMap (\x -> indent 2 ++ predUpdToCode x) predUpds
   in
