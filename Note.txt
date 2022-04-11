@@ -1,0 +1,10 @@
+
+if (state ==  0 ){
+
+    if (true){
+        noteToPlay = G4;
+        nextState = 0;
+}
+}
+state = nextState;
+
