@@ -6,5 +6,6 @@ always guarantee {
     F [noteToPlay <- E4];
     [noteToPlay <- E4] -> X [noteToPlay <- G4];
     [noteToPlay <- G4] -> X [noteToPlay <- C4];
+    [noteToPlay <- C4] -> X [noteToPlay <- E4];
 }
 
