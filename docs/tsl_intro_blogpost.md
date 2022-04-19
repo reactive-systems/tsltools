@@ -265,7 +265,119 @@ The third example plays an unspecified number of `G`s – can be zero – before
 
 [Play Example 4](https://barnard-pl-labs.github.io/tsltools/music2.html)
 
-The final example specifies that we should start with either note `G` or `E` and alternate 1 note at a time between `G` and `E`, but always end on an `E`. Lines 5-7 represent the TSL specifications for the system. On line 5, it guarantees that we will finally play note `E` at the end of the series of notes. Lines 6 and 7 specify that as soon as we play note `E`, the next note we should play is note `G`, and as soon as we play note `G`, the following note to be played should be note `E`. Some possible sequences of notes that can generated from the code are “GEGEGEGEGEGEGE” and “EGEGEGEGE”.
+The fourth example specifies that we should start with either note `G` or `E` and alternate 1 note at a time between `G` and `E`, but always end on an `E`. Lines 5-7 represent the TSL specification for the system. On line 5, it guarantees that we will finally play note `E` at the end of the series of notes. Lines 6 and 7 specify that as soon as we play note `E`, the next note we should play is note `G`, and as soon as we play note `G`, the following note to be played should be note `E`. Some possible sequences of notes that can generated from the code are “GEGEGEGEGEGEGE” and “EGEGEGEGE”.
 
 It is interesting to note that the generated code from the two-note specifications are identical across examples 2-4 because "GEGEGE" and "EGEGEGE" – produced by the generated code – are valid realizable sequences of notes for all three TSL specifications. 
 
+## Example 5: 
+
+<table>
+<tr>
+<th>TSL Specification</th>
+<th>Generated Code</th>
+</tr>
+<tr>
+<td>
+<pre>
+  1 always assume {
+  2    
+  3 }
+  4 always guarantee {
+  5     F [noteToPlay <- E4];
+  6     F [noteToPlay <- G4];
+  7     F [noteToPlay <- C4];
+  8 }
+  9
+</pre>
+</td>
+<td>
+
+<pre>
+  1 if (state ==  0 ){
+  2    if (true){
+  3        noteToPlay = "C4";
+  4        nextState = 1;
+  5   }
+  6 }
+  7
+  8 if (state ==  1 ){
+  9    if (true){
+  10       noteToPlay = "E4";
+  11       nextState = 2;
+  12   }
+  13 }
+  14
+  15 if (state ==  2 ){
+  16   if (true){
+  17       noteToPlay = "G4";
+  18       nextState = 0;
+  19   }
+  20 }
+  21 state = nextState;
+  22
+</pre>
+
+</td>
+</tr>
+</table>
+
+[Play Example 5](https://barnard-pl-labs.github.io/tsltools/ThreeNotesRand.html)
+
+The fifth example generates code that produces a random sequence of `G`s, `E`s, and `C`s. In the TSL specification on lines 5 to 7, we say that the system should always eventually play an `E` or a `G` or a `C`. This means once a `G` is played, after some amount of continuous `G`s, there will be an `E` or a `C` that is played, and after an `E` is played there will then be a `C` or a `G` that is played, and so on and so forth. This results in a loop of random `G`s, `E`s, and `C`s being played, such as a string of notes “GGGEEEECCCCCGEECCCGGGGGE…” or "GGGCCCCEEEECGE...".
+
+## Example 6: 
+
+<table>
+<tr>
+<th>TSL Specification</th>
+<th>Generated Code</th>
+</tr>
+<tr>
+<td>
+<pre>
+  1 always assume {
+  2    
+  3 }
+  4 always guarantee {
+  5     F [noteToPlay <- E4];
+  6     [noteToPlay <- E4] -> X [noteToPlay <- G4];
+  7     [noteToPlay <- G4] -> X [noteToPlay <- C4];
+  8     [noteToPlay <- C4] -> X [noteToPlay <- E4];
+  9 }
+  10
+</pre>
+</td>
+<td>
+
+<pre>
+  1 if (state ==  0 ){
+  2   if (true){
+  3     noteToPlay = "E4";
+  4     nextState = 1;
+  5   }
+  6 }
+  7
+  8 if (state ==  1 ){
+  9   if (true){
+  10      noteToPlay = "G4";
+  11      nextState = 2;
+  12  }
+  13 }
+  14
+  15 if (state ==  2 ){
+  16   if (true){
+  17      noteToPlay = "C4";
+  18      nextState = 0;
+  19   }
+  20 }
+  21 state = nextState;
+  22
+</pre>
+
+</td>
+</tr>
+</table>
+
+[Play Example 6](https://barnard-pl-labs.github.io/tsltools/ThreeNotesE.html)
+
+The sixth example specifies that we should start with either note `G`, `E`, or `C` and alternate 1 note at a time between the three notes, but always end on an `E`. Lines 5-8 represent the TSL specification for the system. Line 5 guarantees that we will finally play note `E` at the end of the series of notes. Line 6 says as soon as we play note `E`, we should next play note `G`. Line 7 says as soon as we play note `G`, next we must play note `C`. Line 8 says as soon as we play note `C`, note `E` should be played. This generates a sequence of notes such as “GCEGCEGCEGCE” or “CEGCEGCEGE” for example.
