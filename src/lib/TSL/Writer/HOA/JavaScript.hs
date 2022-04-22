@@ -83,13 +83,13 @@ printHOALines hoa@HOA {..} =
         predUpds = splitPredUpdates termStringList
         predUpdToCode (preds, upds) = let
             conditional =  if preds == [] then "true" else intercalate (" &&"++ indent 3) preds
-            body = indent 4 ++ intercalate (indent 4) (map updateToAssignment upds ++ [stateUpdate]) ++ "\n}"
+            body = indent 4 ++ intercalate (indent 4) (map updateToAssignment upds ++ [stateUpdate]) ++ indent 2 ++ "}"
           in
-            "if (" ++ conditional ++ "){" ++ body ++ "\n}" ++ "\nstate = nextState;"
+            "if (" ++ conditional ++ "){" ++ body ++ "\n}" ++ "\n"
       in
         concatMap (\x -> indent 2 ++ predUpdToCode x) predUpds
   in
-    concatMap printState values
+    concatMap printState values ++ ["\nstate = nextState;"]
 
 -----------------------------------------------------------------------------
 -- | Language specific functions
