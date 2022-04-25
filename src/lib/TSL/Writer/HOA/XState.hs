@@ -25,22 +25,21 @@ module TSL.Writer.HOA.XState
 import qualified TSL.Logic as T (Formula(..), decodeOutputAP, decodeInputAP, tslFormula ) 
 import Data.List ( isPrefixOf, isInfixOf )
 import Data.Tuple ( swap )
-
 import Data.Text(pack, unpack, replace)
 
 import Hanoi
-    ( HOA(..), parse, AcceptanceSet, Label, State, Formula(..) )
-import Data.Maybe ( fromJust, maybeToList )
+    ( HOA(..), AcceptanceSet, Label, State, Formula(..) )
+import Data.Maybe ( fromJust )
 import Data.List as List (intercalate, sortOn)
 
 import Finite (Finite, FiniteBounds, index, offset, v2t, values)
 
 import qualified Data.Map as M
-import Data.Set as Set (Set, elems, toList)
+import Data.Set as Set (Set, toList)
 import qualified Data.Bifunctor
 
 implementHoa :: HOA -> String
-implementHoa = unlines . printHOALines
+implementHoa = (unlines . printHOALines)
 
 printHOALines :: HOA -> [String]
 printHOALines hoa@HOA {..} =
@@ -52,46 +51,48 @@ printHOALines hoa@HOA {..} =
     printState :: FiniteBounds HOA => State -> [String]
     printState s =
       unwords (
-        ["\nif (currentState == "]
-        ++
         [strInd s]
         ++
-        ["):"]
+        [": {"]
+        ++
+        ["\n on: {"]
       )
       :
-      map printEdge (toList $ edges s)
+      (map printEdge (zip (toList $ edges (s)) [1..])) ++ ["}"] ++ ["},"]
 
     printEdge ::
           FiniteBounds HOA
-      => ([State], Maybe Label, Maybe (Set AcceptanceSet))
+      => (([State], Maybe Label, Maybe (Set AcceptanceSet)), Integer)
       -> String
     printEdge edge =
       let
-        (target, label, _) = edge
-        stateUpdate = "target: " ++ printStateConj target
+        ((target, label, _), nlab) = edge
+        stateUpdate = "target: \'" ++ printStateConj target ++ "\',\n},"
       in
-        printLabel (fromJust label) stateUpdate
+        printLabel (fromJust label) stateUpdate nlab
 
-    printLabel :: FiniteBounds HOA => Label -> String -> String
-    printLabel label stateUpdate = let
+    printLabel :: FiniteBounds HOA => Label -> String -> Integer -> String
+    printLabel label stateUpdate n = let
 
         splitFormulas = formulaToList label
         termStringList = map (map (printTSLFormula strInd2)) splitFormulas :: [[String]]
         predUpds = splitPredUpdates termStringList
-        predUpdToCode (preds, upds) = let
-            conditional =  if preds == [] then "True" else intercalate (" and"++ indent 3) preds
-            body = indent 4 ++ intercalate (indent 4) ((map updateToAssignment upds) ++ [stateUpdate])
+        predUpdToCode (predsupds, num) = let
+            (preds,upds)=predsupds
+            conditional =  if preds == [] then "True" else intercalate (" and ") preds
+            body = indent 4 ++ intercalate (indent 4) (((["actions: ["] ++ map (wrap "\'" "\',") (map updateToAssignment (upds )) ++ ["],"]) ++ [stateUpdate]))
           in
-            "if (" ++ conditional ++ "):" ++ body
+             "t" ++ show n ++ show num  ++ ":\n {description: \'" ++ conditional ++ "\'," ++ body
       in
-        concatMap (\x -> indent 2 ++ predUpdToCode x) predUpds
+      --add zip below
+        concatMap (\x -> indent 2 ++ predUpdToCode x) (zip predUpds [1..])
 
     printStateConj :: FiniteBounds HOA => [State] -> String
     printStateConj = intercalate " & " . map strInd
 
     strInd2 = strIndWithMap apNamesMap
   in
-    concatMap printState values
+     ["import { createMachine } from 'xstate';"]++ ["const musicMachine = createMachine("]++["{"]++["id: 'music',"] ++["initial: '0',"]++ ["states: {"] ++ concatMap printState values ++ ["}"] ++["}"] ++ [");"]
 
 -----------------------------------------------------------------------------
 -- | Different library related printing methods
@@ -102,6 +103,7 @@ updateToAssignment =
 
 replaceUpdate :: String -> String
 replaceUpdate = unpack . replace "<-" "=" . pack
+
 
 negationSymbol :: String
 negationSymbol = "not"
