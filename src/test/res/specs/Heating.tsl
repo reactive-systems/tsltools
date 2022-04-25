@@ -4,7 +4,9 @@ always assume {
   ([ room.heating.ctrl <- turnOn() ]
     -> F ([ room.heating.ctrl <- turnOff() ] R room.heating.on)) ;
   ([ room.heating.ctrl <- turnOff() ]
-    -> F ([ room.heating.ctrl <- turnOn() ] R room.heating.off))
+    -> F ([ room.heating.ctrl <- turnOn() ] R room.heating.off));
+  ([ room.heating.ctrl <- turnOff() ]
+    -> F (! (gt outside.temperature room.temperature)));
  }
 always guarantee {
   
