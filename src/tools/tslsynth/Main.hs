@@ -55,8 +55,9 @@ main = do
     if isPrefixOf "REALIZABLE" hoaOutput
     then do
       return $ unlines $ tail $ lines $ hoaOutput
-    else 
-      error "unrealizable spec"
+    else do
+      print hoaOutput 
+      error "unrealizable spec?"
       --error $ tslCoreGen $ fromJust input
 
   if writeHoa /= ""
