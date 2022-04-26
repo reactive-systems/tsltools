@@ -323,7 +323,7 @@ It is interesting to note that the generated code from the two-note specificatio
 The fifth example generates code that produces a random sequence of `G`s, `E`s, and `C`s. In the TSL specification on lines 5 to 7, we say that the system should always eventually play an `E` or a `G` or a `C`. This means once a `G` is played, after some amount of continuous `G`s, there will be an `E` or a `C` that is played, and after an `E` is played there will then be a `C` or a `G` that is played, and so on and so forth. This results in a loop of random `G`s, `E`s, and `C`s being played, such as a string of notes “GGGEEEECCCCCGEECCCGGGGGE…” or "GGGCCCCEEEECGE...".
 
 
-## Example 6 [RHEA]: 
+## Example 6: 
 
 <table>
 <tr>
@@ -378,7 +378,7 @@ The fifth example generates code that produces a random sequence of `G`s, `E`s, 
 </tr>
 </table>
 
-[Play Example 6](https://barnard-pl-labs.github.io/tsltools/ThreeNotesRand.html)
+[Play Example 6](https://barnard-pl-labs.github.io/tsltools/ThreeNotesAlt.html)
 
 The sixth example generates code that produces an ordered sequence of `E`, `G`, and `C`, . In the TSL specification on lines 5 to 7, we say that eventually play `E`, and once it plays `E` it must play `G` next, and once it plays `G` it must play `C` next. Therefore the resulting sequence continues to play `G` after `E` and `C` after `G`, but it will always return back to `E` and restart this sequence of notes.
 
