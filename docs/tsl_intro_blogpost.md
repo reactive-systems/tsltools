@@ -293,28 +293,25 @@ It is interesting to note that the generated code from the two-note specificatio
 <td>
 
 <pre>
-  1 if (state ==  0 ){
-  2    if (true){
-  3        noteToPlay = "C4";
-  4        nextState = 1;
-  5   }
+  1 if (currentState ==  0 ){
+  2     if (true){
+  3         noteToPlay = C4;
+  4         currentState = 1;
+  5     }
   6 }
-  7
-  8 if (state ==  1 ){
-  9    if (true){
-  10       noteToPlay = "E4";
-  11       nextState = 2;
-  12   }
-  13 }
-  14
-  15 if (state ==  2 ){
-  16   if (true){
-  17       noteToPlay = "G4";
-  18       nextState = 0;
-  19   }
-  20 }
-  21 state = nextState;
-  22
+  7 else if (currentState ==  1 ){
+  8     if (true){
+  9         noteToPlay = E4;
+  10        currentState = 2;
+  11    }
+  12 }
+  13 else if (currentState ==  2 ){
+  14     if (true){
+  15         noteToPlay = G4;
+  16         currentState = 0;
+  17     }
+  18 }
+  19
 </pre>
 
 </td>
@@ -350,28 +347,25 @@ The fifth example generates code that produces a random sequence of `G`s, `E`s, 
 <td>
 
 <pre>
-  1 if (state ==  0 ){
-  2   if (true){
-  3     noteToPlay = "E4";
-  4     nextState = 1;
-  5   }
+  1 if (currentState ==  0 ){
+  2     if (true){
+  3         noteToPlay = E4;
+  4         currentState = 1;
+  5     }
   6 }
-  7
-  8 if (state ==  1 ){
-  9   if (true){
-  10      noteToPlay = "G4";
-  11      nextState = 2;
-  12  }
-  13 }
-  14
-  15 if (state ==  2 ){
-  16   if (true){
-  17      noteToPlay = "C4";
-  18      nextState = 0;
-  19   }
-  20 }
-  21 state = nextState;
-  22
+  7 else if (currentState ==  1 ){
+  8     if (true){
+  9         noteToPlay = G4;
+  10        currentState = 2;
+  11    }
+  12 }
+  13 else if (currentState ==  2 ){
+  14     if (true){
+  15        noteToPlay = C4;
+  16        currentState = 0;
+  17    }
+  18 }
+  19
 </pre>
 
 </td>
