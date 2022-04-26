@@ -7,7 +7,7 @@ document.getElementById("play-button4").addEventListener("click", function() {
       const loopA = new Tone.Loop(time => {
         updateStateMachine();
 	synthA.triggerAttackRelease(noteToPlay, rhythm, time);
-      }, "4n").start(0);
+      }, rhythm).start(0);
 
       first = false;
 

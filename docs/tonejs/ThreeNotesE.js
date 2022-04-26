@@ -22,7 +22,7 @@ document.getElementById("play-button3").addEventListener("click", function() {
   }
 });
 
-var state = 0
+var currentState = 0
 var noteToPlay = "E4"
 function updateStateMachine() {
     if (currentState ==  0 ){
