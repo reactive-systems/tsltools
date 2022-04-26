@@ -375,3 +375,55 @@ The fifth example generates code that produces a random sequence of `G`s, `E`s, 
 [Play Example 6](https://barnard-pl-labs.github.io/tsltools/ThreeNotesE.html)
 
 The sixth example specifies that we should start with either note `G`, `E`, or `C` and alternate 1 note at a time between the three notes, but always end on an `E`. Lines 5-8 represent the TSL specification for the system. Line 5 guarantees that we will finally play note `E` at the end of the series of notes. Line 6 says as soon as we play note `E`, we should next play note `G`. Line 7 says as soon as we play note `G`, next we must play note `C`. Line 8 says as soon as we play note `C`, note `E` should be played. This generates a sequence of notes such as “GCEGCEGCEGCE” or “CEGCEGCEGE” for example.
+
+## Example 7: 
+
+<table>
+<tr>
+<th>TSL Specification</th>
+<th>Generated Code</th>
+</tr>
+<tr>
+<td>
+<pre>
+  1 always assume {
+  2    
+  3 }
+  4 always guarantee {
+  5     ([noteToPlay <- E4]) -> X [rhythm <- eigthnote];
+  6     ([noteToPlay <- G4]) -> X [rhythm <- halfnote];
+  7     ([noteToPlay <- E4]) -> X [noteToPlay <- G4];
+  8     ([noteToPlay <- G4]) -> X [noteToPlay <- E4];
+  9     F ([noteToPlay <- E4]);
+  10
+</pre>
+</td>
+<td>
+
+<pre>
+  1 if (currentState ==  0 ){
+  2    if (true){
+  3         noteToPlay = E4;
+  4         rhythm = halfnote;
+  5         currentState = 1;
+  6     }
+  7 }
+  8 else if (currentState ==  1 ){
+  9     if (true){
+  10        noteToPlay = G4;
+  11        rhythm = eigthnote;
+  12        currentState = 0;
+  13    }
+  14 }
+  15
+</pre>
+
+</td>
+</tr>
+</table>
+
+[Play Example 7](https://barnard-pl-labs.github.io/tsltools/Rhythm.html)
+
+The seventh example specifies that we should start with either note `G` or `E` and alternate 1 note at a time between the two notes, but always end on an `E`. Additionally, when we play a `E`, we play a half note, and when we play a `G`, we play an eigth note, specified in lines 5 and 6. Lines 5 and 7 say when we play an `E`, the next note to be played should be a G that is an eigth note. Lines 6 and 8 say that after we play the G, the next note to be played should be an `E` that is a half note. This pattern repeats until we end on an `E`, as specified in line 9 of the TSL Specification.
+
+
