@@ -25,27 +25,23 @@ document.getElementById("play-button3").addEventListener("click", function() {
 var state = 0
 var noteToPlay = "E4"
 function updateStateMachine() {
-  if (state ==  0 ){
-    if (true){
-        noteToPlay = "E4";
-        nextState = 1;
+    if (currentState ==  0 ){
+        if (true){
+            noteToPlay = "E4";
+            currentState = 1;
+        }
+    } 
+    else if (currentState ==  1 ){
+        if (true){
+            noteToPlay = "G4";
+            currentState = 2;
+        }
     }
-  }
-
-  if (state ==  1 ){
-
-      if (true){
-          noteToPlay = "G4";
-          nextState = 2;
-      }
-  }
-
-  if (state ==  2 ){
-      if (true){
-          noteToPlay = "C4";
-          nextState = 0;
-      }
-  }
-  state = nextState;
+    else if (currentState ==  2 ){
+        if (true){
+            noteToPlay = "C4";
+            currentState = 0;
+       	}
+    }
 }
 
