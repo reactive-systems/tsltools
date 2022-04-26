@@ -1,0 +1,11 @@
+always assume {
+}
+
+always guarantee {
+    ([noteToPlay <- E4]) -> X [rhythm <- eigthnote];
+    ([noteToPlay <- G4]) -> X [rhythm <- halfnote];
+    ([noteToPlay <- E4]) -> X [noteToPlay <- G4];
+    ([noteToPlay <- G4]) -> X [noteToPlay <- E4];
+    F ([noteToPlay <- E4]);
+}
+
