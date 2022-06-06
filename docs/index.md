@@ -1,5 +1,9 @@
 Code - [https://github.com/Barnard-PL-Labs/tsltools](https://github.com/Barnard-PL-Labs/tsltools)
 
+Tutorial blog post - [https://barnard-pl-labs.github.io/tsltools/tsl_intro_blogpost](https://barnard-pl-labs.github.io/tsltools/tsl_intro_blogpost)
+
+Run synthesis online - [https://barnard-pl-labs.github.io/tsl-api/](https://barnard-pl-labs.github.io/tsl-api/)
+
 # Basic usage
 
 Write a .tsl specification. As an example, let's write a file called `NoteButton.tsl`:
@@ -16,7 +20,9 @@ always guarantee {
 }
 ```
 
-Then, run `./tslsynth NoteButton.tsl --python`. The following code will be generated
+Install the tool [locally](https://github.com/Barnard-PL-Labs/tsltools/blob/master/README.md#installation) or run the [online tool](https://barnard-pl-labs.github.io/tsl-api/).
+Then, run `./tslsynth NoteButton.tsl --python`.
+The following code will be generated
 
 ```python
 if (currentState ==  0 ):
