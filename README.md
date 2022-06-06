@@ -109,12 +109,12 @@ in the main directory to build TSL tools.
 You will also need to install an LTL synthesis engine.
 Recommended options are ltlsynt (https://spot.lrde.epita.fr/ltlsynt.html)
 or Strix (https://strix.model.in.tum.de/).
-`ltlsynt` is packaged with `spot` (https://spot.lrde.epita.fr/), which also includes `autfilt`, 
-a required dependency for visualizing generated systems (that have been postprocessed with `parsehoa`.
+`ltlsynt` is packaged with `spot` (https://spot.lrde.epita.fr/)
 
+There is a legacy visualizer tool, `parsehoa`. This has a required dependency `autfilt`, which comes with `spot`.
 If you use `autfilt` from the `spot` package to visualize code, you will then also need the `syfco` tool.
-To install, follow the directions at the repo here: https://github.com/reactive-systems/syfco and ```stack install```.
-Visualization will soon be replaced so that this is not necessary.
+To install, follow the directions at the repo here: https://github.com/reactive-systems/syfco and `stack install`.
+A beta visualization tool is also supported - use the target `--xstate` to generate xstate code then paste it into `https://stately.ai/viz`.
 
 # Research and Documentation
 
@@ -125,7 +125,5 @@ Visualization will soon be replaced so that this is not necessary.
 * A FPGA arcade game specified using TSL, 
   [syntroids](https://www.react.uni-saarland.de/casestudies/syntroids/)
 * **WIP**: A tool-paper describing the format and other features of `tsltools`.
-
-# Contributing
 
 If you want to contribute please refer to [CONTRIBUTING](./CONTRIBUTING.md).
