@@ -114,7 +114,7 @@ or [Strix](https://strix.model.in.tum.de/).
 There is a legacy visualizer tool, `parsehoa`. This has a required dependency `autfilt`, which comes with `spot`.
 If you use `autfilt` from the `spot` package to visualize code, you will then also need the `syfco` tool.
 To install, follow the directions at the [repo here](https://github.com/reactive-systems/syfco) and `stack install`.
-A beta visualization tool is also supported - use the target `--xstate` to generate xstate code then paste it into `https://stately.ai/viz`.
+A beta visualization tool is also supported - use the target `--xstate` to generate xstate code then paste it into [`https://stately.ai/viz`](https://stately.ai/viz).
 
 # Research and Documentation
 
