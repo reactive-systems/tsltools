@@ -107,13 +107,13 @@ installation. After `stack` is installed just type
 in the main directory to build TSL tools.
 
 You will also need to install an LTL synthesis engine.
-Recommended options are ltlsynt (https://spot.lrde.epita.fr/ltlsynt.html)
-or Strix (https://strix.model.in.tum.de/).
-`ltlsynt` is packaged with `spot` (https://spot.lrde.epita.fr/)
+Recommended options are [ltlsynt](https://spot.lrde.epita.fr/ltlsynt.html)
+or [Strix](https://strix.model.in.tum.de/).
+`ltlsynt` is packaged with [`spot`](https://spot.lrde.epita.fr/)
 
 There is a legacy visualizer tool, `parsehoa`. This has a required dependency `autfilt`, which comes with `spot`.
 If you use `autfilt` from the `spot` package to visualize code, you will then also need the `syfco` tool.
-To install, follow the directions at the repo here: https://github.com/reactive-systems/syfco and `stack install`.
+To install, follow the directions at the [repo here](https://github.com/reactive-systems/syfco) and `stack install`.
 A beta visualization tool is also supported - use the target `--xstate` to generate xstate code then paste it into `https://stately.ai/viz`.
 
 # Research and Documentation
