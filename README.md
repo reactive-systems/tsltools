@@ -100,7 +100,7 @@ We recommend using the [Haskell Tool Stack](http://haskellstack.org/)
 for building. The tool automatically pulls the required version of the 
 Glasgow Haskell Compiler (GHC) and all required dependencies. Note that by 
 using `stack`, the installation does not interfere with any system 
-installation. After `stack` is installed just type
+installation. After `stack` is installed just type:
 
 `make`
 
@@ -109,7 +109,7 @@ in the main directory to build TSL tools.
 You will also need to install an LTL synthesis engine.
 Recommended options are [ltlsynt](https://spot.lrde.epita.fr/ltlsynt.html)
 or [Strix](https://strix.model.in.tum.de/).
-`ltlsynt` is packaged with [`spot`](https://spot.lrde.epita.fr/)
+`ltlsynt` is packaged with [`spot`](https://spot.lrde.epita.fr/).
 
 There is a legacy visualizer tool, `parsehoa`. This has a required dependency `autfilt`, which comes with `spot`.
 If you use `autfilt` from the `spot` package to visualize code, you will then also need the `syfco` tool.
