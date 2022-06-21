@@ -1,4 +1,7 @@
+*.tsl
+TODO
 .DS_Store
+tags
 dist
 dist-newstyle
 cabal-dev
@@ -16,6 +19,7 @@ cabal.sandbox.config
 *.prof
 *.aux
 *.hp
+tslmt2tsl
 tsl2tlsf
 tslcheck
 tslsize
