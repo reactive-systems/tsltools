@@ -31,6 +31,8 @@ import Data.List (isInfixOf, partition)
 
 import Control.Monad (when)
 
+import Debug.Trace (trace)
+
 -----------------------------------------------------------------------------
 
 main
@@ -43,7 +45,7 @@ main = do
 
   spec <- loadTSL input
   let
-    table = toCSV $ symboltable spec
+    table = toCSV $ symboltable $ trace (show spec) spec
     (is,ts') = partition (isInfixOf "internal") es
     (h':es) = lines table
 
