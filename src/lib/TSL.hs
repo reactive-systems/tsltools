@@ -67,6 +67,9 @@ module TSL
   , simulate
     -- * Error Handling
   , Error
+    -- * Modulo Theories
+  , CFG(..)
+  , fromSpec
   ) where
 
 -----------------------------------------------------------------------------
@@ -115,6 +118,8 @@ import TSL.Simulation (simulate)
 import TSL.TOML (toTOML)
 
 import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
+
+import TSL.ModuloTheories.CFG(CFG(..), fromSpec)
 
 import qualified TSL.Writer.CFM.Clash as Clash (implement)
 import qualified TSL.Writer.CFM.Applicative as Applicative (implement)
