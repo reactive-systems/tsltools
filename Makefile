@@ -15,6 +15,7 @@ TSLMINREAL=tslminrealizable
 PARSEHOA=parsehoa
 HOA2CODE=hoa2code
 TSLSYNTH=tslsynth
+TSLMT2TSL=tslmt2tsl
 
 TOOLS=\
   ${TSLCHECK}\
@@ -33,7 +34,8 @@ TOOLS=\
   ${TSLMINREAL}\
   ${PARSEHOA}\
   ${HOA2CODE}\
-  ${TSLSYNTH}
+  ${TSLSYNTH}\
+  ${TSLMT2TSL}
 
 STACKPATH=$(shell if [ -d "dist" ]; then echo ""; else stack path | grep local-install-root | sed 's/local-install-root: //'; fi)
 BLDTOOL=$(shell if [ -d "dist" ]; then echo "cabal"; else echo "stack"; fi)
@@ -110,8 +112,9 @@ ${TSLSYNTH}:
 	${BLDTOOL} build :$@
 	@if [ -d "dist" ]; then cp ./dist/build/$@/$@ $@; else cp ${STACKPATH}/bin/$@ $@; fi
 
-
-
+${TSLMT2TSL}:
+	${BLDTOOL} build :$@
+	@if [ -d "dist" ]; then cp ./dist/build/$@/$@ $@; else cp ${STACKPATH}/bin/$@ $@; fi
 
 install:
 	${BLDTOOL} install

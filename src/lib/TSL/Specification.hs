@@ -36,6 +36,12 @@ data Specification =
     }
 
 -----------------------------------------------------------------------------
+instance Show Specification where
+    show (Specification a g s) = "Assumptions\n:" ++ stringify a ++ "\nGuarantees:\n" ++ stringify g
+        where 
+            getName    = fmap (stName s)
+            stringify  = unlines . (map (show . getName))
+-----------------------------------------------------------------------------
 
 -- | Create one formula out of assumptions and guarantees.
 --   TODO, look into this. 
