@@ -19,7 +19,6 @@ cabal.sandbox.config
 *.prof
 *.aux
 *.hp
-tslmt2tsl
 tsl2tlsf
 tslcheck
 tslsize
@@ -38,7 +37,7 @@ tslminrealizable
 hoa2code
 parsehoa
 tslsynth
+tslmt2tsl
 .commit
 .stack-work
-local_testing
 stack.yaml.lock
