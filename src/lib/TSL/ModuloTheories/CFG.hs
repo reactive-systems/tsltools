@@ -15,5 +15,44 @@
 
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.CFG
-  ( 
+  ( CFG(..)
+  , 
   ) where
+
+-------------------------------------------------------------------------------
+
+import TSL.Specification (Specification)
+
+import qualified Data.Sequence as Seq
+
+import Data.Sequence((!?), (><), Seq(..), (|>), fromList)
+
+-------------------------------------------------------------------------------
+
+type Id = Int
+
+data CFG = CFG
+    { -- | CFG implemented as a seq of lists.
+      -- To get the possible gramamrs for each,
+      -- index into the grammar with the signal Id.
+        grammar :: Seq.Seq [Formula Id]
+    , -- | Converts Id to name.
+        toName :: (Id -> String)
+    }
+
+fromSpec :: Specification -> CFG
+fromSpec (Specification a g s) =
+    CFG { grammar = buildGrammar
+        , toName = stName s
+        }
+
+-- TODO: just start out with static length
+buildGrammar :: [Formula Id] -> Seq.Seq [Formula Id]
+buildGrammar = buildGrammar' (Seq.fromList [])
+  where 
+    buildGrammar' acc []     = acc
+    buildGrammar' acc (x:xs) = 
+        \case x of
+          (Update dst src) -> undefined
+          -- TODO: append src to acc[dst]
+           _               -> undefined
