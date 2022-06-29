@@ -16,6 +16,7 @@ module TSL.Logic
   , SignalTerm(..)
   , FunctionTerm(..)
   , PredicateTerm(..)
+  , foldFormula
   , updates
   , checks
   , inputs
@@ -221,6 +222,28 @@ instance Foldable Formula where
     Weak x y       -> foldr f (foldr f a x) y
     Since x y      -> foldr f (foldr f a x) y
     Triggered x y  -> foldr f (foldr f a x) y
+
+foldFormula :: (Formula a -> bs -> bs) -> bs -> Formula a -> bs
+foldFormula f acc = \case
+    p@(Check _)     -> f p acc
+    u@(Update _ _ ) -> f u acc
+    Not b           -> foldFormula f acc b
+    Implies p q     -> foldFormula f (foldFormula f acc q) p
+    Equiv p q       -> foldFormula f (foldFormula f acc q) p
+    And (x:xs)      -> foldFormula f (foldFormula f acc x) (And xs)
+    Or (x:xs)       -> foldFormula f (foldFormula f acc x) (Or xs)
+    Next p          -> foldFormula f acc p
+    Previous p      -> foldFormula f acc p
+    Globally p      -> foldFormula f acc p
+    Finally p       -> foldFormula f acc p
+    Historically p  -> foldFormula f acc p
+    Once p          -> foldFormula f acc p
+    Until p q       -> foldFormula f (foldFormula f acc q) p
+    Release p q     -> foldFormula f (foldFormula f acc q) p
+    Weak p q        -> foldFormula f (foldFormula f acc q) p
+    Since p q       -> foldFormula f (foldFormula f acc q) p
+    Triggered p q   -> foldFormula f (foldFormula f acc q) p
+    _               -> acc
 
 -----------------------------------------------------------------------------
 

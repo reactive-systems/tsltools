@@ -15,6 +15,7 @@
 
 module TSL.SymbolTable
   ( SymbolTable(..)
+  , Id
   , IdRec(..)
   , Kind(..)
   , toCSV

@@ -25,15 +25,11 @@ import Data.Semigroup ((<>))
 
 import Options.Applicative
 
-import Data.Char (toLower, toUpper)
-
 import System.Exit (exitFailure)
 
 import Control.Monad (unless)
 
 import System.Directory (doesFileExist)
-
-import System.FilePath (takeBaseName)
 
 -----------------------------------------------------------------------------
 
