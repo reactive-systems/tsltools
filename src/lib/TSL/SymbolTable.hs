@@ -15,6 +15,7 @@
 
 module TSL.SymbolTable
   ( SymbolTable(..)
+  , Id
   , IdRec(..)
   , Kind(..)
   , toCSV
@@ -118,7 +119,7 @@ data IdRec =
 
 -----------------------------------------------------------------------------
 
--- | Prints the symbol table in the CVS format.
+-- | Prints the symbol table in the CSV format.
 
 toCSV
   :: SymbolTable -> String

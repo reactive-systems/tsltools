@@ -9,6 +9,7 @@
 -- "Can Reactive Synthesis and Syntax-Guided Synthesis Be Friends?"
 --
 -----------------------------------------------------------------------------
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 -----------------------------------------------------------------------------
 
@@ -24,17 +25,35 @@ import EncodingUtils (initEncoding)
 
 import FileUtils (writeContent, loadTSL)
 
-import TSL (CFG(..), fromSpec)
+import TSL ( Specification(..)
+           , SymbolTable(..)
+           , fromSpec
+           , getPredicateTerms
+           )
 
 import System.Exit(die)
 
 -----------------------------------------------------------------------------
 
+filterNotDQuote :: String -> String
+filterNotDQuote = filter (/= '\"')
+
+writeOutput :: Maybe FilePath -> Either String String -> IO ()
+writeOutput _ (Left errMsg)      = die errMsg
+writeOutput path (Right content) = writeContent path $ filterNotDQuote content
+
 main :: IO ()
 main = do
   initEncoding
   Configuration{input, output, flag} <- parseArguments
+
   spec <- loadTSL input
-  case flag of
-      (Just Grammar) -> writeContent output (show $ fromSpec spec)
-      _              -> die $ "Unsupported Flag" ++ show flag
+  
+  let unhash  = stName $ symboltable spec
+      content = case flag of
+                  (Just Predicates) -> Right $ unlines $ map (show . (fmap unhash)) $ getPredicateTerms spec
+                  (Just Grammar)    -> Right $ show $ fromSpec spec
+                  Nothing           -> Left $ "tslmt2tsl end-to-end not yet supported"
+                  (Just flag')      -> Left $ "Unimplemented flag: " ++ show flag'
+
+  writeOutput output content

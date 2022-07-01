@@ -70,6 +70,7 @@ module TSL
     -- * Modulo Theories
   , CFG(..)
   , fromSpec
+  , getPredicateTerms
   ) where
 
 -----------------------------------------------------------------------------
@@ -120,6 +121,7 @@ import TSL.TOML (toTOML)
 import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
 
 import TSL.ModuloTheories.CFG(CFG(..), fromSpec)
+import TSL.ModuloTheories.PredicateList(getPredicateTerms)
 
 import qualified TSL.Writer.CFM.Clash as Clash (implement)
 import qualified TSL.Writer.CFM.Applicative as Applicative (implement)

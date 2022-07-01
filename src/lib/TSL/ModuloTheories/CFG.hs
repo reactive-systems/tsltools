@@ -21,54 +21,39 @@ module TSL.ModuloTheories.CFG
 
 -------------------------------------------------------------------------------
 
-import TSL.Logic (Formula(..)
+import Data.Array(Array, array, assocs, bounds, indices, (//), (!))
+
+import TSL.Logic ( Formula(..)
                  , SignalTerm(..)
-                 , FunctionTerm(..)
-                 , PredicateTerm(..)
+                 , foldFormula
                  )
+
+import TSL.Types(arity)
 
 import TSL.Specification (Specification(..))
 
-import TSL.SymbolTable (SymbolTable(..), Kind(..))
-
-import Data.Array(Array, array, assocs, bounds, indices, (//), (!))
+import TSL.SymbolTable (Id, SymbolTable(..), Kind(..))
 
 -------------------------------------------------------------------------------
 
-type Id = Int
 type Grammar = Array Id [SignalTerm Id]
 
 data CFG = CFG
     { -- | CFG implemented as an array of lists.
       -- To get the possible production rules for each,
       -- index into the grammar with the appropriate signal Id.
-        grammar :: Grammar
-    ,
-        symTable :: SymbolTable
+        grammar  :: Grammar
+    ,   symTable :: SymbolTable
     }
 
 instance Show CFG where
     show (CFG g s) = 
         unlines $ map show' $ filter (\(fst, _) -> isUpdate fst) $ assocs g
       where
-        show' (id, rules)  = show (unhashId id) ++ " :\n" ++ show'' rules
-        show''             = unlines . (map (('\t':) . show . unhashS))
+        show' (id, rules)  = unhashId id ++ " :\n" ++ show'' rules
+        show''             = unlines . (map (('\t':) . show . (fmap unhashId)))
         isUpdate idx       = (stKind s) idx == Output
-
-        unhashId                    = (stName s) 
-
-        unhashS (Signal s)          = unhashId s
-        unhashS (FunctionTerm f)    = unhashF f
-        unhashS (PredicateTerm p)   = unhashP p
-
-        unhashF (FunctionSymbol f)  = unhashId f
-        unhashF (FApplied f s)      = unhashF f ++ " " ++ unhashS s
-
-        unhashP BooleanTrue         = "True"
-        unhashP BooleanFalse        = "False"
-        unhashP (BooleanInput b)    = unhashId b
-        unhashP (PredicateSymbol p) = unhashId p
-        unhashP (PApplied p s)      = unhashP p ++ " " ++ unhashS s
+        unhashId           = stName s
 
 fromSpec :: Specification -> CFG
 fromSpec (Specification a g s) =
@@ -83,7 +68,7 @@ fromSpec (Specification a g s) =
 
 buildGrammar :: [Formula Id] -> Grammar -> Grammar
 buildGrammar [] g     = g
-buildGrammar (x:xs) g = buildGrammar xs (extendGrammar x g)
+buildGrammar (x:xs) g = buildGrammar xs (foldFormula extendGrammar g x)
 
 -- | Adds new production rules to the grammar.
 extendGrammar :: Formula Id -> Grammar -> Grammar
@@ -92,20 +77,4 @@ extendGrammar (Update dst src) oldGrammar = newGrammar
     oldRules   = oldGrammar ! dst
     newRules   = src:oldRules
     newGrammar = oldGrammar // [(dst, newRules)]
-extendGrammar (Not f) g          = extendGrammar f g
-extendGrammar (Implies f h) g    = extendGrammar f (extendGrammar h g)
-extendGrammar (Equiv f h) g      = extendGrammar f (extendGrammar h g)
-extendGrammar (And (x:xs)) g     = extendGrammar (And xs) (extendGrammar x g)
-extendGrammar (Or (x:xs))  g     = extendGrammar (Or xs) (extendGrammar x g)
-extendGrammar (Next f) g         = extendGrammar f g
-extendGrammar (Previous f) g     = extendGrammar f g
-extendGrammar (Globally f) g     = extendGrammar f g
-extendGrammar (Finally f) g      = extendGrammar f g
-extendGrammar (Historically f) g = extendGrammar f g
-extendGrammar (Once f) g         = extendGrammar f g
-extendGrammar (Until f h) g      = extendGrammar f (extendGrammar h g)
-extendGrammar (Release f h) g    = extendGrammar f (extendGrammar h g)
-extendGrammar (Weak f h) g       = extendGrammar f (extendGrammar h g)
-extendGrammar (Since f h) g      = extendGrammar f (extendGrammar h g)
-extendGrammar (Triggered f h) g  = extendGrammar f (extendGrammar h g)
-extendGrammar _ g                = g
+extendGrammar _ g = g

@@ -101,6 +101,7 @@ library
     CoreGeneration.MinimalAssumptionCores
     CoreGeneration.FindFirstConcurrent
     TSL.ModuloTheories.CFG
+    TSL.ModuloTheories.PredicateList
 
   hs-source-dirs:
     src/lib

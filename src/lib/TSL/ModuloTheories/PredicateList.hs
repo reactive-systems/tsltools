@@ -1,19 +1,37 @@
 -------------------------------------------------------------------------------
 -- |
--- Module      :  TSL.ModuloTheories.CFG
--- Description :  Builds a CFG for cells and outputs from the specification.
+-- Module      :  TSL.ModuloTheories.PredicateList
+-- Description :  Predicate term operations for TSL-MT
 -- Maintainer  :  Wonhyuk Choi
---
--- This module builds a Context-Free Grammar for cell and output signals
--- from the original specification.
--- This is necessary to build a Syntax-Guided Synthesis grammar when
--- transforming a TSL-MT specification to TSL.
 
 -------------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE RecordWildCards #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.CFG
-  ( 
-  ) where
+module TSL.ModuloTheories.PredicateList(getPredicateTerms) where
+
+-------------------------------------------------------------------------------
+
+import TSL.Specification(Specification(..))
+
+import TSL.SymbolTable(Id)
+
+import TSL.Logic( Formula(..)
+                , PredicateTerm(..)
+                , foldFormula
+                )
+
+-------------------------------------------------------------------------------
+
+getPredicateTerms :: Specification -> [PredicateTerm Id]
+getPredicateTerms (Specification a g _) = (fromFList a []) ++ (fromFList g [])
+
+fromFList :: [Formula a] -> [PredicateTerm a] -> [PredicateTerm a]
+fromFList [] ps     = ps
+fromFList (x:xs) ps = fromFList xs (foldFormula getPredsInF ps x)
+
+-- | Obtains all predicate terms in a given TSL-MT formula
+getPredsInF :: Formula a -> [PredicateTerm a] -> [PredicateTerm a]
+getPredsInF (Check p) ps = p:ps
+getPredsInF _ ps         = ps
