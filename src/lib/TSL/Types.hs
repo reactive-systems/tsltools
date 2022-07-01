@@ -20,6 +20,7 @@ module TSL.Types
   , reducer
   , polyIds
   , prType
+  , arity
   ) where
 
 -----------------------------------------------------------------------------
@@ -127,5 +128,17 @@ prType f = \case
     prPoly i
       | i >= 0 && i < 26 = [chr (i + ord 'a')]
       | otherwise      = "a" ++ show i
+
+
+-----------------------------------------------------------------------------
+
+-- | Calculates the arity of each expression.
+
+arity :: ExprType -> Int
+arity = \case
+  TSet s    -> arity s
+  TSignal s -> arity s
+  TFml _ g  -> 1 + arity g
+  _         -> 0
 
 -----------------------------------------------------------------------------

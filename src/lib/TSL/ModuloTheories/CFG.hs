@@ -28,6 +28,8 @@ import TSL.Logic ( Formula(..)
                  , foldFormula
                  )
 
+import TSL.Types(arity)
+
 import TSL.Specification (Specification(..))
 
 import TSL.SymbolTable (Id, SymbolTable(..), Kind(..))

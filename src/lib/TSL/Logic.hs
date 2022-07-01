@@ -1,4 +1,4 @@
------------------------------------------------------------------------------
+
 -- |
 -- Module      :  TSL.Logic
 -- Maintainer  :  Felix Klein
@@ -113,7 +113,7 @@ instance Foldable FunctionTerm where
 instance Show a => Show (FunctionTerm a) where
   show = \case
     FunctionSymbol s -> show s
-    FApplied t t'    -> show t ++ " " ++ show t'
+    FApplied t t' -> show t ++ " " ++ show t'
 
 instance Arbitrary a => Arbitrary (FunctionTerm a) where
   arbitrary = do
@@ -158,7 +158,7 @@ instance Show a => Show (PredicateTerm a) where
     BooleanFalse      -> "False"
     BooleanInput s    -> show s
     PredicateSymbol s -> show s
-    PApplied t t'     -> show t ++ " " ++ show t'
+    PApplied t t'     -> show t ++ " " ++ show t' ++ " "
 
 instance Arbitrary a => Arbitrary (PredicateTerm a) where
   arbitrary =

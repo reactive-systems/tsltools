@@ -35,9 +35,12 @@ import System.Exit(die)
 
 -----------------------------------------------------------------------------
 
+filterNotDQuote :: String -> String
+filterNotDQuote = filter (/= '\"')
+
 writeOutput :: Maybe FilePath -> Either String String -> IO ()
 writeOutput _ (Left errMsg)      = die errMsg
-writeOutput path (Right content) = writeContent path content
+writeOutput path (Right content) = writeContent path $ filterNotDQuote content
 
 main :: IO ()
 main = do
