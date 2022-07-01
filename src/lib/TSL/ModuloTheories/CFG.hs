@@ -20,18 +20,17 @@ module TSL.ModuloTheories.CFG
   ) where
 
 -------------------------------------------------------------------------------
-import TSL.Logic (Formula(..)
+
+import Data.Array(Array, array, assocs, bounds, indices, (//), (!))
+
+import TSL.Logic ( Formula(..)
                  , SignalTerm(..)
-                 , FunctionTerm(..)
-                 , PredicateTerm(..)
                  , foldFormula
                  )
 
 import TSL.Specification (Specification(..))
 
 import TSL.SymbolTable (Id, SymbolTable(..), Kind(..))
-
-import Data.Array(Array, array, assocs, bounds, indices, (//), (!))
 
 -------------------------------------------------------------------------------
 
@@ -49,24 +48,10 @@ instance Show CFG where
     show (CFG g s) = 
         unlines $ map show' $ filter (\(fst, _) -> isUpdate fst) $ assocs g
       where
-        show' (id, rules)  = show (unhashId id) ++ " :\n" ++ show'' rules
-        show''             = unlines . (map (('\t':) . show . unhashS))
+        show' (id, rules)  = unhashId id ++ " :\n" ++ show'' rules
+        show''             = unlines . (map (('\t':) . show . (fmap unhashId)))
         isUpdate idx       = (stKind s) idx == Output
-
-        unhashId                    = (stName s) 
-
-        unhashS (Signal s)          = unhashId s
-        unhashS (FunctionTerm f)    = unhashF f
-        unhashS (PredicateTerm p)   = unhashP p
-
-        unhashF (FunctionSymbol f)  = unhashId f
-        unhashF (FApplied f s)      = unhashF f ++ " " ++ unhashS s
-
-        unhashP BooleanTrue         = "True"
-        unhashP BooleanFalse        = "False"
-        unhashP (BooleanInput b)    = unhashId b
-        unhashP (PredicateSymbol p) = unhashId p
-        unhashP (PApplied p s)      = unhashP p ++ " " ++ unhashS s
+        unhashId           = stName s
 
 fromSpec :: Specification -> CFG
 fromSpec (Specification a g s) =

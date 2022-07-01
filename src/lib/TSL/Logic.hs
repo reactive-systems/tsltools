@@ -60,7 +60,7 @@ data SignalTerm a =
     Signal a
   | FunctionTerm (FunctionTerm a)
   | PredicateTerm (PredicateTerm a)
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
 
 -----------------------------------------------------------------------------
 
@@ -76,6 +76,12 @@ instance Foldable SignalTerm where
     FunctionTerm t  -> foldr f a t
     PredicateTerm t -> foldr f a t
 
+instance Show a => Show (SignalTerm a) where
+  show = \case
+    Signal s        -> show s
+    FunctionTerm t  -> show t
+    PredicateTerm t -> show t
+
 instance Arbitrary a => Arbitrary (SignalTerm a) where
   arbitrary =
     choose (0 :: Int, 2 :: Int) >>= \case
@@ -90,7 +96,7 @@ instance Arbitrary a => Arbitrary (SignalTerm a) where
 data FunctionTerm a =
     FunctionSymbol a
   | FApplied (FunctionTerm a) (SignalTerm a)
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
 
 -----------------------------------------------------------------------------
 
@@ -103,6 +109,11 @@ instance Foldable FunctionTerm where
   foldr f a = \case
     FunctionSymbol s -> f s a
     FApplied t t'    -> foldr f (foldr f a t) t'
+
+instance Show a => Show (FunctionTerm a) where
+  show = \case
+    FunctionSymbol s -> show s
+    FApplied t t'    -> show t ++ " " ++ show t'
 
 instance Arbitrary a => Arbitrary (FunctionTerm a) where
   arbitrary = do
@@ -121,7 +132,7 @@ data PredicateTerm a =
   | BooleanInput a
   | PredicateSymbol a
   | PApplied (PredicateTerm a) (SignalTerm a)
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
 
 -----------------------------------------------------------------------------
 
@@ -140,6 +151,14 @@ instance Foldable PredicateTerm where
     BooleanInput s    -> f s a
     PredicateSymbol s -> f s a
     PApplied t t'     -> foldr f (foldr f a t) t'
+
+instance Show a => Show (PredicateTerm a) where
+  show = \case
+    BooleanTrue       -> "True"
+    BooleanFalse      -> "False"
+    BooleanInput s    -> show s
+    PredicateSymbol s -> show s
+    PApplied t t'     -> show t ++ " " ++ show t'
 
 instance Arbitrary a => Arbitrary (PredicateTerm a) where
   arbitrary =

@@ -25,7 +25,11 @@ import EncodingUtils (initEncoding)
 
 import FileUtils (writeContent, loadTSL)
 
-import TSL (fromSpec, getPredicateTerms)
+import TSL ( Specification(..)
+           , SymbolTable(..)
+           , fromSpec
+           , getPredicateTerms
+           )
 
 import System.Exit(die)
 
@@ -42,8 +46,9 @@ main = do
 
   spec <- loadTSL input
   
-  let content = case flag of
-                  (Just Predicates) -> Right $ show $ getPredicateTerms spec
+  let unhash  = stName $ symboltable spec
+      content = case flag of
+                  (Just Predicates) -> Right $ unlines $ map (show . (fmap unhash)) $ getPredicateTerms spec
                   (Just Grammar)    -> Right $ show $ fromSpec spec
                   Nothing           -> Left $ "tslmt2tsl end-to-end not yet supported"
                   (Just flag')      -> Left $ "Unimplemented flag: " ++ show flag'
