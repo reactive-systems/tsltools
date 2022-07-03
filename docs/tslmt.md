@@ -18,6 +18,26 @@ However, as classic TSL is just TSL-MT with the Theory of Uninterpreted Function
 This allows TSL specifications (equivalently, TSL Modulo the Theory of Uninterpreted Functions) to _not underapproximate_ to Linear Temporal Logic (LTL) during synthesis as the TSL-MT synthesis procedure will capture the semantics of the update operator.
 More explanation is given in Example 4.3 of the [TSL-MT synthesis paper](https://www.marksantolucito.com/papers/pldi2022.pdf).
 
+## Installation
+In order to run `tslmt`, you will need a Satisfiability Modulo Theories (SMT) and Syntax-Guided Synthesis Solver (SyGuS) solver.
+The recommend solver is [CVC5](https://cvc5.github.io/).
+
+### Installing with CVC5
+First, you need to be in the top level directory (tsltools/.)
+
+Linux:
+```
+mkdir deps && cd deps
+wget https://github.com/cvc5/cvc5/releases/latest/download/cvc5-Linux -O cvc5
+chmod +x ./cvc5
+```
+MacOS:
+```
+mkdir deps && cd deps
+wget https://github.com/cvc5/cvc5/releases/latest/download/cvc5-macOS -O cvc5
+chmod +x ./cvc5
+```
+
 ## Supported first-order theories
 `tsltools` can support all first-order theories that a SyGuS solver can solve.
 However, we currently only have support for the following using [CVC5](https://cvc5.github.io/):

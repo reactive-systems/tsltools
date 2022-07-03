@@ -60,7 +60,7 @@ data SignalTerm a =
     Signal a
   | FunctionTerm (FunctionTerm a)
   | PredicateTerm (PredicateTerm a)
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 -----------------------------------------------------------------------------
 
@@ -76,11 +76,11 @@ instance Foldable SignalTerm where
     FunctionTerm t  -> foldr f a t
     PredicateTerm t -> foldr f a t
 
-instance Show a => Show (SignalTerm a) where
-  show = \case
-    Signal s        -> show s
-    FunctionTerm t  -> show t
-    PredicateTerm t -> show t
+-- instance Show a => Show (SignalTerm a) where
+--   show = \case
+--     Signal s        -> show s
+--     FunctionTerm t  -> show t
+--     PredicateTerm t -> show t
 
 instance Arbitrary a => Arbitrary (SignalTerm a) where
   arbitrary =
@@ -96,7 +96,7 @@ instance Arbitrary a => Arbitrary (SignalTerm a) where
 data FunctionTerm a =
     FunctionSymbol a
   | FApplied (FunctionTerm a) (SignalTerm a)
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 -----------------------------------------------------------------------------
 
@@ -110,10 +110,10 @@ instance Foldable FunctionTerm where
     FunctionSymbol s -> f s a
     FApplied t t'    -> foldr f (foldr f a t) t'
 
-instance Show a => Show (FunctionTerm a) where
-  show = \case
-    FunctionSymbol s -> show s
-    FApplied t t' -> show t ++ " " ++ show t'
+-- instance Show a => Show (FunctionTerm a) where
+--   show = \case
+--     FunctionSymbol s -> show s
+--     FApplied t t' -> show t ++ " " ++ show t'
 
 instance Arbitrary a => Arbitrary (FunctionTerm a) where
   arbitrary = do
