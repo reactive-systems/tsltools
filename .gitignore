@@ -1,3 +1,6 @@
+deps
+specs
+local-dev
 *.tsl
 TODO
 .DS_Store

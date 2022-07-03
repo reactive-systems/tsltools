@@ -15,17 +15,24 @@ module TSL.ModuloTheories.PredicateList(getPredicateTerms) where
 
 import TSL.Specification(Specification(..))
 
-import TSL.SymbolTable(Id)
+import TSL.SymbolTable(Id, SymbolTable(..))
+
+import TSL.Types(arity)
 
 import TSL.Logic( Formula(..)
                 , PredicateTerm(..)
                 , foldFormula
                 )
 
+import TSL.ModuloTheories.AST(AST, fromPredicateTerm)
+
 -------------------------------------------------------------------------------
 
-getPredicateTerms :: Specification -> [PredicateTerm Id]
-getPredicateTerms (Specification a g _) = (fromFList a []) ++ (fromFList g [])
+getPredicateTerms :: Specification -> [AST Id]
+getPredicateTerms (Specification a g s) = map fromPTerm pTerms
+  where 
+    pTerms    = (fromFList a []) ++ (fromFList g [])
+    fromPTerm = fromPredicateTerm (arity . (stType s))
 
 fromFList :: [Formula a] -> [PredicateTerm a] -> [PredicateTerm a]
 fromFList [] ps     = ps

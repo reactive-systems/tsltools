@@ -23,26 +23,26 @@ module TSL.ModuloTheories.CFG
 
 import Data.Array(Array, array, assocs, bounds, indices, (//), (!))
 
+import TSL.Types (arity)
+
 import TSL.Logic ( Formula(..)
                  , SignalTerm(..)
                  , foldFormula
                  )
 
-import TSL.Types(arity)
-
 import TSL.Specification (Specification(..))
 
 import TSL.SymbolTable (Id, SymbolTable(..), Kind(..))
 
--------------------------------------------------------------------------------
+import TSL.ModuloTheories.AST(AST, fromSignalTerm)
 
-type Grammar = Array Id [SignalTerm Id]
+-------------------------------------------------------------------------------
 
 data CFG = CFG
     { -- | CFG implemented as an array of lists.
       -- To get the possible production rules for each,
       -- index into the grammar with the appropriate signal Id.
-        grammar  :: Grammar
+        grammar  :: Array Id [AST Id]
     ,   symTable :: SymbolTable
     }
 
@@ -58,20 +58,28 @@ instance Show CFG where
 fromSpec :: Specification -> CFG
 fromSpec (Specification a g s) =
     CFG {
-            grammar     = buildGrammar (a ++ g) grammarInit
+            grammar     = fmap (map fromSTerm) grammar'
         ,   symTable    = s
         }
   where
     symTableArr = symtable s
+    fromSTerm   = fromSignalTerm (arity . (stType s))
+    grammar'    = buildGrammar (a ++ g) grammarInit
     grammarInit = array (bounds symTableArr) emptyRules
     emptyRules  = [(idx, []) | idx <- indices symTableArr]
 
-buildGrammar :: [Formula Id] -> Grammar -> Grammar
+buildGrammar
+    :: [Formula Id]
+    -> Array Id [SignalTerm Id]
+    -> Array Id [SignalTerm Id]
 buildGrammar [] g     = g
 buildGrammar (x:xs) g = buildGrammar xs (foldFormula extendGrammar g x)
 
 -- | Adds new production rules to the grammar.
-extendGrammar :: Formula Id -> Grammar -> Grammar
+extendGrammar
+    :: Formula Id
+    -> Array Id [SignalTerm Id]
+    -> Array Id [SignalTerm Id]
 extendGrammar (Update dst src) oldGrammar = newGrammar
   where
     oldRules   = oldGrammar ! dst
