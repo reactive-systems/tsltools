@@ -1,23 +1,33 @@
 -------------------------------------------------------------------------------
 -- |
--- Module      :  TSL.ModuloTheories.CVC5
--- Description :  Utilities to send SMT and SyGuS problems to CVC5.
+-- Module      :  TSL.ModuloTheories.Theories
+-- Description :  Supported First-Order Theories.
 -- Maintainer  :  Wonhyuk Choi
---
--- Used for sending SMT and SyGuS problems to CVC5.
 
 -------------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE RecordWildCards #-}
 
-{-
-   TODO:
-   * Send SMT/SyGuS problems to CVC5
-   * Parse results from CVC5
-   * Transform CVC5 results into some internal function representation
--}
+-------------------------------------------------------------------------------
+module TSL.ModuloTheories.Theories( Theory(..)
+                                  , TheorySymbol(..)
+                                  , readTheory
+                                  , applySemantics
+                                  ) where
+-------------------------------------------------------------------------------
+
+import TSL.ModuloTheories.AST(AST(..))
+
+import TSL.ModuloTheories.Theories.Base( TheoryParseErr
+                                       , Theory(..)
+                                       , TheorySymbol(..)
+                                       )
+
+import TSL.ModuloTheories.Theories.Uf(UfTheory)
+import TSL.ModuloTheories.Theories.Lia(LiaTheory)
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.CVC5
-  ( 
-  ) where
+readTheory :: String -> Either TheoryParseErr Theory
+readTheory "UF"  = Right UfTheory
+readTheory "LIA" = Right LiaTheory
+readTheory _     = Left TheoryParseErr
