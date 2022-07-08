@@ -5,15 +5,11 @@
 -- Maintainer  :  Wonhyuk Choi
 
 -------------------------------------------------------------------------------
-{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE TypeFamilies #-}
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.Theories.Base( TheoryParseErr(..)
-                                       , Theory
-                                       , TheorySymbol
-                                       , readT
-                                       , applySemantics
-                                       , toSMT2
-                                       , toTSL
+                                       , Theory(..)
+                                       , TheorySymbol(..)
                                        ) where
 -------------------------------------------------------------------------------
 
@@ -24,11 +20,8 @@ import TSL.ModuloTheories.AST(AST(..))
 data TheoryParseErr = TheoryParseErr deriving (Show)
 
 class Theory t where
-    applySemantics
-        :: (forall s. TheorySymbol s)
-        => t
-        -> AST String
-        -> AST (Either TheoryParseErr s)
+    type Symbol t
+    applySemantics :: t -> AST String -> AST (Either TheoryParseErr (Symbol t))
 
 class TheorySymbol a where
   readT  :: String -> Either TheoryParseErr a

@@ -22,17 +22,10 @@ module TSL.ModuloTheories.AST( AST
 
 -------------------------------------------------------------------------------
 
-import TSL.Logic ( Formula(..)
-                 , SignalTerm(..)
+import TSL.Logic ( SignalTerm(..)
                  , FunctionTerm(..)
                  , PredicateTerm(..)
                  )
-
-import TSL.Types(ExprType(..))
-
-import TSL.Specification (Specification(..))
-
-import TSL.SymbolTable (Id)
 
 -------------------------------------------------------------------------------
 

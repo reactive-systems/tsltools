@@ -5,15 +5,13 @@
 -- Maintainer  :  Wonhyuk Choi
 
 -------------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.Theories.Uf(UfTheory) where
+module TSL.ModuloTheories.Theories.Uf(UfTheory(..)) where
 
 -------------------------------------------------------------------------------
-import TSL.ModuloTheories.Theories.Base( TheoryParseErr(..)
-                                       , Theory
+import TSL.ModuloTheories.Theories.Base( Theory(..)
                                        , TheorySymbol
                                        , readT
                                        , applySemantics
@@ -24,7 +22,8 @@ import TSL.ModuloTheories.Theories.Base( TheoryParseErr(..)
 data UfTheory = UfTheory deriving (Show, Eq)
 
 instance Theory UfTheory where
-  applySemantics _ = fmap readT
+    type Symbol UfTheory = UfSymbol
+    applySemantics UfTheory = fmap readT
 
 data UfSymbol = Uninterpreted String deriving (Show)
 

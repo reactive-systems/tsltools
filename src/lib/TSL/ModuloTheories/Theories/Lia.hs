@@ -1,17 +1,18 @@
 -------------------------------------------------------------------------------
 -- |
--- Module      :  TSL.ModuloTheories.Theories
--- Description :  Supported First-Order Theories.
+-- Module      :  TSL.ModuloTheories.Lia
+-- Description :  Linear Integer Arithmetic
 -- Maintainer  :  Wonhyuk Choi
 
 -------------------------------------------------------------------------------
+{-# LANGUAGE TypeFamilies #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.Theories.Lia(readLia) where
+module TSL.ModuloTheories.Theories.Lia(LiaTheory(..)) where
 
 -------------------------------------------------------------------------------
 import TSL.ModuloTheories.Theories.Base( TheoryParseErr(..)
-                                       , Theory
+                                       , Theory(..)
                                        , TheorySymbol
                                        , readT
                                        , applySemantics
@@ -24,7 +25,8 @@ import TSL.ModuloTheories.Theories.Base( TheoryParseErr(..)
 data LiaTheory = LiaTheory deriving (Show, Eq)
 
 instance Theory LiaTheory where
-  applySemantics _ = fmap readT
+    type Symbol LiaTheory = LiaSymbol
+    applySemantics _ = fmap readT
 
 data LiaSymbol = 
     Int (Int)
