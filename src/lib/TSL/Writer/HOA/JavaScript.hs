@@ -24,7 +24,7 @@ import TSL.Writer.HOA.Utils
 
 import Data.Tuple ( swap )
 
-import Data.Text(pack, unpack, replace, Text)
+import qualified Data.Text as T
 
 import Hanoi
     ( HOA(..), AcceptanceSet, Label, State )
@@ -79,30 +79,32 @@ printHOALines hoa@HOA {..} =
         termStringList = map (map (printTSLFormula negationOperator (strIndWithMap apNamesMap))) splitFormulas :: [[String]]
         predUpds = splitPredUpdates negationOperator termStringList
         predUpdToCode (preds, upds) = let
-            conditional =  if null preds then "true" else intercalate (" "++conjunctionOperator++ indent 3) preds
-            body = indent 4 ++ intercalate (indent 4) (map updateToAssignment upds ++ [stateUpdate])
+            conditional =  if null preds then "true" else List.intercalate (" "++conjunctionOperator++ indent 3) preds
+            body = indent 4 ++ List.intercalate (indent 4) (map updateToAssignment upds ++ [stateUpdate])
           in
             "if (" ++ conditional ++ "){" ++ body ++ indent 2 ++ "}" ++ "\n"
       in
         concatMap (\x -> indent 2 ++ predUpdToCode x) predUpds
   in
-    intercalate ["\nelse "] $ map printState values
+    List.intercalate ["\nelse "] $ map printState values
 
 -----------------------------------------------------------------------------
 -- | Language specific functions
 
 updateToAssignment :: String -> String
-updateToAssignment x =
-  filter (\c -> c /= '[' && c /= ']') (replaceUpdate x ++ ";")
-
-replaceUpdate :: String -> String
-replaceUpdate = unpack . replace "<-" assignmentOperator . pack
+updateToAssignment x = let
+  noBrackets = filter (\c -> not $ c `elem` ['[',']','(',')']) x
+  [val, assignment] = T.splitOn " <- " $ T.pack noBrackets
+  fxnParts = map T.strip $ T.splitOn " " assignment
+  params = if tail fxnParts == []
+           then ""
+           else T.concat ["(", (T.intercalate ", " $ tail fxnParts), ");"] 
+ in
+   T.unpack $ T.concat [val, " = ", head fxnParts, params]
+   
 
 negationOperator :: String
 negationOperator = "!"
-
-assignmentOperator :: Text
-assignmentOperator = "="
 
 conjunctionOperator :: String
 conjunctionOperator = "&&"
