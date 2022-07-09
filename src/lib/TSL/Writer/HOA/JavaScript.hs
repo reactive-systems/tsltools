@@ -93,16 +93,16 @@ printHOALines hoa@HOA {..} =
 
 updateToAssignment :: String -> String
 updateToAssignment x = let
-  noBrackets = filter (\c -> not $ c `elem` ['[',']','(',')']) x
+  constsSaved = T.unpack $ T.replace "()" "cccccc" $ T.pack (traceShowId x)
+  noBrackets = filter (\c -> not $ c `elem` ['[',']','(',')']) constsSaved
   [val, assignment] = T.splitOn " <- " $ T.pack noBrackets
   fxnParts = map T.strip $ T.splitOn " " assignment
   params = if tail fxnParts == []
            then ""
-           else T.concat ["(", (T.intercalate ", " $ tail fxnParts), ");"] 
+           else T.replace "cccccc" "()" $ T.concat ["(", (T.intercalate ", " $ tail fxnParts), ");"] 
  in
    T.unpack $ T.concat [val, " = ", head fxnParts, params]
    
-
 negationOperator :: String
 negationOperator = "!"
 
