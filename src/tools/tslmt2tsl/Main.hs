@@ -28,7 +28,7 @@ import FileUtils (writeContent, loadTSL)
 import TSL ( Specification(..)
            , SymbolTable(..)
            , fromSpec
-           , getPredicateTerms
+           , getPredicateLiterals
            )
 
 import System.Exit(die)
@@ -51,7 +51,7 @@ main = do
   
   let unhash  = stName $ symboltable spec
       content = case flag of
-                  (Just Predicates) -> Right $ unlines $ map (show . (fmap unhash)) $ getPredicateTerms spec
+                  (Just Predicates) -> Right $ unlines $ map (show . (fmap unhash)) $ getPredicateLiterals spec
                   (Just Grammar)    -> Right $ show $ fromSpec spec
                   Nothing           -> Left $ "tslmt2tsl end-to-end not yet supported"
                   (Just flag')      -> Left $ "Unimplemented flag: " ++ show flag'

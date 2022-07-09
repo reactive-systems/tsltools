@@ -5,25 +5,16 @@
 -- Maintainer  :  Wonhyuk Choi
 
 -------------------------------------------------------------------------------
-{-# LANGUAGE TypeFamilies #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.Theories.Uf(UfTheory(..)) where
+
+module TSL.ModuloTheories.Theories.Uf(UfSymbol) where
 
 -------------------------------------------------------------------------------
-import TSL.ModuloTheories.Theories.Base( Theory(..)
-                                       , TheorySymbol
-                                       , readT
-                                       , applySemantics
-                                       , toSMT2
-                                       , toTSL
-                                       )
--------------------------------------------------------------------------------
-data UfTheory = UfTheory deriving (Show, Eq)
 
-instance Theory UfTheory where
-    type Symbol UfTheory = UfSymbol
-    applySemantics UfTheory = fmap readT
+import TSL.ModuloTheories.Theories.Base(TheorySymbol(..))
+
+-------------------------------------------------------------------------------
 
 data UfSymbol = Uninterpreted String deriving (Show)
 

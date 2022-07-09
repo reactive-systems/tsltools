@@ -5,28 +5,18 @@
 -- Maintainer  :  Wonhyuk Choi
 
 -------------------------------------------------------------------------------
-{-# LANGUAGE TypeFamilies #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.Theories.Lia(LiaTheory(..)) where
+
+module TSL.ModuloTheories.Theories.Lia(LiaSymbol) where
 
 -------------------------------------------------------------------------------
+
 import TSL.ModuloTheories.Theories.Base( TheoryParseErr(..)
-                                       , Theory(..)
-                                       , TheorySymbol
-                                       , readT
-                                       , applySemantics
-                                       , toSMT2
-                                       , toTSL
+                                       , TheorySymbol(..)
                                        )
 
 -------------------------------------------------------------------------------
-
-data LiaTheory = LiaTheory deriving (Show, Eq)
-
-instance Theory LiaTheory where
-    type Symbol LiaTheory = LiaSymbol
-    applySemantics _ = fmap readT
 
 data LiaSymbol = 
     Int (Int)
