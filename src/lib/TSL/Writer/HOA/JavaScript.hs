@@ -79,7 +79,7 @@ printHOALines hoa@HOA {..} =
         termStringList = map (map (printTSLFormula negationOperator (strIndWithMap apNamesMap))) splitFormulas :: [[String]]
         predUpds = splitPredUpdates negationOperator termStringList
         predUpdToCode (preds, upds) = let
-            conditional =  if null preds then "true" else List.intercalate (" "++conjunctionOperator++ indent 3) preds
+            conditional =  if null preds then "true" else List.intercalate (" "++conjunctionOperator++ indent 3) $ map (T.unpack. uncurryFxnCall. T.pack) preds
             body = indent 4 ++ List.intercalate (indent 4) (map updateToAssignment upds ++ [stateUpdate])
           in
             "if (" ++ conditional ++ "){" ++ body ++ indent 2 ++ "}" ++ "\n"
@@ -91,17 +91,25 @@ printHOALines hoa@HOA {..} =
 -----------------------------------------------------------------------------
 -- | Language specific functions
 
-updateToAssignment :: String -> String
-updateToAssignment x = let
-  constsSaved = T.unpack $ T.replace "()" "cccccc" $ T.pack (traceShowId x)
-  noBrackets = filter (\c -> not $ c `elem` ['[',']','(',')']) constsSaved
-  [val, assignment] = T.splitOn " <- " $ T.pack noBrackets
-  fxnParts = map T.strip $ T.splitOn " " assignment
+uncurryFxnCall :: T.Text -> T.Text
+uncurryFxnCall x = let
+  constsSaved = T.replace "()" "cccccc" $ x
+  noBrackets = T.filter (\c -> not $ c `elem` ['[',']','(',')']) constsSaved
+  fxnParts = map T.strip $ T.splitOn " " noBrackets
   params = if tail fxnParts == []
            then ""
-           else T.replace "cccccc" "()" $ T.concat ["(", (T.intercalate ", " $ tail fxnParts), ");"] 
+           else T.concat ["(", (T.intercalate ", " $ tail fxnParts), ")"] 
+ in 
+  T.replace "cccccc" "()" $ T.concat $ [head fxnParts, params]
+
+
+updateToAssignment :: String -> String
+updateToAssignment x = let
+  noBrackets = T.filter (\c -> not $ c `elem` ['[',']','(',')']) $ T.pack x
+  [val, assignment] = T.splitOn " <- " noBrackets
+  fxnCall = uncurryFxnCall assignment
  in
-   T.unpack $ T.concat [val, " = ", head fxnParts, params]
+   T.unpack $ T.concat [val, " = ", fxnCall, ";"]
    
 negationOperator :: String
 negationOperator = "!"

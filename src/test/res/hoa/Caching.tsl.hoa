@@ -1,0 +1,17 @@
+HOA: v1
+States: 2
+Start: 0
+AP: 7 "u0response0cached2data" "u0response0f1dcall2a2p2i0query1b" "u0response0response" "u0cached2data0cached2data" "u0cached2data0f1dcall2a2p2i0query1b" "p0p0authed2user0query" "p0p0cache2stale0query"
+acc-name: all
+Acceptance: 0 t
+properties: trans-labels explicit-labels state-acc deterministic
+--BODY--
+State: 0
+[0&!1&!2&!3&4&!5&!6 | 0&!1&!2&3&!4&!5&!6] 0
+[!0&1&!2&!3&4&5] 1
+[!0&1&!2&!3&4&!5&6] 1
+State: 1
+[0&!1&!2&!3&4&!5&!6 | 0&!1&!2&3&!4&!5&!6] 0
+[!0&1&!2&!3&4&5&!6] 1
+[!0&!1&!2&6 | 0&1&6 | 0&2&6 | 1&2&6 | !3&!4&6 | 3&4&6] 1
+--END--

@@ -1,0 +1,13 @@
+HOA: v1
+States: 2
+Start: 1
+AP: 6 "u0note2to2play02e4" "u0note2to2play02g4" "u0note2to2play0note2to2play" "u0rhythm0eigthnote" "u0rhythm0halfnote" "u0rhythm0rhythm"
+acc-name: all
+Acceptance: 0 t
+properties: trans-labels explicit-labels state-acc deterministic
+--BODY--
+State: 0
+[0&!1&!2&!3&4&!5] 1
+State: 1
+[!0&1&!2&3&!4&!5] 0
+--END--

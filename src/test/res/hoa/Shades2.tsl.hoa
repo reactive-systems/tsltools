@@ -1,0 +1,24 @@
+HOA: v1
+States: 4
+Start: 0
+AP: 7 "p0b0room29shades29closed" "p0b0room29shades29open" "u0room29shades29ctrl0f1dmove2to0f1dpercent2423231b1b" "u0room29shades29ctrl0room29shades29ctrl" "u0room29shades29ctrl0f1dmove2to0f1dpercent231b1b" "p0b0room29screen29lowered" "p0p0bright0outside29brightness"
+acc-name: all
+Acceptance: 0 t
+properties: trans-labels explicit-labels state-acc deterministic
+--BODY--
+State: 0
+[0&1] 3
+[!0&!2&!3&!4 | !1&!2&!3&!4] 1
+State: 1
+[0&1] 3
+[!0&!2&4 | !1&!2&4] 2
+State: 2
+[!0&!2] 2
+[0&!1&2&3 | 0&!1&2&4] 3
+[0&1&!3&!4] 3
+State: 3
+[!0&!1] 3
+[!0&1&!2&!3] 2
+[0&!1&3 | 0&!1&4] 3
+[0&1&!2&!3&!4] 3
+--END--

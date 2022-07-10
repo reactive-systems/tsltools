@@ -1,0 +1,22 @@
+HOA: v1
+States: 3
+Start: 0
+AP: 5 "p0p0leftmost0ball" "p0p0rightmost0ball" "u0ball0f1dmove2left0ball1b" "u0ball0f1dmove2right0ball1b" "u0ball0ball"
+acc-name: all
+Acceptance: 0 t
+properties: trans-labels explicit-labels state-acc deterministic
+--BODY--
+State: 0
+[0&1&!2&!3&!4 | 0&1&2&3 | 0&1&2&4 | 0&1&3&4] 2
+[!0&!1&2&!3&!4] 1
+[!0&1&2&!3&!4] 1
+[0&!1&!2&3&!4] 2
+State: 1
+[1&!2&!3&!4 | 1&2&3 | 1&2&4 | 1&3&4] 2
+[!0&!1&2&!3&!4] 1
+[0&!1&!2&3&!4] 2
+State: 2
+[0&!2&!3&!4 | 0&2&3 | 0&2&4 | 0&3&4] 2
+[!0&1&2&!3&!4] 1
+[!0&!1&!2&3&!4] 2
+--END--
