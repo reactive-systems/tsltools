@@ -94,7 +94,7 @@ printHOALines hoa@HOA {..} =
 uncurryFxnCall :: T.Text -> T.Text
 uncurryFxnCall x = let
   constsSaved = T.replace "()" "cccccc" $ x
-  noBrackets = T.filter (\c -> not $ c `elem` ['[',']','(',')']) constsSaved
+  noBrackets = T.filter (\c -> not $ c `elem` ['(',')']) constsSaved
   fxnParts = map T.strip $ T.splitOn " " noBrackets
   params = if tail fxnParts == []
            then ""
@@ -105,7 +105,7 @@ uncurryFxnCall x = let
 
 updateToAssignment :: String -> String
 updateToAssignment x = let
-  noBrackets = T.filter (\c -> not $ c `elem` ['[',']','(',')']) $ T.pack x
+  noBrackets = T.filter (\c -> not $ c `elem` ['[',']']) $ T.pack x
   [val, assignment] = T.splitOn " <- " noBrackets
   fxnCall = uncurryFxnCall assignment
  in
