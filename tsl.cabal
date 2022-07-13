@@ -108,6 +108,7 @@ library
     TSL.ModuloTheories.Theories.Base
     TSL.ModuloTheories.Theories.Uf
     TSL.ModuloTheories.Theories.Lia
+    TSL.ModuloTheories.Solver
 
   hs-source-dirs:
     src/lib

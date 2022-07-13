@@ -28,17 +28,23 @@ import TSL.ModuloTheories.PredicateList( PredicateLiteral(..)
                                        , getPLitVars
                                        )
 
+import TSL.ModuloTheories.Solver(SolverErr(..), checkSat)
+
 -------------------------------------------------------------------------------
 
+-- consistencyChecking
+--     :: Theory
+--     -> [PredicateLiteral TheorySymbol]
+--     -> Either SolverErr [String]
+-- consistencyChecking theory =
+--   (map toTslAssumption) . (filter notSat) . enumeratePreds
+--     where notSat = not . checkSat . (checkSatSmt theory)
+--           toTslAssumption p = "G " ++ pred2Tsl (NotPLit p) ++ ";"
 consistencyChecking
     :: Theory
-    -> (String -> Bool)
     -> [PredicateLiteral TheorySymbol]
-    -> [String]
-consistencyChecking theory smtSolver =
-  (map toTslAssumption) . (filter notSat) . enumeratePreds
-    where notSat = not . smtSolver . (checkSatSmt theory)
-          toTslAssumption p = "G " ++ pred2Tsl (NotPLit p) ++ ";"
+    -> Either SolverErr [String]
+consistencyChecking theory = undefined
 
 checkSatSmt :: Theory -> PredicateLiteral TheorySymbol -> String
 checkSatSmt theory p = unlines $ [logic, variables, assert, checkSAT]

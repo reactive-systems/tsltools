@@ -27,20 +27,27 @@ import FileUtils (writeContent, loadTSL)
 
 import TSL ( Specification(..)
            , SymbolTable(..)
+           , SolverErr(..)
            , fromSpec
            , getPredicateLiterals
+           , consistencyChecking
+           , checkSat
            )
 
 import System.Exit(die)
 
 -----------------------------------------------------------------------------
 
-filterNotDQuote :: String -> String
-filterNotDQuote = filter (/= '\"')
-
 writeOutput :: Maybe FilePath -> Either String String -> IO ()
 writeOutput _ (Left errMsg)      = die errMsg
-writeOutput path (Right content) = writeContent path $ filterNotDQuote content
+writeOutput path (Right content) = writeContent path $ removeDQuote content
+  where removeDQuote = filter (/= '\"')
+
+-- consistencyAssumptions :: Theory -> Specification -> Either SolverErr [String]
+-- consistencyAssumptions theory spec = assumptions
+--   where
+--     predLits    = getPredicateLiterals spec
+--     assumptions = consistencyChecking theory predLits checkSat
 
 main :: IO ()
 main = do
@@ -51,9 +58,10 @@ main = do
   
   let unhash  = stName $ symboltable spec
       content = case flag of
-                  (Just Predicates) -> Right $ unlines $ map (show . (fmap unhash)) $ getPredicateLiterals spec
-                  (Just Grammar)    -> Right $ show $ fromSpec spec
-                  Nothing           -> Left $ "tslmt2tsl end-to-end not yet supported"
-                  (Just flag')      -> Left $ "Unimplemented flag: " ++ show flag'
+        (Just Predicates)  -> Right $ unlines $ map (show . (fmap unhash)) $ getPredicateLiterals spec
+        (Just Grammar)     -> Right $ show $ fromSpec spec
+        -- (Just Consistency) -> Right $ show $ fromSpec spec
+        Nothing            -> Left $ "tslmt2tsl end-to-end not yet supported"
+        (Just flag')       -> Left $ "Unimplemented flag: " ++ show flag'
 
   writeOutput output content
