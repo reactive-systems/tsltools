@@ -14,38 +14,55 @@ module TSL.ModuloTheories.ConsistencyChecking(consistencyChecking) where
 
 -------------------------------------------------------------------------------
 
-import TSL.ModuloTheories.Theories(Theory)
+import TSL.Ast(stringifyAst)
 
-import TSL.ModuloTheories.PredicateList(PredicateLiteral, enumeratePreds)
+import TSL.ModuloTheories.Theories( Theory
+                                  , TheorySymbol(..)
+                                  , toSmt
+                                  , toTsl
+                                  , symbolType
+                                  )
 
-import qualified TSL.ModuloTheories.PredicateList as PLit(toSMT2)
+import TSL.ModuloTheories.PredicateList( PredicateLiteral(..)
+                                       , enumeratePreds
+                                       , getPLitVars
+                                       )
 
 -------------------------------------------------------------------------------
-    
-{-
-   1. convert function symbols to appropriate symbol
--}
 
 consistencyChecking
-    :: (Show a)
-    => Theory
+    :: Theory
     -> (String -> Bool)
-    -> [PredicateLiteral a]
+    -> [PredicateLiteral TheorySymbol]
     -> [String]
 consistencyChecking theory smtSolver =
   (map toTslAssumption) . (filter notSat) . enumeratePreds
-    where notSat = not . smtSolver . (checkSatSmt2 theory)
+    where notSat = not . smtSolver . (checkSatSmt theory)
+          toTslAssumption p = "G " ++ pred2Tsl (NotPLit p) ++ ";"
 
-checkSatSmt2 :: Show a => Theory -> PredicateLiteral a -> String
-checkSatSmt2 theory p = unlines $ logic:variables:assert:checkSAT:[]
+checkSatSmt :: Theory -> PredicateLiteral TheorySymbol -> String
+checkSatSmt theory p = unlines $ [logic, variables, assert, checkSAT]
   where
-    logic     = "(set-logic " ++ show theory ++ ")"
-    variables = show p
-    assert    = show p
-    checkSAT  = "(check-sat)"
+    logic       = "(set-logic " ++ show theory ++ ")"
+    variables   = unlines $ map declConst $ getPLitVars p
+    assert      = "(assert " ++ pred2Smt p ++ ")"
+    checkSAT    = "(check-sat)"
+    declConst x =
+      "(declare-const " ++ toSmt x ++ " " ++ symbolType x ++ ")"
 
-toTslAssumption :: Show a => PredicateLiteral a -> String
-toTslAssumption p = show p ++ ";"
+pred2Smt :: PredicateLiteral TheorySymbol -> String
+pred2Smt = \case
+  PLiteral p  -> stringifyAst toSmt p
+  NotPLit p   -> "(not " ++ pred2Smt p ++ ")"
+  OrPLit p q  -> "(or "  ++ pred2Smt p ++ " " ++ pred2Smt q ++ ")"
+  AndPLit p q -> "(and " ++ pred2Smt p ++ " " ++ pred2Smt q ++ ")"
+
+pred2Tsl :: PredicateLiteral TheorySymbol -> String
+pred2Tsl = \case
+  PLiteral p  -> stringifyAst toTsl p
+  NotPLit p   -> "!" ++ pred2Tsl p
+  OrPLit p q  -> "(" ++ pred2Tsl p ++ " || " ++ pred2Tsl q ++ ")"
+  AndPLit p q -> "(" ++ pred2Tsl p ++ " && " ++ pred2Tsl q ++ ")"
 
 -- (set-logic LIA)
 -- (declare-const vruntime2 Int)

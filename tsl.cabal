@@ -100,7 +100,7 @@ library
     CoreGeneration.UnrealizabilityCores
     CoreGeneration.MinimalAssumptionCores
     CoreGeneration.FindFirstConcurrent
-    TSL.ModuloTheories.AST
+    TSL.Ast
     TSL.ModuloTheories.CFG
     TSL.ModuloTheories.PredicateList
     TSL.ModuloTheories.ConsistencyChecking

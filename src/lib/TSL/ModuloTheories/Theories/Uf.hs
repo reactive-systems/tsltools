@@ -20,5 +20,6 @@ data UfSymbol = Uninterpreted String deriving (Show)
 
 instance TheorySymbol UfSymbol where
     readT s                  = Right $ Uninterpreted s
-    toSMT2 (Uninterpreted a) = show a
-    toTSL  (Uninterpreted a) = show a
+    toSmt (Uninterpreted a) = show a
+    toTsl (Uninterpreted a) = show a
+    symbolType _            = "Sort"

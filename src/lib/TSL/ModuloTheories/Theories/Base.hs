@@ -12,13 +12,12 @@ module TSL.ModuloTheories.Theories.Base( TheoryParseErr(..)
                                        ) where
 -------------------------------------------------------------------------------
 
-import TSL.ModuloTheories.AST(AST(..))
-
 -------------------------------------------------------------------------------
 
 data TheoryParseErr = TheoryParseErr deriving (Show)
 
 class TheorySymbol a where
-  readT  :: String -> Either TheoryParseErr a
-  toSMT2 :: a -> String
-  toTSL  :: a -> String
+  readT      :: String -> Either TheoryParseErr a
+  toSmt      :: a -> String
+  toTsl      :: a -> String
+  symbolType :: a -> String

@@ -9,10 +9,11 @@
 {-# LANGUAGE RecordWildCards #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.PredicateList( PredicateLiteral
+module TSL.ModuloTheories.PredicateList( PredicateLiteral(..)
                                        , getPredicateLiterals
                                        , enumeratePreds
-                                       , toSMT2) where
+                                       , getPLitVars
+                                       ) where
 
 -------------------------------------------------------------------------------
 
@@ -27,39 +28,38 @@ import TSL.Logic( Formula(..)
                 , foldFormula
                 )
 
-import TSL.ModuloTheories.AST(AST, fromPredicateTerm)
+import TSL.Ast(Ast, fromPredicateTerm, getVars)
 
 -------------------------------------------------------------------------------
 
--- | TODO: make AST type more granular to enforce
--- the fact that PredicateLiteral cannot be constructed
--- out of PredicateTerms.
 data PredicateLiteral a =
-      PLiteral (AST a)
-    | NotPLit (PredicateLiteral a)
-    | OrPLit  (PredicateLiteral a) (PredicateLiteral a)
-    | AndPLit (PredicateLiteral a) (PredicateLiteral a)
-
-instance Show a => Show (PredicateLiteral a) where
-  show = \case
-    PLiteral p  -> show p     
-    NotPLit p   -> "!" ++ show p ++ ""
-    OrPLit p q  -> "(" ++ show p ++ " || " ++ show q ++ ")"
-    AndPLit p q -> "(" ++ show p ++ " && " ++ show q ++ ")"
+      PLiteral (Ast a)
+    | NotPLit  (PredicateLiteral a)
+    | OrPLit   (PredicateLiteral a) (PredicateLiteral a)
+    | AndPLit  (PredicateLiteral a) (PredicateLiteral a)
+    deriving (Show)
 
 instance Functor PredicateLiteral where
   fmap f = \case
-    PLiteral p  -> PLiteral $ fmap f p
-    NotPLit p   -> NotPLit $ fmap f p
-    OrPLit p q  -> OrPLit (fmap f p) (fmap f q)
-    AndPLit p q -> AndPLit (fmap f p) (fmap f q)
+    PLiteral ast -> PLiteral $ fmap f ast
+    NotPLit p    -> NotPLit  $ fmap f p
+    OrPLit p q   -> OrPLit  (fmap f p) (fmap f q)
+    AndPLit p q  -> AndPLit (fmap f p) (fmap f q)
 
-toSMT2 :: Show a => PredicateLiteral a -> String
-toSMT2 = \case
-  PLiteral p  -> show p
-  NotPLit p   -> "(not " ++ show p ++ ")"
-  OrPLit p q  -> "(or " ++ show p ++ " " ++ show q ++ ")"
-  AndPLit p q -> "(and " ++ show p ++ " " ++ show q ++ ")"
+instance Foldable PredicateLiteral where
+  foldr f acc = \case
+    PLiteral ast -> foldr f acc ast
+    NotPLit p    -> foldr f acc p
+    OrPLit p q   -> foldr f (foldr f acc q) p
+    AndPLit p q  -> foldr f (foldr f acc q) p
+
+-- FIXME: make this tractable
+getPLitVars :: PredicateLiteral a -> [a]
+getPLitVars = \case
+  PLiteral ast -> getVars ast
+  NotPLit p    -> getPLitVars p
+  OrPLit p q   -> getPLitVars p ++ getPLitVars q
+  AndPLit p q  -> getPLitVars p ++ getPLitVars q
 
 -- FIXME: make this tractable
 enumeratePreds :: [PredicateLiteral a] -> [PredicateLiteral a]

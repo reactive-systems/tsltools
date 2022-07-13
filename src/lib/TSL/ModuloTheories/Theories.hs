@@ -13,16 +13,17 @@ module TSL.ModuloTheories.Theories( Theory(..)
                                   , TheorySymbol(..)
                                   , readTheory
                                   , applySemantics
-                                  , toSMT2
-                                  , toTSL
+                                  , toSmt
+                                  , toTsl
+                                  , symbolType
                                   ) where
 -------------------------------------------------------------------------------
 
 import TSL.ModuloTheories.Theories.Base(TheoryParseErr(..))
-import qualified TSL.ModuloTheories.Theories.Base as Base(readT, toSMT2, toTSL)
+import qualified TSL.ModuloTheories.Theories.Base as Base(TheorySymbol(..))
 
-import qualified TSL.ModuloTheories.Theories.Uf as Uf(UfSymbol(..))
-import qualified TSL.ModuloTheories.Theories.Lia as Lia(LiaSymbol(..))
+import qualified TSL.ModuloTheories.Theories.Uf as Uf(UfSymbol)
+import qualified TSL.ModuloTheories.Theories.Lia as Lia(LiaSymbol)
 
 -------------------------------------------------------------------------------
 data Theory = 
@@ -38,13 +39,17 @@ data TheorySymbol =
       UfSymbol  Uf.UfSymbol
     | LiaSymbol Lia.LiaSymbol
 
-toTSL :: TheorySymbol -> String
-toTSL (UfSymbol  uf)  = Base.toTSL uf
-toTSL (LiaSymbol lia) = Base.toTSL lia
+toTsl :: TheorySymbol -> String
+toTsl (UfSymbol  uf)  = Base.toTsl uf
+toTsl (LiaSymbol lia) = Base.toTsl lia
 
-toSMT2 :: TheorySymbol -> String
-toSMT2 (UfSymbol  uf)  = Base.toSMT2 uf
-toSMT2 (LiaSymbol lia) = Base.toSMT2 lia
+toSmt :: TheorySymbol -> String
+toSmt (UfSymbol  uf)  = Base.toSmt uf
+toSmt (LiaSymbol lia) = Base.toSmt lia
+
+symbolType :: TheorySymbol -> String
+symbolType (UfSymbol   uf) = Base.symbolType uf
+symbolType (LiaSymbol lia) = Base.symbolType lia
 
 readTheory :: String -> Either TheoryParseErr Theory
 readTheory "UF"  = Right Uf

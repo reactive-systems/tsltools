@@ -39,22 +39,24 @@ instance TheorySymbol LiaSymbol where
   readT "<=" = Right Lte
   readT _    = Left TheoryParseErr
 
-  toSMT2 (Int i) = show i
-  toSMT2 (Var v) = show v
-  toSMT2 Add     = "+"
-  toSMT2 Sub     = "-"
-  toSMT2 Eq      = "="
-  toSMT2 Gt      = ">"
-  toSMT2 Lt      = "<"
-  toSMT2 Gte     = ">="
-  toSMT2 Lte     = "<="
+  toSmt (Int i) = show i
+  toSmt (Var v) = show v
+  toSmt Add     = "+"
+  toSmt Sub     = "-"
+  toSmt Eq      = "="
+  toSmt Gt      = ">"
+  toSmt Lt      = "<"
+  toSmt Gte     = ">="
+  toSmt Lte     = "<="
 
-  toTSL (Int i) = show i
-  toTSL (Var v) = show v
-  toTSL Add     = "add"
-  toTSL Sub     = "sub"
-  toTSL Eq      = "eq"
-  toTSL Gt      = "gt"
-  toTSL Lt      = "lt"
-  toTSL Gte     = "gte"
-  toTSL Lte     = "lte"
+  toTsl (Int i) = show i
+  toTsl (Var v) = show v
+  toTsl Add     = "add"
+  toTsl Sub     = "sub"
+  toTsl Eq      = "eq"
+  toTsl Gt      = "gt"
+  toTsl Lt      = "lt"
+  toTsl Gte     = "gte"
+  toTsl Lte     = "lte"
+
+  symbolType _  = "Int"
