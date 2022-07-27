@@ -58,10 +58,6 @@ readTheory "UF"  = Right Uf
 readTheory "LIA" = Right Lia
 readTheory _     = Left TheoryParseErr
 
--- applySemantics :: Theory -> String -> Either TheoryParseErr TheorySymbol
--- applySemantics Uf  a = Base.readT a >>= (Right . UfSymbol)
--- applySemantics Lia a = Base.readT a >>= (Right . LiaSymbol)
-
--- FIXME
 applySemantics :: Theory -> Ast String -> Either TheoryParseErr (Ast TheorySymbol)
-applySemantics = undefined
+applySemantics Uf  ast = fmap (fmap UfSymbol ) $ traverse Base.readT ast
+applySemantics Lia ast = fmap (fmap LiaSymbol) $ traverse Base.readT ast

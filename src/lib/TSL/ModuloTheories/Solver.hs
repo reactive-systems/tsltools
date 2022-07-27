@@ -36,16 +36,17 @@ isSat "unsat" = Right False
 isSat err     = Left $ SolverErr err
 
 checkSat :: String -> Either SolverErr Bool
-checkSat problem = solve problem "" >>= isSat
+checkSat problem = solve problem smt2 >>= isSat
+  where smt2 = "--lang=smt2"
 
 -- TODO
-getModel :: Theory -> String -> Either SolverErr (Maybe TheorySymbol)
-getModel _ _ = Right Nothing
+getModel :: Theory -> String -> Either SolverErr (Maybe (Ast TheorySymbol))
+getModel theory problem = undefined
 
 -- TODO
-getFunction :: Theory -> String -> Either SolverErr (Maybe (Ast TheorySymbol))
-getFunction _ _ = Right Nothing
+parseFunction :: Theory -> String -> (Ast TheorySymbol)
+parseFunction theory fxnStr = undefined
 
 sygus :: Theory -> Int -> String -> Either SolverErr (Maybe (Ast TheorySymbol))
 -- sygus theory maxDepth problem = _
-sygus _ _ _ = Right Nothing
+sygus theory maxDepth problem = Right Nothing

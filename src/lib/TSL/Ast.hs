@@ -52,11 +52,17 @@ instance Foldable Ast where
     Variable  a      -> f a acc
     Function  a args -> f a (foldr onList acc args)
      where onList ast acc = foldr f acc ast
-    Predicate a args -> f a (foldr onList acc args)
-      where onList ast acc = foldr f acc ast
+    Predicate a args -> foldr f acc $ Function a args
 
--- instance Applicative Ast where
--- instance Traversable Ast where
+instance Applicative Ast where
+  pure  = Variable
+  (<*>) = \case
+    (Variable  a  ) -> undefined
+    (Function  a b) -> undefined
+    (Predicate a b) -> undefined
+
+instance Traversable Ast where
+  traverse f a = undefined
 
 data Annotated a = 
     VarSymbol  a
@@ -131,6 +137,7 @@ getVars = \case
   Function  f args -> f:(foldr (++) [] $ map getVars args)
   Predicate f args -> f:(foldr (++) [] $ map getVars args)
 
+-- TODO: implement with foldr instead?
 stringifyAst :: (a -> String) -> Ast a -> String
 stringifyAst stringify = \case
   Variable  v      -> stringify v
