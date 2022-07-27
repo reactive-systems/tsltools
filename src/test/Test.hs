@@ -38,6 +38,8 @@ import qualified SplitTests (tests)
 
 import qualified DependencyTests (tests)
 
+import qualified JSWriterTests (tests)
+
 import Test.QuickCheck
   ( Arbitrary
   , Result(..)
@@ -107,12 +109,15 @@ propReadOutput (o,s) =
 tests
   :: IO [Test]
 
-tests = return $
-  [ test "QuickCheck: Read Input" qc01
-  , test "QuickCheck: Read Output" qc02
-  ]
-  ++ SplitTests.tests
-  ++ DependencyTests.tests
+tests = do
+  jsTests <- JSWriterTests.tests
+  return $
+    [ test "QuickCheck: Read Input" qc01
+    , test "QuickCheck: Read Output" qc02
+    ]
+    ++ SplitTests.tests
+--    ++ DependencyTests.tests
+    ++ jsTests
 
   where
     qc01 =
@@ -124,7 +129,8 @@ tests = return $
       quickCheckResult propReadOutput >>= \case
         Success{..} -> return $ Finished Pass
         x           -> return $ Finished $ Fail $ show x
-
+    
+  --cfm <- loadCFM input
     test testname run =
       let
         t =

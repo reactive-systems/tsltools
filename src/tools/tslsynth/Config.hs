@@ -98,8 +98,7 @@ configParser = Configuration
       )
   <*> option str
       (  long "write-hoa"
-      <> short 'h'
-      <> help "Writes the inermediate HOA file that was generated to the given filepath "
+      <> help "Writes the intermediate HOA file that was generated to the given filepath "
       <> metavar "HOA"
       <> value ""
       )

@@ -1,6 +1,6 @@
 always assume {
   
-  ((room.empty -> !switch.toggled)) ;
+  ((room.empty -> !lightswitch.toggled)) ;
   (room.somebodyEnters
     -> (! room.empty W room.somebodyLeaves)) ;
   ((room.somebodyLeaves && room.empty)

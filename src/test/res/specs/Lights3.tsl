@@ -1,6 +1,6 @@
 always assume {
   
-  ((room.empty -> !switch.toggled)) ;
+  ((room.empty -> !lightswitch.toggled)) ;
   (room.somebodyEnters
     -> (! room.empty W room.somebodyLeaves)) ;
   ((room.somebodyLeaves && room.empty)
@@ -14,6 +14,6 @@ always assume {
 always guarantee {
   
 bright outside.brightness
-    -> (switch.toggled && room.light.off -> X F (room.light.on W (switch.toggled || room.empty)))
+    -> (lightswitch.toggled && room.light.off -> X F (room.light.on W (lightswitch.toggled || room.empty)))
   
 }

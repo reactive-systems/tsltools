@@ -1,0 +1,14 @@
+HOA: v1
+States: 2
+Start: 1
+AP: 4 "u0play0note2e" "u0play0note2g" "u0play0play" "p0p0button2pressed0user2activity"
+acc-name: all
+Acceptance: 0 t
+properties: trans-labels explicit-labels state-acc deterministic
+--BODY--
+State: 0
+[0&!1&!2&3] 0
+[!0&1&!2&!3] 1
+State: 1
+[0&!1&!2] 0
+--END--

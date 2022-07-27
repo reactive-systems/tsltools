@@ -24,7 +24,7 @@ import TSL.Writer.HOA.Utils
 
 import Data.Tuple ( swap )
 
-import Data.Text(pack, unpack, replace, Text)
+import qualified Data.Text as T
 
 import Hanoi
     ( HOA(..), AcceptanceSet, Label, State )
@@ -79,30 +79,40 @@ printHOALines hoa@HOA {..} =
         termStringList = map (map (printTSLFormula negationOperator (strIndWithMap apNamesMap))) splitFormulas :: [[String]]
         predUpds = splitPredUpdates negationOperator termStringList
         predUpdToCode (preds, upds) = let
-            conditional =  if null preds then "true" else intercalate (" "++conjunctionOperator++ indent 3) preds
-            body = indent 4 ++ intercalate (indent 4) (map updateToAssignment upds ++ [stateUpdate])
+            conditional =  if null preds then "true" else List.intercalate (" "++conjunctionOperator++ indent 3) $ map (T.unpack. uncurryFxnCall. T.pack) preds
+            body = indent 4 ++ List.intercalate (indent 4) (map updateToAssignment upds ++ [stateUpdate])
           in
             "if (" ++ conditional ++ "){" ++ body ++ indent 2 ++ "}" ++ "\n"
       in
         concatMap (\x -> indent 2 ++ predUpdToCode x) predUpds
   in
-    intercalate ["\nelse "] $ map printState values
+    List.intercalate ["\nelse "] $ map printState values
 
 -----------------------------------------------------------------------------
 -- | Language specific functions
 
+uncurryFxnCall :: T.Text -> T.Text
+uncurryFxnCall x = let
+  constsSaved = T.replace "()" "cccccc" $ x
+  noBrackets = T.filter (\c -> not $ c `elem` ['(',')']) constsSaved
+  fxnParts = map T.strip $ T.splitOn " " noBrackets
+  params = if tail fxnParts == []
+           then ""
+           else T.concat ["(", (T.intercalate ", " $ tail fxnParts), ")"] 
+ in 
+  T.replace "cccccc" "()" $ T.concat $ [head fxnParts, params]
+
+
 updateToAssignment :: String -> String
-updateToAssignment x =
-  filter (\c -> c /= '[' && c /= ']') (replaceUpdate x ++ ";")
-
-replaceUpdate :: String -> String
-replaceUpdate = unpack . replace "<-" assignmentOperator . pack
-
+updateToAssignment x = let
+  noBrackets = T.filter (\c -> not $ c `elem` ['[',']']) $ T.pack x
+  [val, assignment] = T.splitOn " <- " noBrackets
+  fxnCall = uncurryFxnCall assignment
+ in
+   T.unpack $ T.concat [val, " = ", fxnCall, ";"]
+   
 negationOperator :: String
 negationOperator = "!"
-
-assignmentOperator :: Text
-assignmentOperator = "="
 
 conjunctionOperator :: String
 conjunctionOperator = "&&"

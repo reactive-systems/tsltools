@@ -24,7 +24,7 @@ import TSL.Writer.HOA.Utils
 
 import Data.Tuple ( swap )
 
-import Data.Text(pack, unpack, replace, Text)
+import qualified Data.Text as T
 
 import Hanoi
     ( HOA(..), AcceptanceSet, Label, State )
@@ -93,17 +93,19 @@ printHOALines hoa@HOA {..} =
 -- | Language specific functions
 
 updateToAssignment :: String -> String
-updateToAssignment =
-  filter (\c -> c /= '[' && c /= ']'). replaceUpdate
-
-replaceUpdate :: String -> String
-replaceUpdate = unpack . replace "<-" assignmentOperator . pack
-
+updateToAssignment x = let
+  constsSaved = T.unpack $ T.replace "()" "cccccc" $ T.pack x
+  noBrackets = filter (\c -> not $ c `elem` ['[',']','(',')']) constsSaved
+  [val, assignment] = T.splitOn " <- " $ T.pack noBrackets
+  fxnParts = map T.strip $ T.splitOn " " assignment
+  params = if tail fxnParts == []
+           then ""
+           else T.concat ["(", (T.intercalate ", " $ tail fxnParts), ");"] 
+ in
+   T.unpack $ T.replace "cccccc" "()" $ T.concat [val, " = ", head fxnParts, params]
+   
 negationOperator :: String
 negationOperator = "not"
-
-assignmentOperator :: Text
-assignmentOperator = "="
 
 conjunctionOperator :: String
 conjunctionOperator = "and"

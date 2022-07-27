@@ -13,7 +13,7 @@ module TSL.Writer.HOA.Utils
   , printTSLFormula
   ) where
 import Finite ( v2t, Finite(offset, index), FiniteBounds )
-import Hanoi (HOA, Formula (FAnd, FOr, FVar, FNot))
+import Hanoi (HOA, Formula (FAnd, FOr, FVar, FNot, FTrue, FFalse))
 import qualified Data.Map as M
 import qualified TSL.Logic as T
 import Data.List ( isPrefixOf, isInfixOf )
@@ -80,11 +80,13 @@ formulaToList f =
 
 -- | When printing a TSL formula, we should only have the vars or negated vars
 --   if we have anything else, we did not have only conjunctions and need to revisit assumption of formulaToList
-printTSLFormula :: String -> (a -> String) -> Formula a -> String
+printTSLFormula :: Show a => String -> (a -> String) -> Formula a -> String
 printTSLFormula negationOperator showVar = \case
   FVar a -> showVar a
   FNot f -> negationOperator ++ printSubFormula f
-  _ -> error "unexpected formula structure on transition"
+  FTrue -> "True"
+  FFalse -> "False"
+  x -> error $ "unexpected formula structure on transition: " ++ show x
 
   where
     printSubFormula = brRound . printTSLFormula negationOperator showVar
