@@ -40,14 +40,18 @@ chmod +x ./cvc5
 
 ## Supported first-order theories
 `tsltools` can support all first-order theories that a SyGuS solver can solve.
-However, we currently only have support for the following using [CVC5](https://cvc5.github.io/):
+However, we currently only have support for the following using [CVC5](https://cvc5.github.io/), using the naming scheme given by the [SMT2 Language Standard](https://smtlib.cs.uiowa.edu/logics.shtml):
 
 * Uninterpreted Functions (UF)
-* Uninterpreted Functions and Equality (UEF)
-* Linear Integer Arithmetic (LIA): `eq`, `add`, `sub`
+* Linear Integer Arithmetic (LIA) : `eq`, `add`, `sub`
+* Linear Real Arithmetic (LRA) : `eq`, `add`, `sub`
+* Non-Linear Integer Arithmetic (NIA): `mult`, `div`, `eq`, `add`, `sub`
+* Non-Linear Real Arithmetic (NRA): `mult`, `div`, `eq`, `add`, `sub`
 
-Other first-order theories can easily be included in the system by simple parsing support.
-Combining theories (e.g. with two or more first-order theories) should also be a straightforward extension.
+You can define the logic of by writing `#[LOGIC]` at the top of the TSL-MT specification, i.e. `#LIA`.
+
+Combination of theories such as UFLIA are not straightforward to implement as it requires an automated method for the `tslmt2tsl` to know which signals are uninterpreted and which are integers.
+This is likely an easy problem to solve, but remains an open research problem.
 
 ## Flags
 Once you annotate the file with the first-order theory, `tslmt2tsl` will attempt to transform the TSL-MT specification to TSL.

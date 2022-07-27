@@ -1,23 +1,63 @@
 -------------------------------------------------------------------------------
 -- |
--- Module      :  TSL.ModuloTheories.CVC5
--- Description :  Utilities to send SMT and SyGuS problems to CVC5.
+-- Module      :  TSL.ModuloTheories.Theories
+-- Description :  Supported First-Order Theories.
 -- Maintainer  :  Wonhyuk Choi
---
--- Used for sending SMT and SyGuS problems to CVC5.
 
 -------------------------------------------------------------------------------
+
 {-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE RecordWildCards #-}
-
-{-
-   TODO:
-   * Send SMT/SyGuS problems to CVC5
-   * Parse results from CVC5
-   * Transform CVC5 results into some internal function representation
--}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.CVC5
-  ( 
-  ) where
+module TSL.ModuloTheories.Theories( Theory(..)
+                                  , TheorySymbol(..)
+                                  , readTheory
+                                  , applySemantics
+                                  , toSmt
+                                  , toTsl
+                                  , symbolType
+                                  ) where
+-------------------------------------------------------------------------------
+
+import TSL.Ast(Ast)
+
+import TSL.ModuloTheories.Theories.Base(TheoryParseErr(..))
+import qualified TSL.ModuloTheories.Theories.Base as Base(TheorySymbol(..))
+
+import qualified TSL.ModuloTheories.Theories.Uf as Uf(UfSymbol)
+import qualified TSL.ModuloTheories.Theories.Lia as Lia(LiaSymbol)
+
+-------------------------------------------------------------------------------
+data Theory = 
+      Uf 
+    | Lia
+
+instance Show Theory where
+  show = \case
+    Uf  -> "UF"
+    Lia -> "LIA"
+
+data TheorySymbol = 
+      UfSymbol  Uf.UfSymbol
+    | LiaSymbol Lia.LiaSymbol
+
+toTsl :: TheorySymbol -> String
+toTsl (UfSymbol  uf)  = Base.toTsl uf
+toTsl (LiaSymbol lia) = Base.toTsl lia
+
+toSmt :: TheorySymbol -> String
+toSmt (UfSymbol  uf)  = Base.toSmt uf
+toSmt (LiaSymbol lia) = Base.toSmt lia
+
+symbolType :: TheorySymbol -> String
+symbolType (UfSymbol   uf) = Base.symbolType uf
+symbolType (LiaSymbol lia) = Base.symbolType lia
+
+readTheory :: String -> Either TheoryParseErr Theory
+readTheory "UF"  = Right Uf
+readTheory "LIA" = Right Lia
+readTheory _     = Left TheoryParseErr
+
+applySemantics :: Theory -> Ast String -> Either TheoryParseErr (Ast TheorySymbol)
+applySemantics Uf  ast = fmap (fmap UfSymbol ) $ traverse Base.readT ast
+applySemantics Lia ast = fmap (fmap LiaSymbol) $ traverse Base.readT ast

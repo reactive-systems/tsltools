@@ -70,7 +70,12 @@ module TSL
     -- * Modulo Theories
   , CFG(..)
   , fromSpec
-  , getPredicateTerms
+  , getPredicateLiterals
+  , Theory
+  , TheorySymbol
+  , SolverErr(..)
+  , consistencyChecking
+  , checkSat
   ) where
 
 -----------------------------------------------------------------------------
@@ -121,7 +126,10 @@ import TSL.TOML (toTOML)
 import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
 
 import TSL.ModuloTheories.CFG(CFG(..), fromSpec)
-import TSL.ModuloTheories.PredicateList(getPredicateTerms)
+import TSL.ModuloTheories.ConsistencyChecking(consistencyChecking)
+import TSL.ModuloTheories.PredicateList(getPredicateLiterals)
+import TSL.ModuloTheories.Theories(Theory, TheorySymbol)
+import TSL.ModuloTheories.Solver(SolverErr(..), checkSat)
 
 import qualified TSL.Writer.CFM.Clash as Clash (implement)
 import qualified TSL.Writer.CFM.Applicative as Applicative (implement)
