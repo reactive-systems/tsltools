@@ -23,17 +23,50 @@ module TSL.Ast( Ast(..)
 
 -------------------------------------------------------------------------------
 
-import Control.Applicative(liftA2)
+import Control.Applicative (liftA2)
 
-import Control.Exception(assert)
+import Control.Exception (assert)
 
 import TSL.Logic ( SignalTerm(..)
                  , FunctionTerm(..)
                  , PredicateTerm(..)
                  )
 
+import TSL.Specification (Specification)
+
 -------------------------------------------------------------------------------
 
+-- | The Abstract Syntax Tree (AST) datatype.
+-- SignalTerm as defined by Logic.hs are all curried,
+-- consistent with Haskell methodology.
+-- However, an AST representation can come in handy;
+-- e.g. the SMT2 standard accepts specifications in AST syntax.
+--
+-- Example:
+-- Consider the following TSL signalterm:
+-- f x (g y) (h z)
+-- As a Logic.SignalTerm datatype, this is structured as
+-- FunctionTerm
+-- (FApplied
+--     (  FApplied
+--        (FApplied (FunctionSymbol f) (Signal x))
+--        (FunctionTerm (FApplied (FunctionSymbol g) (Signal y)))
+--     )
+--     (  FunctionTerm
+--        (FApplied (FunctionSymbol h) (Signal z))
+--     )
+-- )
+-- 
+-- As an AST, the same signal term is 
+-- Function f [ Variable x
+--            , Function g [Variable y]
+--            , Function h [Variable z]
+--            ]
+-- Which is a more compact structure.
+--
+-- AST's are generated from Logic.SignalTerm by using `fromSignalTerm`.
+-- In order to convert the curried SignalTerm to an AST, however,
+-- you need to provide a function that returns the arity of each symbol.
 data Ast a = 
       Variable  a
     | Function  a [Ast a]
@@ -111,7 +144,7 @@ buildAst :: [Ast a] -> Annotated a -> Ast a
 buildAst args = \case
   VarSymbol  a -> case args of
                    [] -> Variable a
-                   _  -> undefined
+                   _  -> error "Variable construction has arguments!"
   FuncSymbol a -> Function  a args
   PredSymbol a -> Predicate a args
 
@@ -124,7 +157,7 @@ fromList arity (x:xs) = assert usedAllArgs $ buildAst args x
 
 argBuilder :: (a -> Int) -> Int -> [Annotated a] -> ([Ast a], [Annotated a])
 argBuilder _ 0 xs          = ([], xs)
-argBuilder _ _ []          = undefined
+argBuilder _ _ []          = error "Ast building ran out of arguments!"
 argBuilder arity n (x:xs)  = (args, remainder)
   where 
     args     = argsHead:argsTail

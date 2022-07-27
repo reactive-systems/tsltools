@@ -76,12 +76,6 @@ instance Foldable SignalTerm where
     FunctionTerm t  -> foldr f a t
     PredicateTerm t -> foldr f a t
 
--- instance Show a => Show (SignalTerm a) where
---   show = \case
---     Signal s        -> show s
---     FunctionTerm t  -> show t
---     PredicateTerm t -> show t
-
 instance Arbitrary a => Arbitrary (SignalTerm a) where
   arbitrary =
     choose (0 :: Int, 2 :: Int) >>= \case
