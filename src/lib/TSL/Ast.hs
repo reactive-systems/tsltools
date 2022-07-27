@@ -23,6 +23,8 @@ module TSL.Ast( Ast(..)
 
 -------------------------------------------------------------------------------
 
+import Control.Applicative(liftA2)
+
 import TSL.Logic ( SignalTerm(..)
                  , FunctionTerm(..)
                  , PredicateTerm(..)
@@ -56,13 +58,13 @@ instance Foldable Ast where
 
 instance Applicative Ast where
   pure  = Variable
-  (<*>) = \case
-    (Variable  a  ) -> undefined
-    (Function  a b) -> undefined
-    (Predicate a b) -> undefined
+  (<*>) = liftA2 id
 
 instance Traversable Ast where
-  traverse f a = undefined
+  traverse f = \case
+    Variable  a       -> Variable  <$> f a
+    Function  a args  -> Function  <$> f a <*> traverse (traverse f) args
+    Predicate a args  -> Predicate <$> f a <*> traverse (traverse f) args
 
 data Annotated a = 
     VarSymbol  a
@@ -137,7 +139,7 @@ getVars = \case
   Function  f args -> f:(foldr (++) [] $ map getVars args)
   Predicate f args -> f:(foldr (++) [] $ map getVars args)
 
--- TODO: implement with foldr instead?
+-- TODO: implement with fold instead?
 stringifyAst :: (a -> String) -> Ast a -> String
 stringifyAst stringify = \case
   Variable  v      -> stringify v
