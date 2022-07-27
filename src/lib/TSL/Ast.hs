@@ -25,6 +25,8 @@ module TSL.Ast( Ast(..)
 
 import Control.Applicative(liftA2)
 
+import Control.Exception(assert)
+
 import TSL.Logic ( SignalTerm(..)
                  , FunctionTerm(..)
                  , PredicateTerm(..)
@@ -97,11 +99,10 @@ flattenF = \case
   FunctionSymbol a -> [FuncSymbol a]
   FApplied fterm s -> flattenF fterm ++ flattenS s
 
--- FIXME: edit with Error & Assert
 flattenP :: PredicateTerm a -> [Annotated a]
 flattenP = \case
-  BooleanTrue       -> undefined -- Not Implemented
-  BooleanFalse      -> undefined -- Not Implemented
+  BooleanTrue       -> error "\"True\"  cannot be part of an AST."
+  BooleanFalse      -> error "\"False\" cannot be part of an AST."
   BooleanInput a    -> [VarSymbol a]
   PredicateSymbol a -> [PredSymbol a]
   PApplied pterm s  -> flattenP pterm ++ flattenS s
@@ -114,12 +115,12 @@ buildAst args = \case
   FuncSymbol a -> Function  a args
   PredSymbol a -> Predicate a args
 
--- FIXME: assert remaining args is empty
 fromList :: (a -> Int) -> [Annotated a] -> Ast a
-fromList _ [] = undefined
-fromList arity (x:xs) = buildAst args x 
-  where (args, _) = argBuilder arity (arity' x) xs
-        arity'    = arity . unAnnotate
+fromList _ [] = error "Cannot construct AST from nothing"
+fromList arity (x:xs) = assert usedAllArgs $ buildAst args x 
+  where (args, rem) = argBuilder arity (arity' x) xs
+        arity'      = arity . unAnnotate
+        usedAllArgs = null rem
 
 argBuilder :: (a -> Int) -> Int -> [Annotated a] -> ([Ast a], [Annotated a])
 argBuilder _ 0 xs          = ([], xs)
@@ -139,7 +140,6 @@ getVars = \case
   Function  f args -> f:(foldr (++) [] $ map getVars args)
   Predicate f args -> f:(foldr (++) [] $ map getVars args)
 
--- TODO: implement with fold instead?
 stringifyAst :: (a -> String) -> Ast a -> String
 stringifyAst stringify = \case
   Variable  v      -> stringify v
