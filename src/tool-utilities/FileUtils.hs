@@ -17,6 +17,7 @@ module FileUtils
   , readContent
   , writeContent
   , loadTSL
+  , loadTSLMT
   , loadCFM
   ) where
 
@@ -32,7 +33,7 @@ import PrintUtils
   , printErrLn
   )
 
-import TSL (CFM, Error, Specification, fromCFM, fromTSL)
+import TSL (CFM, Error, Specification, Theory, fromCFM, fromTSL)
 
 import Control.Monad (unless)
 
@@ -99,6 +100,20 @@ loadTSL input =
   tryReadContent input
   >>= fromTSL input
   >>= rightOrInvalidInput input
+
+-----------------------------------------------------------------------------
+-- | 'loadTSLMT' is a helper function which loads and parses a TSLMT file and
+-- if this is not possible outputs a respective error on the command line
+-- and exits
+loadTSLMT :: Maybe FilePath -> IO (Theory, Specification)
+loadTSLMT = undefined
+--loadTSLMT input = do
+--  contents <- tryReadContent input
+--  --TODO: function to get head
+--  theory <- getHead contents
+--  tslmt  <- getTail contents
+--  spec   <- tslmt fromTSL
+--  return (theory, spec)
 
 -----------------------------------------------------------------------------
 -- | 'loadCFM' is a helper function which loads and parses a CFM file and

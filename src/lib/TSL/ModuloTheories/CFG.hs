@@ -34,7 +34,7 @@ import TSL.Specification (Specification(..))
 
 import TSL.SymbolTable (Id, SymbolTable(..), Kind(..))
 
-import TSL.ModuloTheories.AST(AST, fromSignalTerm)
+import TSL.Ast(Ast, fromSignalTerm)
 
 -------------------------------------------------------------------------------
 
@@ -42,7 +42,7 @@ data CFG = CFG
     { -- | CFG implemented as an array of lists.
       -- To get the possible production rules for each,
       -- index into the grammar with the appropriate signal Id.
-        grammar  :: Array Id [AST Id]
+        grammar  :: Array Id [Ast Id]
     ,   symTable :: SymbolTable
     }
 
