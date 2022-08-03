@@ -8,4 +8,4 @@ filename="${filename%.*}"
 LTL=$(syfco $1 -f ltlxba -m fully)
 IN=$(syfco $1 --print-input-signals)
 OUT=$(syfco $1 --print-output-signals)
-ltlsynt --formula="$LTL" --ins="$IN" --outs="$OUT" --hoaf="i" > $filename.hoa
+ltlsynt --formula="$LTL" --ins="$IN" --outs="$OUT" --hoaf="i" --simplify="bwoa-sat" > $filename.hoa
