@@ -55,8 +55,8 @@ symbolType (UfSymbol   uf) = Base.symbolType uf
 symbolType (LiaSymbol lia) = Base.symbolType lia
 
 readTheory :: String -> Either Error Theory
-readTheory "UF"  = Right Uf
-readTheory "LIA" = Right Lia
+readTheory "#UF"  = Right Uf
+readTheory "#LIA" = Right Lia
 readTheory other = errMtParse other
 
 applySemantics :: Theory -> Ast String -> Either Error (Ast TheorySymbol)

@@ -23,7 +23,7 @@ import Config (Configuration(..), Flag(..), parseArguments)
 
 import EncodingUtils (initEncoding)
 
-import FileUtils (writeContent, loadTSL)
+import FileUtils (writeContent, loadTSLMT)
 
 import TSL ( Specification(..)
            , SymbolTable(..)
@@ -54,14 +54,14 @@ main = do
   initEncoding
   Configuration{input, output, flag} <- parseArguments
 
-  spec <- loadTSL input
+  (theory, spec) <- loadTSLMT input
   
   let unhash  = stName $ symboltable spec
       content = case flag of
         (Just Predicates)  -> Right $ unlines $ map (show . (fmap unhash)) $ getPredicateLiterals spec
         (Just Grammar)     -> Right $ show $ fromSpec spec
-        -- (Just Consistency) -> Right $ show $ fromSpec spec
-        Nothing            -> Left $ "tslmt2tsl end-to-end not yet supported"
+        (Just Consistency) -> Right $ show theory
         (Just flag')       -> Left $ "Unimplemented flag: " ++ show flag'
+        Nothing            -> Left $ "tslmt2tsl end-to-end not yet supported"
 
   writeOutput output content
