@@ -107,13 +107,17 @@ loadTSL input =
 -- and exits
 loadTSLMT :: Maybe FilePath -> IO (Theory, Specification)
 loadTSLMT = undefined
---loadTSLMT input = do
---  contents <- tryReadContent input
---  --TODO: function to get head
---  theory <- getHead contents
---  tslmt  <- getTail contents
---  spec   <- tslmt fromTSL
---  return (theory, spec)
+-- loadTSLMT input = do
+--   content <- tryReadContent input
+--   let linesList = lines content
+--       theory    = readTheory $ head linesList
+--       specStr   = tail linesList
+--   tslmt  <- fromTSL input specStr
+
+-- readTheory :: String -> Either TheoryParseErr Theory
+-- tryReadContent :: Maybe FilePath -> IO String
+-- fromTSL :: Maybe FilePath -> String -> IO (Either Error Specification)
+-- rightOrInvalidInput :: Maybe FilePath -> Either Error a -> IO a
 
 -----------------------------------------------------------------------------
 -- | 'loadCFM' is a helper function which loads and parses a CFM file and

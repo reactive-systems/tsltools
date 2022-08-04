@@ -12,9 +12,9 @@ module TSL.ModuloTheories.Theories.Lia(LiaSymbol) where
 
 -------------------------------------------------------------------------------
 
-import TSL.ModuloTheories.Theories.Base( TheoryParseErr(..)
-                                       , TheorySymbol(..)
-                                       )
+import TSL.Error (Error(..), errMtParse)
+
+import TSL.ModuloTheories.Theories.Base (TheorySymbol(..))
 
 -------------------------------------------------------------------------------
 
@@ -37,7 +37,7 @@ instance TheorySymbol LiaSymbol where
   readT "<"  = Right Lt
   readT ">=" = Right Gte
   readT "<=" = Right Lte
-  readT _    = Left TheoryParseErr
+  readT str  = errMtParse str
 
   toSmt (Int i) = show i
   toSmt (Var v) = show v

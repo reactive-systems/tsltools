@@ -32,8 +32,6 @@ import TSL.Logic ( SignalTerm(..)
                  , PredicateTerm(..)
                  )
 
-import TSL.Specification (Specification)
-
 -------------------------------------------------------------------------------
 
 -- | The Abstract Syntax Tree (AST) datatype.

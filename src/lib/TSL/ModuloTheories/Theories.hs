@@ -19,9 +19,10 @@ module TSL.ModuloTheories.Theories( Theory(..)
                                   ) where
 -------------------------------------------------------------------------------
 
+import TSL.Error (Error(..), errMtParse)
+
 import TSL.Ast(Ast)
 
-import TSL.ModuloTheories.Theories.Base(TheoryParseErr(..))
 import qualified TSL.ModuloTheories.Theories.Base as Base(TheorySymbol(..))
 
 import qualified TSL.ModuloTheories.Theories.Uf as Uf(UfSymbol)
@@ -53,11 +54,11 @@ symbolType :: TheorySymbol -> String
 symbolType (UfSymbol   uf) = Base.symbolType uf
 symbolType (LiaSymbol lia) = Base.symbolType lia
 
-readTheory :: String -> Either TheoryParseErr Theory
+readTheory :: String -> Either Error Theory
 readTheory "UF"  = Right Uf
 readTheory "LIA" = Right Lia
-readTheory _     = Left TheoryParseErr
+readTheory other = errMtParse other
 
-applySemantics :: Theory -> Ast String -> Either TheoryParseErr (Ast TheorySymbol)
+applySemantics :: Theory -> Ast String -> Either Error (Ast TheorySymbol)
 applySemantics Uf  ast = fmap (fmap UfSymbol ) $ traverse Base.readT ast
 applySemantics Lia ast = fmap (fmap LiaSymbol) $ traverse Base.readT ast
