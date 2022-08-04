@@ -76,6 +76,7 @@ module TSL
   , SolverErr(..)
   , consistencyChecking
   , checkSat
+  , readTheory
   ) where
 
 -----------------------------------------------------------------------------
@@ -128,7 +129,7 @@ import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
 import TSL.ModuloTheories.CFG(CFG(..), fromSpec)
 import TSL.ModuloTheories.ConsistencyChecking(consistencyChecking)
 import TSL.ModuloTheories.PredicateList(getPredicateLiterals)
-import TSL.ModuloTheories.Theories(Theory, TheorySymbol)
+import TSL.ModuloTheories.Theories(Theory, TheorySymbol, readTheory)
 import TSL.ModuloTheories.Solver(SolverErr(..), checkSat)
 
 import qualified TSL.Writer.CFM.Clash as Clash (implement)
