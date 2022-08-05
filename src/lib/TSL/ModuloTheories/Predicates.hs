@@ -12,6 +12,8 @@
 module TSL.ModuloTheories.Predicates( TheoryPredicate(..)
                                        , predsFromSpec
                                        , enumeratePreds
+                                       , tast2Smt
+                                       , tast2Tsl
                                        ) where
 
 -------------------------------------------------------------------------------
@@ -24,11 +26,18 @@ import TSL.SymbolTable(SymbolTable(..))
 
 import TSL.Types(arity)
 
-import TSL.Logic(PredicateTerm, Formula(..))
+import TSL.Logic(PredicateTerm, Formula(..), foldFormula)
 
 import TSL.Ast(fromPredicateTerm)
 
-import TSL.ModuloTheories.Theories(Theory, TAst, applySemantics)
+import TSL.ModuloTheories.Theories( Theory
+                                  , TAst
+                                  , applySemantics
+                                  , tast2Smt
+                                  , tast2Tsl
+                                  )
+
+import Debug.Trace(trace)
 
 -------------------------------------------------------------------------------
 
@@ -37,7 +46,22 @@ data TheoryPredicate =
     | NotPLit  TheoryPredicate 
     | OrPLit   TheoryPredicate TheoryPredicate
     | AndPLit  TheoryPredicate TheoryPredicate
-    deriving (Show)
+
+instance Show TheoryPredicate where show = pred2Smt
+
+pred2Smt :: TheoryPredicate -> String
+pred2Smt = \case
+  PLiteral tast  -> tast2Smt tast
+  NotPLit p      -> "(not " ++ pred2Smt p ++ ")"
+  OrPLit p q     -> "(or "  ++ pred2Smt p ++ " " ++ pred2Smt q ++ ")"
+  AndPLit p q    -> "(and " ++ pred2Smt p ++ " " ++ pred2Smt q ++ ")"
+
+pred2Tsl :: TheoryPredicate -> String
+pred2Tsl = \case
+  PLiteral tast -> tast2Tsl tast
+  NotPLit p     -> "!" ++ pred2Tsl p
+  OrPLit p q    -> "(" ++ pred2Tsl p ++ " || " ++ pred2Tsl q ++ ")"
+  AndPLit p q   -> "(" ++ pred2Tsl p ++ " && " ++ pred2Tsl q ++ ")"
 
 -- FIXME: make this tractable
 enumeratePreds :: [TheoryPredicate] -> [TheoryPredicate]
@@ -56,6 +80,6 @@ predsFromSpec theory (Specification a g s) = mapM toTheoryPred asts
     toTheoryPred = (fmap PLiteral) . (applySemantics theory)
 
 fromFormula :: Formula a -> [PredicateTerm a]
-fromFormula = baseCaseExtender []
-  where baseCaseExtender ps (Check p) = p:ps
-        baseCaseExtender ps _         = ps
+fromFormula = foldFormula baseCaseExtender []
+  where baseCaseExtender (Check p) ps = p:ps
+        baseCaseExtender _ ps         = ps
