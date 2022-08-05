@@ -12,41 +12,40 @@
 {-# LANGUAGE RecordWildCards #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.Solver( SolverErr(..)
-                                , checkSat) where
+module TSL.ModuloTheories.Solver (checkSat) where
 
 -------------------------------------------------------------------------------
+
+import TSL.Error(Error, errSolver)
 
 import TSL.Ast(Ast)
 
-import TSL.ModuloTheories.Theories(Theory, TheorySymbol)
+import TSL.ModuloTheories.Theories(Theory, TAst)
 
 -------------------------------------------------------------------------------
 
-data SolverErr = SolverErr String deriving (Show)
-
 -- TODO: I/O
-solve :: String -> String -> Either SolverErr String
+solve :: String -> String -> Either Error String
 -- solve args problem = Right ""
 solve _ _ = Right ""
 
-isSat :: String -> Either SolverErr Bool
+isSat :: String -> Either Error Bool
 isSat "sat"   = Right True
 isSat "unsat" = Right False
-isSat err     = Left $ SolverErr err
+isSat err     = errSolver err
 
-checkSat :: String -> Either SolverErr Bool
+checkSat :: String -> Either Error Bool
 checkSat problem = solve problem smt2 >>= isSat
   where smt2 = "--lang=smt2"
 
 -- TODO
-getModel :: Theory -> String -> Either SolverErr (Maybe (Ast TheorySymbol))
+getModel :: Theory -> String -> Either Error (Maybe TAst)
 getModel theory problem = undefined
 
 -- TODO
-parseFunction :: Theory -> String -> (Ast TheorySymbol)
+parseFunction :: Theory -> String -> TAst
 parseFunction theory fxnStr = undefined
 
-sygus :: Theory -> Int -> String -> Either SolverErr (Maybe (Ast TheorySymbol))
+sygus :: Theory -> Int -> String -> Either Error (Maybe TAst)
 -- sygus theory maxDepth problem = _
 sygus theory maxDepth problem = Right Nothing

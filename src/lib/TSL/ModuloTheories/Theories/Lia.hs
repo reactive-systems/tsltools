@@ -12,7 +12,7 @@ module TSL.ModuloTheories.Theories.Lia(LiaSymbol) where
 
 -------------------------------------------------------------------------------
 
-import TSL.Error (Error(..), errMtParse)
+import TSL.Error (errMtParse)
 
 import TSL.ModuloTheories.Theories.Base (TheorySymbol(..))
 

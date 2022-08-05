@@ -67,13 +67,12 @@ module TSL
   , simulate
     -- * Error Handling
   , Error
+  , genericError
     -- * Modulo Theories
-  , CFG(..)
-  , fromSpec
-  , getPredicateLiterals
+  , Cfg(..)
+  , predsFromSpec
+  , cfgFromSpec
   , Theory
-  , TheorySymbol
-  , SolverErr(..)
   , consistencyChecking
   , checkSat
   , readTheory
@@ -100,7 +99,7 @@ import TSL.Logic
   , updates
   )
 
-import TSL.Error (Error)
+import TSL.Error (Error, genericError)
 
 import TSL.SymbolTable (Kind(..), SymbolTable(..), toCSV)
 
@@ -126,11 +125,11 @@ import TSL.TOML (toTOML)
 
 import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
 
-import TSL.ModuloTheories.CFG(CFG(..), fromSpec)
 import TSL.ModuloTheories.ConsistencyChecking(consistencyChecking)
-import TSL.ModuloTheories.PredicateList(getPredicateLiterals)
-import TSL.ModuloTheories.Theories(Theory, TheorySymbol, readTheory)
-import TSL.ModuloTheories.Solver(SolverErr(..), checkSat)
+import TSL.ModuloTheories.Theories(Theory, readTheory)
+import TSL.ModuloTheories.Solver(checkSat)
+import TSL.ModuloTheories.Cfg(Cfg(..), cfgFromSpec)
+import TSL.ModuloTheories.Predicates(predsFromSpec)
 
 import qualified TSL.Writer.CFM.Clash as Clash (implement)
 import qualified TSL.Writer.CFM.Applicative as Applicative (implement)

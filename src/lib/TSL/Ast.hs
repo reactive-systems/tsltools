@@ -168,8 +168,8 @@ argBuilder arity n (x:xs)  = (args, remainder)
 getVars :: Ast a -> [a]
 getVars = \case
   Variable  a      -> [a]
-  Function  f args -> f:(foldr (++) [] $ map getVars args)
-  Predicate f args -> f:(foldr (++) [] $ map getVars args)
+  Function  f args -> f:(foldr1 (++) $ map getVars args)
+  Predicate f args -> f:(foldr1 (++) $ map getVars args)
 
 stringifyAst :: (a -> String) -> Ast a -> String
 stringifyAst stringify = \case

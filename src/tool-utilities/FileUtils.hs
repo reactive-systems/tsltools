@@ -117,7 +117,7 @@ loadTSLMT input = do
   content <- tryReadContent input
   let linesList = lines content
       theory    = readTheory $ head linesList
-      specStr   = unlines $ tail linesList
+      specStr   = unlines $ tail linesList -- FIXME: computationally wasteful
   tslmt  <- fromTSL input specStr
   returnTuple theory tslmt
 

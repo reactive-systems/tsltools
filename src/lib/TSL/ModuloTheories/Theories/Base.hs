@@ -10,7 +10,7 @@
 module TSL.ModuloTheories.Theories.Base(TheorySymbol(..)) where
 -------------------------------------------------------------------------------
 
-import TSL.Error (Error(..))
+import TSL.Error (Error)
 
 -------------------------------------------------------------------------------
 

@@ -101,8 +101,8 @@ library
     CoreGeneration.MinimalAssumptionCores
     CoreGeneration.FindFirstConcurrent
     TSL.Ast
-    TSL.ModuloTheories.CFG
-    TSL.ModuloTheories.PredicateList
+    TSL.ModuloTheories.Cfg
+    TSL.ModuloTheories.Predicates
     TSL.ModuloTheories.ConsistencyChecking
     TSL.ModuloTheories.Theories
     TSL.ModuloTheories.Theories.Base

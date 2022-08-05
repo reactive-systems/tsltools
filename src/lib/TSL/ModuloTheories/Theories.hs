@@ -7,21 +7,22 @@
 -------------------------------------------------------------------------------
 
 {-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE TypeFamilies    #-}
 
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.Theories( Theory(..)
-                                  , TheorySymbol(..)
+                                  , TAst
                                   , readTheory
                                   , applySemantics
-                                  , toSmt
-                                  , toTsl
-                                  , symbolType
+                                  , tastTheory
+                                  , tast2Tsl
+                                  , tast2Smt
                                   ) where
 -------------------------------------------------------------------------------
 
-import TSL.Error (Error(..), errMtParse)
+import TSL.Error (Error, errMtParse)
 
-import TSL.Ast(Ast)
+import TSL.Ast(Ast, stringifyAst)
 
 import qualified TSL.ModuloTheories.Theories.Base as Base(TheorySymbol(..))
 
@@ -29,8 +30,9 @@ import qualified TSL.ModuloTheories.Theories.Uf as Uf(UfSymbol)
 import qualified TSL.ModuloTheories.Theories.Lia as Lia(LiaSymbol)
 
 -------------------------------------------------------------------------------
+
 data Theory = 
-      Uf 
+      Uf
     | Lia
 
 instance Show Theory where
@@ -38,27 +40,29 @@ instance Show Theory where
     Uf  -> "UF"
     Lia -> "LIA"
 
-data TheorySymbol = 
-      UfSymbol  Uf.UfSymbol
-    | LiaSymbol Lia.LiaSymbol
-
-toTsl :: TheorySymbol -> String
-toTsl (UfSymbol  uf)  = Base.toTsl uf
-toTsl (LiaSymbol lia) = Base.toTsl lia
-
-toSmt :: TheorySymbol -> String
-toSmt (UfSymbol  uf)  = Base.toSmt uf
-toSmt (LiaSymbol lia) = Base.toSmt lia
-
-symbolType :: TheorySymbol -> String
-symbolType (UfSymbol   uf) = Base.symbolType uf
-symbolType (LiaSymbol lia) = Base.symbolType lia
-
 readTheory :: String -> Either Error Theory
 readTheory "#UF"  = Right Uf
 readTheory "#LIA" = Right Lia
-readTheory other = errMtParse other
+readTheory other  = errMtParse other
 
-applySemantics :: Theory -> Ast String -> Either Error (Ast TheorySymbol)
-applySemantics Uf  ast = fmap (fmap UfSymbol ) $ traverse Base.readT ast
-applySemantics Lia ast = fmap (fmap LiaSymbol) $ traverse Base.readT ast
+data TAst =
+    UfAst  (Ast Uf.UfSymbol)
+  | LiaAst (Ast Lia.LiaSymbol)
+
+instance Show TAst where show = tast2Smt
+
+tastTheory :: TAst -> Theory
+tastTheory (UfAst  _) = Uf
+tastTheory (LiaAst _) = Lia
+
+tast2Tsl :: TAst -> String
+tast2Tsl (UfAst  ast) = stringifyAst Base.toTsl ast
+tast2Tsl (LiaAst ast) = stringifyAst Base.toTsl ast
+
+tast2Smt :: TAst -> String
+tast2Smt (UfAst  ast) = stringifyAst Base.toSmt ast
+tast2Smt (LiaAst ast) = stringifyAst Base.toSmt ast
+
+applySemantics :: Theory -> Ast String -> Either Error TAst
+applySemantics Uf  ast = UfAst  <$> traverse Base.readT ast
+applySemantics Lia ast = LiaAst <$> traverse Base.readT ast
