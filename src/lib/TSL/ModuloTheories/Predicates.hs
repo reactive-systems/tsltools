@@ -12,11 +12,15 @@
 module TSL.ModuloTheories.Predicates( TheoryPredicate(..)
                                        , predsFromSpec
                                        , enumeratePreds
-                                       , tast2Smt
-                                       , tast2Tsl
+                                       , predTheory
+                                       , pred2Tsl
+                                       , pred2Smt
+                                       , getPredVars
                                        ) where
 
 -------------------------------------------------------------------------------
+
+import Control.Exception(assert)
 
 import TSL.Error(Error)
 
@@ -32,12 +36,13 @@ import TSL.Ast(fromPredicateTerm)
 
 import TSL.ModuloTheories.Theories( Theory
                                   , TAst
+                                  , TheorySymbol
                                   , applySemantics
+                                  , tastTheory
                                   , tast2Smt
                                   , tast2Tsl
+                                  , getTastVars
                                   )
-
-import Debug.Trace(trace)
 
 -------------------------------------------------------------------------------
 
@@ -62,6 +67,20 @@ pred2Tsl = \case
   NotPLit p     -> "!" ++ pred2Tsl p
   OrPLit p q    -> "(" ++ pred2Tsl p ++ " || " ++ pred2Tsl q ++ ")"
   AndPLit p q   -> "(" ++ pred2Tsl p ++ " && " ++ pred2Tsl q ++ ")"
+
+predTheory :: TheoryPredicate -> Theory
+predTheory = \case
+  PLiteral tast -> tastTheory tast
+  NotPLit p     -> predTheory p
+  OrPLit p q    -> assert (predTheory p == predTheory q) (predTheory p)
+  AndPLit p q   -> assert (predTheory p == predTheory q) (predTheory p)
+
+getPredVars :: TheoryPredicate -> [TheorySymbol]
+getPredVars = \case
+  PLiteral tast -> getTastVars tast
+  NotPLit p     -> getPredVars p
+  OrPLit p q    -> getPredVars p ++ getPredVars q
+  AndPLit p q   -> getPredVars p ++ getPredVars q
 
 -- FIXME: make this tractable
 enumeratePreds :: [TheoryPredicate] -> [TheoryPredicate]

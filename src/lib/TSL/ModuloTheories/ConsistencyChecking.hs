@@ -8,6 +8,7 @@
 -------------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections   #-}
 
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.ConsistencyChecking(consistencyChecking) where
@@ -20,39 +21,40 @@ import TSL.Error(Error)
 
 import TSL.Ast(stringifyAst)
 
-import TSL.ModuloTheories.Theories( Theory )
+import TSL.ModuloTheories.Theories(Theory, symbol2Smt, symbolType)
 
 import TSL.ModuloTheories.Predicates( TheoryPredicate(..)
                                        , enumeratePreds
-                                       -- , getPLitVars
+                                       , pred2Tsl
+                                       , pred2Smt
+                                       , predTheory
+                                       , getPredVars
                                        )
-
-import TSL.ModuloTheories.Solver(checkSat)
 
 -------------------------------------------------------------------------------
 
-consistencyChecking = undefined
+consistencyChecking
+  :: (String -> IO (Either Error Bool))
+  -> [TheoryPredicate]
+  -> IO (Either Error [String])
+consistencyChecking satSolver preds = fmap (fmap (map toTslAssumption)) onlyUnsat
+  where
+    preds'            = enumeratePreds preds
+    checkSat          = satSolver . pred2SmtQuery
+    unsatZipFilter    = (map fst . filter (not . snd)) . (zip preds')
+    filterHelperM     = return . (fmap unsatZipFilter) . sequence
+    onlyUnsat         = (traverse checkSat preds') >>= filterHelperM
+    toTslAssumption p = "G " ++ pred2Tsl (NotPLit p) ++ ";"
 
--- consistencyChecking
---     :: Theory
---     -> [PredicateLiteral TheorySymbol]
---     -> Either Error [String]
--- consistencyChecking theory plist = 
---   (map toTslAssumption) <$> (filterM checkNotSat predicates)
---   where  
---     predicates        = enumeratePreds plist
---     checkNotSat       = (fmap not) . checkSat . (checkSatPred theory)
---     toTslAssumption p = "G " ++ pred2Tsl (NotPLit p) ++ ";"
-
--- checkSatPred :: Theory -> PredicateLiteral TheorySymbol -> String
--- checkSatPred theory p = unlines $ [logic, variables, assert, checkSAT]
---   where
---     logic       = "(set-logic " ++ show theory ++ ")"
---     variables   = unlines $ map declConst $ getPLitVars p
---     assert      = "(assert " ++ pred2Smt p ++ ")"
---     checkSAT    = "(check-sat)"
---     declConst x =
---       "(declare-const " ++ toSmt x ++ " " ++ symbolType x ++ ")"
+pred2SmtQuery :: TheoryPredicate -> String
+pred2SmtQuery p = unlines $ [logic, variables, assert, checkSAT]
+  where
+    logic       = "(set-logic " ++ show (predTheory p) ++ ")"
+    variables   = unlines $ map declConst $ getPredVars p
+    assert      = "(assert " ++ pred2Smt p ++ ")"
+    checkSAT    = "(check-sat)"
+    declConst x =
+      "(declare-const " ++ symbol2Smt x ++ " " ++ symbolType x ++ ")"
 
 -- -- (set-logic LIA)
 -- -- (declare-const vruntime2 Int)

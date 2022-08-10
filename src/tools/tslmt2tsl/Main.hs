@@ -31,7 +31,7 @@ import TSL ( Specification(..)
            , cfgFromSpec
            , predsFromSpec
            , consistencyChecking
-           , checkSat
+           , solveSat
            , genericError
            -- , applySemantics
            )
@@ -52,10 +52,11 @@ main = do
 
   (theory, spec) <- loadTSLMT input
   
-  let content = case flag of
-        (Just Predicates)  -> fmap show $ predsFromSpec theory spec
+  let preds   = predsFromSpec theory spec
+      content = case flag of
+        (Just Predicates)  -> fmap (unlines . (map show)) preds
         (Just Grammar)     -> Right $ show $ cfgFromSpec spec
-        -- (Just Consistency) -> fmap unlines $ consistencyChecking theory $ fmap applySemanticsPred preds
+        -- (Just Consistency) -> unlines <$> (preds >>= consistencyChecking)
         (Just flag')       -> genericError $ "Unimplemented flag: " ++ show flag'
         Nothing            -> genericError $ "tslmt2tsl end-to-end not yet supported"
 

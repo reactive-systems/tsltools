@@ -12,9 +12,11 @@
 {-# LANGUAGE RecordWildCards #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.Solver (checkSat) where
+module TSL.ModuloTheories.Solver (solveSat) where
 
 -------------------------------------------------------------------------------
+
+import System.Process(readProcess)
 
 import TSL.Error(Error, errSolver)
 
@@ -24,19 +26,16 @@ import TSL.ModuloTheories.Theories(Theory, TAst)
 
 -------------------------------------------------------------------------------
 
--- TODO: I/O
-solve :: String -> String -> Either Error String
--- solve args problem = Right ""
-solve _ _ = Right ""
-
 isSat :: String -> Either Error Bool
 isSat "sat"   = Right True
 isSat "unsat" = Right False
 isSat err     = errSolver err
 
-checkSat :: String -> Either Error Bool
-checkSat problem = solve problem smt2 >>= isSat
-  where smt2 = "--lang=smt2"
+solveSat :: FilePath -> String -> IO (Either Error Bool)
+solveSat solverPath problem = do
+  output <- readProcess solverPath smt2 problem
+  return $ isSat output
+  where smt2 = ["--lang=smt2"]
 
 -- TODO
 getModel :: Theory -> String -> Either Error (Maybe TAst)
