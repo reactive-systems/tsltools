@@ -15,7 +15,7 @@ module TSL.ModuloTheories.Predicates( TheoryPredicate(..)
                                        , predTheory
                                        , pred2Tsl
                                        , pred2Smt
-                                       , getPredVars
+                                       , predInfo
                                        ) where
 
 -------------------------------------------------------------------------------
@@ -32,7 +32,7 @@ import TSL.Types(arity)
 
 import TSL.Logic(PredicateTerm, Formula(..), foldFormula)
 
-import TSL.Ast(fromPredicateTerm)
+import TSL.Ast(AstInfo, (+++), fromPredicateTerm)
 
 import TSL.ModuloTheories.Theories( Theory
                                   , TAst
@@ -41,7 +41,7 @@ import TSL.ModuloTheories.Theories( Theory
                                   , tastTheory
                                   , tast2Smt
                                   , tast2Tsl
-                                  , getTastVars
+                                  , tastInfo
                                   )
 
 -------------------------------------------------------------------------------
@@ -75,12 +75,12 @@ predTheory = \case
   OrPLit p q    -> assert (predTheory p == predTheory q) (predTheory p)
   AndPLit p q   -> assert (predTheory p == predTheory q) (predTheory p)
 
-getPredVars :: TheoryPredicate -> [TheorySymbol]
-getPredVars = \case
-  PLiteral tast -> getTastVars tast
-  NotPLit p     -> getPredVars p
-  OrPLit p q    -> getPredVars p ++ getPredVars q
-  AndPLit p q   -> getPredVars p ++ getPredVars q
+predInfo :: TheoryPredicate -> AstInfo TheorySymbol
+predInfo = \case
+  PLiteral tast -> tastInfo tast
+  NotPLit p     -> predInfo p
+  OrPLit p q    -> predInfo p +++ predInfo q
+  AndPLit p q   -> predInfo p +++ predInfo q
 
 -- FIXME: make this tractable
 enumeratePreds :: [TheoryPredicate] -> [TheoryPredicate]

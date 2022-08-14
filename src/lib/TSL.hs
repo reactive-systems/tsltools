@@ -76,6 +76,7 @@ module TSL
   , consistencyChecking
   , solveSat
   , readTheory
+  , debug
   ) where
 
 -----------------------------------------------------------------------------
@@ -125,7 +126,7 @@ import TSL.TOML (toTOML)
 
 import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
 
-import TSL.ModuloTheories.ConsistencyChecking(consistencyChecking)
+import TSL.ModuloTheories.ConsistencyChecking(consistencyChecking, debug)
 import TSL.ModuloTheories.Theories(Theory, readTheory)
 import TSL.ModuloTheories.Solver(solveSat)
 import TSL.ModuloTheories.Cfg(Cfg(..), cfgFromSpec)

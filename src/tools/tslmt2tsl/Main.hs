@@ -19,6 +19,10 @@ module Main
 
 -----------------------------------------------------------------------------
 
+import Control.Monad.Trans.Except
+
+import System.Exit(die)
+
 import Config (Configuration(..), Flag(..), parseArguments)
 
 import EncodingUtils (initEncoding)
@@ -33,10 +37,8 @@ import TSL ( Specification(..)
            , consistencyChecking
            , solveSat
            , genericError
-           -- , applySemantics
+           , debug
            )
-
-import System.Exit(die)
 
 -----------------------------------------------------------------------------
 
@@ -48,16 +50,21 @@ writeOutput path (Right content) = writeContent path $ removeDQuote content
 main :: IO ()
 main = do
   initEncoding
-  Configuration{input, output, flag} <- parseArguments
+  Configuration{input, output, flag, solverPath} <- parseArguments
 
   (theory, spec) <- loadTSLMT input
   
-  let preds   = predsFromSpec theory spec
-      content = case flag of
-        (Just Predicates)  -> fmap (unlines . (map show)) preds
-        (Just Grammar)     -> Right $ show $ cfgFromSpec spec
-        -- (Just Consistency) -> unlines <$> (preds >>= consistencyChecking)
-        (Just flag')       -> genericError $ "Unimplemented flag: " ++ show flag'
-        Nothing            -> genericError $ "tslmt2tsl end-to-end not yet supported"
+  let satSolver = solveSat solverPath -- String -> ExceptT Error IO Bool
+      preds     = predsFromSpec theory spec
+      toOut     = writeOutput output
 
-  writeOutput output content
+  case flag of
+    (Just Predicates)  -> toOut $ fmap (unlines . (map show)) preds
+    (Just Grammar)     -> toOut $ Right $ show $ cfgFromSpec spec
+    (Just Consistency) -> toOut =<< (runExceptT $ fmap unlines $ except preds >>= (consistencyChecking satSolver))
+    (Just flag')       -> toOut $ genericError $ "Unimplemented flag: " ++ show flag'
+    Nothing            -> toOut $ genericError $ "tslmt2tsl end-to-end not yet supported"
+
+-- preds :: Either Error TheoryPredicate
+-- input :: ExceptT Error IO TheoryPredicate
+-- consistencyChecking satSolver :: ExceptT IO Error [String]

@@ -14,10 +14,13 @@
 
 -------------------------------------------------------------------------------
 module TSL.Ast( Ast(..)
+              , AstInfo(..)
+              , SymbolInfo(..)
+              , (+++)
               , fromSignalTerm
               , fromFunctionTerm
               , fromPredicateTerm
-              , getVars
+              , getAstInfo
               , stringifyAst
               ) where
 
@@ -164,12 +167,60 @@ argBuilder arity n (x:xs)  = (args, remainder)
     (headArgs, remainder') = argBuilder arity (arity' x) xs
     arity'                 = arity . unAnnotate
 
+data SymbolInfo a = SymbolInfo {symbol :: a, arity :: Int}
+
+instance Functor SymbolInfo where
+  fmap f (SymbolInfo symbol arity) = SymbolInfo (f symbol) arity
+
+data AstInfo a =
+  AstInfo
+    { varInfos  :: [SymbolInfo a]
+    , funcInfos :: [SymbolInfo a]
+    , predInfos :: [SymbolInfo a]
+    }
+
+infixr 5  +++
+(+++) :: AstInfo a -> AstInfo a -> AstInfo a
+(+++) (AstInfo v f p) (AstInfo v' f' p') = AstInfo (v ++ v') (f ++ f') (p ++ p')
+
+instance Functor AstInfo where
+  fmap f (AstInfo vars funcs preds) = AstInfo vars' funcs' preds'
+      where vars'  = map (fmap f) vars
+            funcs' = map (fmap f) funcs
+            preds' = map (fmap f) preds
+
+symbolInfosFromList
+    :: (Ast a -> [SymbolInfo a])
+    -> [Ast a]
+    -> [SymbolInfo a]
+symbolInfosFromList infoGetter = (foldr1 (++)) . (map infoGetter)
+
 -- TODO: Better time complexity
-getVars :: Ast a -> [a]
-getVars = \case
-  Variable  a      -> [a]
-  Function  f args -> f:(foldr1 (++) $ map getVars args)
-  Predicate f args -> f:(foldr1 (++) $ map getVars args)
+getVarInfos :: Ast a -> [SymbolInfo a]
+getVarInfos = \case
+  Variable  a      -> [SymbolInfo a 0]
+  Function  _ args -> symbolInfosFromList getVarInfos args
+  Predicate _ args -> symbolInfosFromList getVarInfos args
+
+-- TODO: Better time complexity
+getFuncInfos :: Ast a -> [SymbolInfo a]
+getFuncInfos = \case
+  Variable  _      -> []
+  Function  f args -> (SymbolInfo f (length args)):(symbolInfosFromList getFuncInfos args)
+  Predicate _ args -> symbolInfosFromList getFuncInfos args
+
+-- TODO: Better time complexity
+getPredInfos :: Ast a -> [SymbolInfo a]
+getPredInfos = \case
+  Variable  _      -> []
+  Function  _ args -> symbolInfosFromList getPredInfos args
+  Predicate p args -> (SymbolInfo p (length args)):(symbolInfosFromList getPredInfos args)
+
+getAstInfo :: Ast a -> AstInfo a
+getAstInfo ast = AstInfo vars funcs preds
+  where vars   = getVarInfos  ast
+        funcs  = getFuncInfos ast
+        preds  = getPredInfos ast
 
 stringifyAst :: (a -> String) -> Ast a -> String
 stringifyAst stringify = \case

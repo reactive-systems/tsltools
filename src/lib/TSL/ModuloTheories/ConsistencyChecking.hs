@@ -11,54 +11,81 @@
 {-# LANGUAGE TupleSections   #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.ConsistencyChecking(consistencyChecking) where
+module TSL.ModuloTheories.ConsistencyChecking(consistencyChecking, debug) where
 
 -------------------------------------------------------------------------------
 
-import Control.Monad(filterM)
+import Control.Monad.Trans.Except
 
 import TSL.Error(Error)
 
-import TSL.Ast(stringifyAst)
+import TSL.Ast(AstInfo(..), SymbolInfo(..), stringifyAst)
 
-import TSL.ModuloTheories.Theories(Theory, symbol2Smt, symbolType)
+import TSL.ModuloTheories.Theories( Theory
+                                  , TheorySymbol
+                                  , symbol2Smt
+                                  , symbolType
+                                  , smtSortDecl
+                                  )
 
 import TSL.ModuloTheories.Predicates( TheoryPredicate(..)
                                        , enumeratePreds
                                        , pred2Tsl
                                        , pred2Smt
                                        , predTheory
-                                       , getPredVars
+                                       , predInfo
                                        )
 
 -------------------------------------------------------------------------------
 
 consistencyChecking
-  :: (String -> IO (Either Error Bool))
+  :: (String -> ExceptT Error IO Bool)
   -> [TheoryPredicate]
-  -> IO (Either Error [String])
-consistencyChecking satSolver preds = fmap (fmap (map toTslAssumption)) onlyUnsat
+  -> ExceptT Error IO [String]
+consistencyChecking satSolver preds = (map toTslAssumption) <$> onlyUnsat
   where
-    preds'            = enumeratePreds preds
     checkSat          = satSolver . pred2SmtQuery
-    unsatZipFilter    = (map fst . filter (not . snd)) . (zip preds')
-    filterHelperM     = return . (fmap unsatZipFilter) . sequence
-    onlyUnsat         = (traverse checkSat preds') >>= filterHelperM
+    unsatZipFilter    = (map fst . filter (not . snd)) . (zip preds)
+    onlyUnsat         = unsatZipFilter <$> (traverse checkSat preds)
     toTslAssumption p = "G " ++ pred2Tsl (NotPLit p) ++ ";"
 
+debug = pred2SmtQuery
+
 pred2SmtQuery :: TheoryPredicate -> String
-pred2SmtQuery p = unlines $ [logic, variables, assert, checkSAT]
+pred2SmtQuery p = unlines [smtDeclarations, assertion, checkSat]
   where
-    logic       = "(set-logic " ++ show (predTheory p) ++ ")"
-    variables   = unlines $ map declConst $ getPredVars p
-    assert      = "(assert " ++ pred2Smt p ++ ")"
-    checkSAT    = "(check-sat)"
-    declConst x =
-      "(declare-const " ++ symbol2Smt x ++ " " ++ symbolType x ++ ")"
+    smtDeclarations   = smtDecls (predTheory p) $ predInfo p
+    assertion         = "(assert " ++ pred2Smt p ++ ")"
+    checkSat          = "(check-sat)"
 
--- -- (set-logic LIA)
--- -- (declare-const vruntime2 Int)
--- -- (declare-const vruntime1 Int)
+smtDecls :: Theory -> AstInfo TheorySymbol -> String
+smtDecls theory (AstInfo vars funcs preds) =
+  unlines [logic, sortDecl, varDecls, funcDecls, predDecls]
+  where
+    logic     = "(set-logic " ++ show theory ++ ")"
+    sortDecl  = smtSortDecl theory
+    varDecls  = unlines $ map declConst vars
+    funcDecls = unlines $ map declFunc funcs
+    predDecls = unlines $ map declPred preds
+    declConst (SymbolInfo x _) =
+      "(declare-const " ++ symbol2Smt x ++ " " ++ symbolType x  ++ ")"
+    declareFun (SymbolInfo f arity) retType = unwords
+      ["(declare-fun"
+      , symbol2Smt f
+      , "("
+      , unwords $ replicate arity $ show theory
+      , ")"
+      , retType ++ ")"
+      ]
+    declFunc = flip declareFun (show theory)
+    declPred = flip declareFun "Bool"
 
--- -- (assert (and (not (> vruntime2 vruntime1)) (not (> vruntime2 vruntime1))))
--- -- (check-sat)
+-- (set-logic UF)
+-- (declare-sort UFVar 0)
+-- (declare-const a UFVar)
+-- (declare-const b UFVar)
+-- (declare-fun q (UFVar) Bool)
+-- (declare-fun f (UFVar UFVar) UFVar)
+
+-- (assert (q (f a b)))
+-- (check-sat)

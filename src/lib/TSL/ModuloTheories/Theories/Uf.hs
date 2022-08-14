@@ -22,4 +22,4 @@ instance TheorySymbol UfSymbol where
     readT s                 = Right $ Uninterpreted s
     toSmt (Uninterpreted a) = show a
     toTsl (Uninterpreted a) = show a
-    symbolType _            = "Sort"
+    symbolType _            = "UFVar"

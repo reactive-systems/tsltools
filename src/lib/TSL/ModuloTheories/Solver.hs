@@ -16,6 +16,10 @@ module TSL.ModuloTheories.Solver (solveSat) where
 
 -------------------------------------------------------------------------------
 
+import Control.Monad.Trans.Except
+
+import Control.Monad(liftM)
+
 import System.Process(readProcess)
 
 import TSL.Error(Error, errSolver)
@@ -31,15 +35,17 @@ isSat "sat"   = Right True
 isSat "unsat" = Right False
 isSat err     = errSolver err
 
-solveSat :: FilePath -> String -> IO (Either Error Bool)
-solveSat solverPath problem = do
-  output <- readProcess solverPath smt2 problem
-  return $ isSat output
-  where smt2 = ["--lang=smt2"]
+solveSat :: FilePath -> String -> ExceptT Error IO Bool
+solveSat solverPath problem = ExceptT satResult
+  where
+    smt2         = ["--lang=smt2"]
+    solverResult = readProcess solverPath smt2 problem -- IO String
+    satResult    = liftM isSat solverResult
 
 -- TODO
 getModel :: Theory -> String -> Either Error (Maybe TAst)
 getModel theory problem = undefined
+  where model = "(set-option :produce-models true)"
 
 -- TODO
 parseFunction :: Theory -> String -> TAst

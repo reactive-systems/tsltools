@@ -22,11 +22,12 @@ module TSL.ModuloTheories.Theories( Theory(..)
                                   , TAst
                                   , TheorySymbol
                                   , readTheory
+                                  , smtSortDecl
                                   , applySemantics
                                   , tastTheory
                                   , tast2Tsl
                                   , tast2Smt
-                                  , getTastVars
+                                  , tastInfo
                                   , symbol2Tsl
                                   , symbol2Smt
                                   , symbolType
@@ -35,7 +36,7 @@ module TSL.ModuloTheories.Theories( Theory(..)
 
 import TSL.Error (Error, errMtParse)
 
-import TSL.Ast(Ast, stringifyAst, getVars)
+import TSL.Ast(Ast, AstInfo, stringifyAst, getAstInfo)
 
 import qualified TSL.ModuloTheories.Theories.Base as Base(TheorySymbol(..))
 
@@ -58,6 +59,11 @@ readTheory :: String -> Either Error Theory
 readTheory "#UF"  = Right Uf
 readTheory "#LIA" = Right Lia
 readTheory other  = errMtParse other
+
+smtSortDecl :: Theory -> String
+smtSortDecl = \case
+  Uf  -> "(declare-sort UF 0)"
+  Lia -> ""
 
 data TAst =
     UfAst  (Ast Uf.UfSymbol)
@@ -85,9 +91,10 @@ data TheorySymbol =
     UfSymbol  Uf.UfSymbol
   | LiaSymbol Lia.LiaSymbol
 
-getTastVars :: TAst -> [TheorySymbol]
-getTastVars (UfAst  ast) = map UfSymbol  $ getVars ast
-getTastVars (LiaAst ast) = map LiaSymbol $ getVars ast
+tastInfo :: TAst -> AstInfo TheorySymbol
+tastInfo = \case
+  UfAst ast  -> fmap UfSymbol  $ getAstInfo ast
+  LiaAst ast -> fmap LiaSymbol $ getAstInfo ast
 
 symbol2Tsl :: TheorySymbol -> String
 symbol2Tsl (UfSymbol  symbol) = Base.toTsl symbol
