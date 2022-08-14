@@ -79,13 +79,3 @@ smtDecls theory (AstInfo vars funcs preds) =
       ]
     declFunc = flip declareFun (show theory)
     declPred = flip declareFun "Bool"
-
--- (set-logic UF)
--- (declare-sort UFVar 0)
--- (declare-const a UFVar)
--- (declare-const b UFVar)
--- (declare-fun q (UFVar) Bool)
--- (declare-fun f (UFVar UFVar) UFVar)
-
--- (assert (q (f a b)))
--- (check-sat)

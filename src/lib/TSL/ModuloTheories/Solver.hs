@@ -8,19 +8,24 @@
 -- Maintainer  :  Wonhyuk Choi
 
 -------------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.Solver (solveSat) where
 
 -------------------------------------------------------------------------------
 
+import qualified Data.Text as Text
+
 import Control.Monad.Trans.Except
 
 import Control.Monad(liftM)
 
-import System.Process(readProcess)
+import System.Process(readProcess, readProcessWithExitCode)
+
+import System.Exit(ExitCode(..), die)
 
 import TSL.Error(Error, errSolver)
 
@@ -28,7 +33,12 @@ import TSL.Ast(Ast)
 
 import TSL.ModuloTheories.Theories(Theory, TAst)
 
+import Debug.Trace
+
 -------------------------------------------------------------------------------
+
+strip :: String -> String
+strip = Text.unpack . Text.strip . Text.pack
 
 isSat :: String -> Either Error Bool
 isSat "sat"   = Right True
@@ -39,8 +49,16 @@ solveSat :: FilePath -> String -> ExceptT Error IO Bool
 solveSat solverPath problem = ExceptT satResult
   where
     smt2         = ["--lang=smt2"]
-    solverResult = readProcess solverPath smt2 problem -- IO String
-    satResult    = liftM isSat solverResult
+    solverResult = runSolver solverPath smt2 problem
+    satResult    = liftM (isSat . strip) solverResult
+
+runSolver :: FilePath -> [String] -> String -> IO String
+runSolver solverPath args problem = do
+  (exitCode, stdout, stderr) <- readProcessWithExitCode solverPath args problem
+  case exitCode of
+    ExitSuccess      -> return stdout
+    ExitFailure code ->
+      die $ "Process Error " ++ show code ++ ":" ++ stderr ++ "\n" ++ stdout
 
 -- TODO
 getModel :: Theory -> String -> Either Error (Maybe TAst)

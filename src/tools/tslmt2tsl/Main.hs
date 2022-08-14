@@ -47,6 +47,17 @@ writeOutput _ (Left errMsg)      = die $ show errMsg
 writeOutput path (Right content) = writeContent path $ removeDQuote content
   where removeDQuote = filter (/= '\"')
 
+problem :: String
+problem = unlines
+  [ "; Basic Boolean example"
+  , "(set-option :print-success false)"
+  , "(set-logic QF_UF)"
+  , "(declare-const p Bool)"
+  , "(assert (and p (not p))) "
+  , "(check-sat) ; returns 'unsat'"
+  , "(exit)"
+  ]
+
 main :: IO ()
 main = do
   initEncoding
@@ -63,8 +74,4 @@ main = do
     (Just Grammar)     -> toOut $ Right $ show $ cfgFromSpec spec
     (Just Consistency) -> toOut =<< (runExceptT $ fmap unlines $ except preds >>= (consistencyChecking satSolver))
     (Just flag')       -> toOut $ genericError $ "Unimplemented flag: " ++ show flag'
-    Nothing            -> toOut $ genericError $ "tslmt2tsl end-to-end not yet supported"
-
--- preds :: Either Error TheoryPredicate
--- input :: ExceptT Error IO TheoryPredicate
--- consistencyChecking satSolver :: ExceptT IO Error [String]
+    Nothing            -> toOut $ genericError $ "end-to-end tslmt not yet supported"
