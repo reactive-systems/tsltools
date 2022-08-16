@@ -109,6 +109,7 @@ library
     TSL.ModuloTheories.Theories
     TSL.ModuloTheories.Theories.Base
     TSL.ModuloTheories.Theories.Uf
+    TSL.ModuloTheories.Theories.EUf
     TSL.ModuloTheories.Theories.Lia
     TSL.ModuloTheories.Solver
 

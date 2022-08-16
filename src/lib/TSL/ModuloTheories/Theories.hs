@@ -41,71 +41,86 @@ import TSL.Ast(Ast, AstInfo, stringifyAst, getAstInfo)
 import qualified TSL.ModuloTheories.Theories.Base as Base(TheorySymbol(..))
 
 import qualified TSL.ModuloTheories.Theories.Uf as Uf(UfSymbol)
+import qualified TSL.ModuloTheories.Theories.EUf as EUf(EUfSymbol)
 import qualified TSL.ModuloTheories.Theories.Lia as Lia(LiaSymbol)
 
 -------------------------------------------------------------------------------
 
 data Theory = 
       Uf
+    | EUf
     | Lia
     deriving(Eq)
 
 instance Show Theory where
   show = \case
     Uf  -> "UF"
+    EUf -> "EUF"
     Lia -> "LIA"
 
 readTheory :: String -> Either Error Theory
 readTheory "#UF"  = Right Uf
+readTheory "#EUF" = Right EUf
 readTheory "#LIA" = Right Lia
 readTheory other  = errMtParse other
 
 smtSortDecl :: Theory -> String
 smtSortDecl = \case
   Uf  -> "(declare-sort UF 0)"
+  Uf  -> "(declare-sort EUF 0)"
   Lia -> ""
 
 data TAst =
     UfAst  (Ast Uf.UfSymbol)
+  | EUfAst (Ast EUf.EUfSymbol)
   | LiaAst (Ast Lia.LiaSymbol)
 
 instance Show TAst where show = tast2Smt
 
 tastTheory :: TAst -> Theory
 tastTheory (UfAst  _) = Uf
+tastTheory (EUfAst _) = EUf
 tastTheory (LiaAst _) = Lia
 
 tast2Tsl :: TAst -> String
 tast2Tsl (UfAst  ast) = stringifyAst Base.toTsl ast
+tast2Tsl (EUfAst ast) = stringifyAst Base.toTsl ast
 tast2Tsl (LiaAst ast) = stringifyAst Base.toTsl ast
 
 tast2Smt :: TAst -> String
 tast2Smt (UfAst  ast) = stringifyAst Base.toSmt ast
+tast2Smt (EUfAst ast) = stringifyAst Base.toSmt ast
 tast2Smt (LiaAst ast) = stringifyAst Base.toSmt ast
 
 applySemantics :: Theory -> Ast String -> Either Error TAst
 applySemantics Uf  ast = UfAst  <$> traverse Base.readT ast
+applySemantics EUf ast = EUfAst <$> traverse Base.readT ast
 applySemantics Lia ast = LiaAst <$> traverse Base.readT ast
 
 data TheorySymbol = 
     UfSymbol  Uf.UfSymbol
+  | EUfSymbol EUf.EUfSymbol
   | LiaSymbol Lia.LiaSymbol
 
 tastInfo :: TAst -> AstInfo TheorySymbol
 tastInfo = \case
   UfAst ast  -> fmap UfSymbol  $ getAstInfo ast
+  EUfAst ast -> fmap EUfSymbol $ getAstInfo ast
   LiaAst ast -> fmap LiaSymbol $ getAstInfo ast
 
 symbol2Tsl :: TheorySymbol -> String
 symbol2Tsl (UfSymbol  symbol) = Base.toTsl symbol
+symbol2Tsl (EUfSymbol symbol) = Base.toTsl symbol
 symbol2Tsl (LiaSymbol symbol) = Base.toTsl symbol
 
 symbol2Smt :: TheorySymbol -> String
 symbol2Smt (UfSymbol  symbol) = Base.toSmt symbol
+symbol2Smt (EUfSymbol symbol) = Base.toSmt symbol
 symbol2Smt (LiaSymbol symbol) = Base.toSmt symbol
 
 symbolTheory :: TheorySymbol -> Theory
 symbolTheory (UfSymbol  _) = Uf
+symbolTheory (EUfSymbol _) = EUf
 symbolTheory (LiaSymbol _) = Lia
 
 symbolType :: TheorySymbol -> String
