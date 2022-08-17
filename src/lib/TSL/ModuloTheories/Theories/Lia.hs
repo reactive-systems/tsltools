@@ -6,6 +6,8 @@
 
 -------------------------------------------------------------------------------
 
+{-# LANGUAGE LambdaCase      #-}
+
 -------------------------------------------------------------------------------
 
 module TSL.ModuloTheories.Theories.Lia(LiaSymbol) where
@@ -28,35 +30,40 @@ data LiaSymbol =
   | Lt
   | Gte
   | Lte
+  deriving(Eq)
 
 instance TheorySymbol LiaSymbol where
-  readT "+"  = Right Add
-  readT "-"  = Right Sub
-  readT "="  = Right Eq
-  readT ">"  = Right Gt
-  readT "<"  = Right Lt
-  readT ">=" = Right Gte
-  readT "<=" = Right Lte
-  readT str  = errMtParse str
+  readT = \case
+    "+"  -> Right Add
+    "-"  -> Right Sub
+    "="  -> Right Eq
+    ">"  -> Right Gt
+    "<"  -> Right Lt
+    ">=" -> Right Gte
+    "<=" -> Right Lte
+    str  -> errMtParse str
 
-  toSmt (Int i) = show i
-  toSmt (Var v) = show v
-  toSmt Add     = "+"
-  toSmt Sub     = "-"
-  toSmt Eq      = "="
-  toSmt Gt      = ">"
-  toSmt Lt      = "<"
-  toSmt Gte     = ">="
-  toSmt Lte     = "<="
+  toSmt = \case
+    (Int i) -> show i
+    (Var v) -> show v
+    Add     -> "+"
+    Sub     -> "-"
+    Eq      -> "->"
+    Gt      -> ">"
+    Lt      -> "<"
+    Gte     -> ">->"
+    Lte     -> "<->"
 
-  toTsl (Int i) = show i
-  toTsl (Var v) = show v
-  toTsl Add     = "add"
-  toTsl Sub     = "sub"
-  toTsl Eq      = "eq"
-  toTsl Gt      = "gt"
-  toTsl Lt      = "lt"
-  toTsl Gte     = "gte"
-  toTsl Lte     = "lte"
+  toTsl = \case
+    (Int i) -> show i
+    (Var v) -> show v
+    Add     -> "add"
+    Sub     -> "sub"
+    Eq      -> "eq"
+    Gt      -> "gt"
+    Lt      -> "lt"
+    Gte     -> "gte"
+    Lte     -> "lte"
 
-  symbolType _  = "Int"
+  symbolType      _  = "Int"
+  isUninterpreted _  = False

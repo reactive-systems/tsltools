@@ -31,6 +31,7 @@ module TSL.ModuloTheories.Theories( Theory(..)
                                   , symbol2Tsl
                                   , symbol2Smt
                                   , symbolType
+                                  , isUninterpreted
                                   ) where
 -------------------------------------------------------------------------------
 
@@ -55,7 +56,7 @@ data Theory =
 instance Show Theory where
   show = \case
     Uf  -> "UF"
-    EUf -> "EUF"
+    EUf -> "UF"
     Lia -> "LIA"
 
 readTheory :: String -> Either Error Theory
@@ -67,7 +68,7 @@ readTheory other  = errMtParse other
 smtSortDecl :: Theory -> String
 smtSortDecl = \case
   Uf  -> "(declare-sort UF 0)"
-  Uf  -> "(declare-sort EUF 0)"
+  EUf -> "(declare-sort UF 0)"
   Lia -> ""
 
 data TAst =
@@ -101,6 +102,7 @@ data TheorySymbol =
     UfSymbol  Uf.UfSymbol
   | EUfSymbol EUf.EUfSymbol
   | LiaSymbol Lia.LiaSymbol
+  deriving(Eq)
 
 tastInfo :: TAst -> AstInfo TheorySymbol
 tastInfo = \case
@@ -117,6 +119,11 @@ symbol2Smt :: TheorySymbol -> String
 symbol2Smt (UfSymbol  symbol) = Base.toSmt symbol
 symbol2Smt (EUfSymbol symbol) = Base.toSmt symbol
 symbol2Smt (LiaSymbol symbol) = Base.toSmt symbol
+
+isUninterpreted :: TheorySymbol -> Bool
+isUninterpreted (UfSymbol  symbol) = Base.isUninterpreted symbol
+isUninterpreted (EUfSymbol symbol) = Base.isUninterpreted symbol
+isUninterpreted (LiaSymbol symbol) = Base.isUninterpreted symbol
 
 symbolTheory :: TheorySymbol -> Theory
 symbolTheory (UfSymbol  _) = Uf

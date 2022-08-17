@@ -22,6 +22,7 @@ import TSL.ModuloTheories.Theories.Base(TheorySymbol(..))
 data EUfSymbol = 
       Eq
     | Uninterpreted String 
+    deriving(Eq)
 
 instance TheorySymbol EUfSymbol where
     readT = \case
@@ -37,3 +38,7 @@ instance TheorySymbol EUfSymbol where
       Uninterpreted str -> str
 
     symbolType _ = "EUF"
+
+    isUninterpreted = \case
+      Eq              -> False
+      Uninterpreted _ -> True

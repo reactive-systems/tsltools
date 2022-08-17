@@ -33,8 +33,6 @@ import TSL.Ast(Ast)
 
 import TSL.ModuloTheories.Theories(Theory, TAst)
 
-import Debug.Trace
-
 -------------------------------------------------------------------------------
 
 strip :: String -> String

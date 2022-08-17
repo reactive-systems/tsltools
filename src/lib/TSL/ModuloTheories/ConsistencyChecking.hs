@@ -11,7 +11,9 @@
 {-# LANGUAGE TupleSections   #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.ConsistencyChecking(consistencyChecking, debug) where
+module TSL.ModuloTheories.ConsistencyChecking( consistencyChecking
+                                             , consistencyDebug
+                                             ) where
 
 -------------------------------------------------------------------------------
 
@@ -19,13 +21,17 @@ import Control.Monad.Trans.Except
 
 import TSL.Error(Error)
 
-import TSL.Ast(AstInfo(..), SymbolInfo(..), stringifyAst)
+import TSL.Ast( AstInfo(..)
+              , SymbolInfo(..)
+              , deduplicate
+              , stringifyAst)
 
 import TSL.ModuloTheories.Theories( Theory
                                   , TheorySymbol
                                   , symbol2Smt
                                   , symbolType
                                   , smtSortDecl
+                                  , isUninterpreted
                                   )
 
 import TSL.ModuloTheories.Predicates( TheoryPredicate(..)
@@ -38,6 +44,23 @@ import TSL.ModuloTheories.Predicates( TheoryPredicate(..)
 
 -------------------------------------------------------------------------------
 
+
+eof :: String
+eof = ";; END OF FILE\n\n"
+
+consistencyDebug
+  :: (String -> ExceptT Error IO Bool)
+  -> [TheoryPredicate]
+  -> ExceptT Error IO [(String, String, Maybe String)]
+consistencyDebug satSolver preds = (map assumeOnlyUnsat) <$> zippedResults
+  where
+    preds'                       = enumeratePreds preds
+    queries                      = map pred2SmtQuery preds'
+    zippedResults                = fmap (zip3 preds' queries) $ traverse satSolver queries
+    toTslAssumption p            = "G " ++ pred2Tsl (NotPLit p) ++ ";"
+    assumeOnlyUnsat (p, q, res)  =
+      if res then (show p, q, Nothing) else (show p, q, Just (toTslAssumption p))
+
 consistencyChecking
   :: (String -> ExceptT Error IO Bool)
   -> [TheoryPredicate]
@@ -45,16 +68,15 @@ consistencyChecking
 consistencyChecking satSolver preds = (map toTslAssumption) <$> onlyUnsat
   where
     checkSat          = satSolver . pred2SmtQuery
-    unsatZipFilter    = (map fst . filter (not . snd)) . (zip preds)
-    onlyUnsat         = unsatZipFilter <$> (traverse checkSat preds)
+    preds'            = enumeratePreds preds
+    unsatZipFilter    = (map fst . filter (not . snd)) . (zip preds')
+    onlyUnsat         = unsatZipFilter <$> (traverse checkSat preds')
     toTslAssumption p = "G " ++ pred2Tsl (NotPLit p) ++ ";"
 
-debug = pred2SmtQuery
-
 pred2SmtQuery :: TheoryPredicate -> String
-pred2SmtQuery p = unlines [smtDeclarations, assertion, checkSat]
+pred2SmtQuery p = unlines [smtDeclarations, assertion, checkSat, eof]
   where
-    smtDeclarations   = smtDecls (predTheory p) $ predInfo p
+    smtDeclarations   = smtDecls (predTheory p) $ deduplicate $ predInfo p
     assertion         = "(assert " ++ pred2Smt p ++ ")"
     checkSat          = "(check-sat)"
 
@@ -69,7 +91,10 @@ smtDecls theory (AstInfo vars funcs preds) =
     predDecls = unlines $ map declPred preds
     declConst (SymbolInfo x _) =
       "(declare-const " ++ symbol2Smt x ++ " " ++ symbolType x  ++ ")"
-    declareFun (SymbolInfo f arity) retType = unwords
+    declareFun retType (SymbolInfo f arity) = 
+      if not (isUninterpreted f)
+        then ""
+        else unwords
       ["(declare-fun"
       , symbol2Smt f
       , "("
@@ -77,5 +102,5 @@ smtDecls theory (AstInfo vars funcs preds) =
       , ")"
       , retType ++ ")"
       ]
-    declFunc = flip declareFun (show theory)
-    declPred = flip declareFun "Bool"
+    declFunc = declareFun (show theory)
+    declPred = declareFun "Bool"

@@ -73,10 +73,11 @@ module TSL
   , predsFromSpec
   , cfgFromSpec
   , Theory
+  , TheoryPredicate
   , consistencyChecking
+  , consistencyDebug
   , solveSat
   , readTheory
-  , debug
   ) where
 
 -----------------------------------------------------------------------------
@@ -126,11 +127,11 @@ import TSL.TOML (toTOML)
 
 import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
 
-import TSL.ModuloTheories.ConsistencyChecking(consistencyChecking, debug)
+import TSL.ModuloTheories.ConsistencyChecking(consistencyChecking, consistencyDebug)
 import TSL.ModuloTheories.Theories(Theory, readTheory)
 import TSL.ModuloTheories.Solver(solveSat)
 import TSL.ModuloTheories.Cfg(Cfg(..), cfgFromSpec)
-import TSL.ModuloTheories.Predicates(predsFromSpec)
+import TSL.ModuloTheories.Predicates(TheoryPredicate, predsFromSpec)
 
 import qualified TSL.Writer.CFM.Clash as Clash (implement)
 import qualified TSL.Writer.CFM.Applicative as Applicative (implement)

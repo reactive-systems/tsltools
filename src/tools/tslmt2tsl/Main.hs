@@ -29,34 +29,57 @@ import EncodingUtils (initEncoding)
 
 import FileUtils (writeContent, loadTSLMT)
 
-import TSL ( Specification(..)
-           , SymbolTable(..)
+import PrintUtils ( Color(..)
+                  , ColorIntensity(..)
+                  , cPutOutLn
+                  )
+
+import TSL ( SymbolTable(..)
            , Error
+           , TheoryPredicate
            , cfgFromSpec
            , predsFromSpec
-           , consistencyChecking
+           , consistencyDebug
            , solveSat
            , genericError
-           , debug
            )
 
 -----------------------------------------------------------------------------
+
+tabulate :: Int -> String -> String
+tabulate n = unlines . (map ((replicate n '\t') ++ )) . lines
+
+delWhiteLines :: String -> String
+delWhiteLines = unlines . filter (not . null) . lines
 
 writeOutput :: (Show a) => Maybe FilePath -> Either a String -> IO ()
 writeOutput _ (Left errMsg)      = die $ show errMsg
 writeOutput path (Right content) = writeContent path $ removeDQuote content
   where removeDQuote = filter (/= '\"')
 
-problem :: String
-problem = unlines
-  [ "; Basic Boolean example"
-  , "(set-option :print-success false)"
-  , "(set-logic QF_UF)"
-  , "(declare-const p Bool)"
-  , "(assert (and p (not p))) "
-  , "(check-sat) ; returns 'unsat'"
-  , "(exit)"
-  ]
+consistency
+  :: (String -> ExceptT Error IO Bool) 
+  -> Either Error [TheoryPredicate]
+  -> IO ()
+consistency satSolver preds = do
+  result <- runExceptT $ (except preds >>= consistencyDebug satSolver)
+
+  let printTabRed = cPutOutLn Vivid Red . tabulate 1
+      printConsistencyResult = \case
+        Nothing  -> printTabRed "None; predicate is satisfiable."
+        Just ass -> printTabRed ass
+      printTuple (pred, query, result) = do
+        cPutOutLn Vivid Blue "Predicate:"
+        putStrLn $ tabulate 1 pred
+        cPutOutLn Vivid Green "SMT Query:"
+        putStrLn $ tabulate 1 $ delWhiteLines query
+        cPutOutLn Vivid Green "Assumption:"
+        printConsistencyResult result
+        cPutOutLn Dull Cyan "\n\n----------------------------------------------------\n\n"
+
+  case result of 
+    Left  errMsg   -> die $ show errMsg
+    Right cResults -> mapM_ printTuple cResults
 
 main :: IO ()
 main = do
@@ -65,13 +88,13 @@ main = do
 
   (theory, spec) <- loadTSLMT input
   
-  let satSolver = solveSat solverPath -- String -> ExceptT Error IO Bool
+  let satSolver = solveSat solverPath
       preds     = predsFromSpec theory spec
       toOut     = writeOutput output
 
   case flag of
     (Just Predicates)  -> toOut $ fmap (unlines . (map show)) preds
     (Just Grammar)     -> toOut $ Right $ show $ cfgFromSpec spec
-    (Just Consistency) -> toOut =<< (runExceptT $ fmap unlines $ except preds >>= (consistencyChecking satSolver))
+    (Just Consistency) -> consistency satSolver preds
     (Just flag')       -> toOut $ genericError $ "Unimplemented flag: " ++ show flag'
     Nothing            -> toOut $ genericError $ "end-to-end tslmt not yet supported"

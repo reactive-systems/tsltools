@@ -17,6 +17,7 @@ module TSL.Ast( Ast(..)
               , AstInfo(..)
               , SymbolInfo(..)
               , (+++)
+              , deduplicate
               , fromSignalTerm
               , fromFunctionTerm
               , fromPredicateTerm
@@ -25,6 +26,8 @@ module TSL.Ast( Ast(..)
               ) where
 
 -------------------------------------------------------------------------------
+
+import Data.List(nub)
 
 import Control.Applicative (liftA2)
 
@@ -172,6 +175,12 @@ data SymbolInfo a = SymbolInfo {symbol :: a, arity :: Int}
 instance Functor SymbolInfo where
   fmap f (SymbolInfo symbol arity) = SymbolInfo (f symbol) arity
 
+instance Ord a => Ord (SymbolInfo a) where
+  compare s1 s2 = compare (symbol s1) (symbol s2)
+
+instance Eq a => Eq (SymbolInfo a) where
+    t1 == t2 = (symbol t1) == (symbol t2) && (arity t1) == (arity t2)
+
 data AstInfo a =
   AstInfo
     { varInfos  :: [SymbolInfo a]
@@ -182,6 +191,9 @@ data AstInfo a =
 infixr 5  +++
 (+++) :: AstInfo a -> AstInfo a -> AstInfo a
 (+++) (AstInfo v f p) (AstInfo v' f' p') = AstInfo (v ++ v') (f ++ f') (p ++ p')
+
+deduplicate :: (Eq a) => AstInfo a -> AstInfo a
+deduplicate (AstInfo v f p) = AstInfo (nub v) (nub f) (nub p)
 
 instance Functor AstInfo where
   fmap f (AstInfo vars funcs preds) = AstInfo vars' funcs' preds'

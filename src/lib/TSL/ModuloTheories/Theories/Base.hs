@@ -15,7 +15,8 @@ import TSL.Error (Error)
 -------------------------------------------------------------------------------
 
 class TheorySymbol a where
-  readT      :: String -> Either Error a
-  toSmt      :: a -> String
-  toTsl      :: a -> String
-  symbolType :: a -> String
+  readT           :: String -> Either Error a
+  toSmt           :: a -> String
+  toTsl           :: a -> String
+  symbolType      :: a -> String
+  isUninterpreted :: a -> Bool
