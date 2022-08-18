@@ -1,48 +1,54 @@
 -------------------------------------------------------------------------------
 -- |
--- Module      :  TSL.ModuloTheories.CVC5
--- Description :  Utilities to send SMT and SyGuS problems to CVC5.
+-- Module      :  TSL.ModuloTheories.Sygus
+-- Description :  Generates SyGuS problems from a Data Transformation Obligation.
 -- Maintainer  :  Wonhyuk Choi
---
--- Used for sending SMT and SyGuS problems to CVC5.
 
 -------------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE RecordWildCards #-}
 
-{-
-   TODO:
-   * Send SMT/SyGuS problems to CVC5
-   * Parse results from CVC5
-   * Transform CVC5 results into some internal function representation
--}
-
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.CVC5
+module TSL.ModuloTheories.Sygus
   ( 
   ) where
 
 -------------------------------------------------------------------------------
+import TSL.Ast(AstInfo(..), SymbolInfo(..))
+
 import TSL.ModuloTheories.CFG(CFG(..))
 
-import TSL.Logic(PredicateTerm(..))
+import TSL.ModuloTheories.Predicates(TheoryPredicate, predInfo)
 
-import TSL.SymbolTable(Id)
+import TSL.ModuloTheories.Theories( Theory
+                                  , TheorySymbol
+                                  , symbol2Smt
+                                  , symbolType
+                                  , smtSortDecl
+                                  , isUninterpreted
+                                  )
 
 -------------------------------------------------------------------------------
 -- | Data Transformation Obligation.
 data DTO a = DTO 
     { -- | 
-        preCondition  :: PredicateTerm a
-    ,   postCondition :: PredicateTerm a
+        preCondition  :: TheoryPredicate
+    ,   postCondition :: TheoryPredicate
     }
+
+preCondition2Sygus :: TheoryPredicate -> String
+preCondition2Sygus = undefined
+
+postCondition2Sygus :: TheoryPredicate -> String
+postCondition2Sygus = undefined
 
 -- TODO
 -- | Gets all signals that SyGuS may need to update
 -- to obtain a realizable underapproximation to TSL.
 -- Intuitively, these are the cell & output signals in the post-condition.
-getSygusTargets :: DTO a -> [a]
-getSygusTargets (DTO _ post) = undefined
+-- Currently, it is approximated as all the signals in post-condition.
+getSygusTargets :: DTO -> [TheorySymbol]
+getSygusTargets (DTO _ post) = map symbol $ varInfos $ predInfo post
 
 -- TODO
 -- | Builds a SyGuS query from a

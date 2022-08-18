@@ -112,6 +112,7 @@ library
     TSL.ModuloTheories.Theories.EUf
     TSL.ModuloTheories.Theories.Lia
     TSL.ModuloTheories.Solver
+    TSL.ModuloTheories.Sygus
 
   hs-source-dirs:
     src/lib
