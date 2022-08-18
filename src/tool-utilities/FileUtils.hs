@@ -18,6 +18,7 @@ module FileUtils
   , writeContent
   , loadTSL
   , loadTSLMT
+  , loadTSLMTRaw
   , loadCFM
   ) where
 
@@ -120,6 +121,18 @@ loadTSLMT input = do
       specStr   = unlines $ tail linesList -- FIXME: computationally wasteful
   tslmt  <- fromTSL input specStr
   returnTuple theory tslmt
+
+-----------------------------------------------------------------------------
+-- | 'loadTSLMT' is a helper function which loads and parses a TSLMT file and
+-- if this is not possible outputs a respective error on the command line
+-- and exits
+loadTSLMTRaw :: Maybe FilePath -> IO (Theory, String)
+loadTSLMTRaw input = do
+  content <- tryReadContent input
+  let linesList = lines content
+      theory    = readTheory $ head linesList
+      specStr   = unlines $ tail linesList -- FIXME: computationally wasteful
+  returnTuple theory $ Right specStr
 
 -----------------------------------------------------------------------------
 -- | 'loadCFM' is a helper function which loads and parses a CFM file and

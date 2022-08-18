@@ -48,6 +48,9 @@ import TSL.ModuloTheories.Predicates( TheoryPredicate(..)
 eof :: String
 eof = ";; END OF FILE\n\n"
 
+pred2TslAssumption :: TheoryPredicate -> String
+pred2TslAssumption p = "G " ++ pred2Tsl (NotPLit p) ++ ";"
+
 consistencyDebug
   :: (String -> ExceptT Error IO Bool)
   -> [TheoryPredicate]
@@ -57,21 +60,19 @@ consistencyDebug satSolver preds = (map assumeOnlyUnsat) <$> zippedResults
     preds'                       = enumeratePreds preds
     queries                      = map pred2SmtQuery preds'
     zippedResults                = fmap (zip3 preds' queries) $ traverse satSolver queries
-    toTslAssumption p            = "G " ++ pred2Tsl (NotPLit p) ++ ";"
     assumeOnlyUnsat (p, q, res)  =
-      if res then (show p, q, Nothing) else (show p, q, Just (toTslAssumption p))
+      if res then (show p, q, Nothing) else (show p, q, Just (pred2TslAssumption p))
 
 consistencyChecking
   :: (String -> ExceptT Error IO Bool)
   -> [TheoryPredicate]
   -> ExceptT Error IO [String]
-consistencyChecking satSolver preds = (map toTslAssumption) <$> onlyUnsat
+consistencyChecking satSolver preds = (map pred2TslAssumption) <$> onlyUnsat
   where
     checkSat          = satSolver . pred2SmtQuery
     preds'            = enumeratePreds preds
     unsatZipFilter    = (map fst . filter (not . snd)) . (zip preds')
     onlyUnsat         = unsatZipFilter <$> (traverse checkSat preds')
-    toTslAssumption p = "G " ++ pred2Tsl (NotPLit p) ++ ";"
 
 pred2SmtQuery :: TheoryPredicate -> String
 pred2SmtQuery p = unlines [smtDeclarations, assertion, checkSat, eof]
