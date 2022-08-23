@@ -72,6 +72,8 @@ The limitations can be categorized in three different types:
 ### Limitations of the dependencies
 * As noted in section 5.1, currently (in 2022) state-of-the-art SyGuS solvers such as [CVC5 cannot synthesize recursive functions](https://github.com/cvc5/cvc5/issues/6182).
 Therefore, Syntax-Guided Synthesis of a recursive function is replaced with an approximation.
+* CVC5 also does not allow synthesis is multiple functions simultaneously.
+This means that Data Transformation Obligations that require updates on two or more variables will likely fail.
 ### Limitations of the algorithm
 * Section 4.5 describes some limitations of the grammar, e.g. no support for nested conditionals.
 * Similarly, the current procedure does not support simultaneous updates.

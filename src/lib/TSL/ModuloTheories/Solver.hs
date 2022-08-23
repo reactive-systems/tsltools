@@ -59,14 +59,14 @@ runSolver solverPath args problem = do
       die $ "Process Error " ++ show code ++ ":" ++ stderr ++ "\n" ++ stdout
 
 -- TODO
-getModel :: Theory -> String -> Either Error (Maybe TAst)
-getModel theory problem = undefined
+getModel :: FilePath -> String -> ExceptT Error (IO Bool)
+getModel solverPath problem = undefined
   where model = "(set-option :produce-models true)"
 
 -- TODO
-parseFunction :: Theory -> String -> TAst
+parseFunction :: Theory -> String -> Either Error TAst
 parseFunction theory fxnStr = undefined
 
-sygus :: Theory -> Int -> String -> Either Error (Maybe TAst)
--- sygus theory maxDepth problem = _
-sygus theory maxDepth problem = Right Nothing
+-- TODO
+sygus :: FilePath -> Int -> String -> ExceptT Error (IO (Maybe TAst))
+sygus solverPath maxDepth problem = undefined

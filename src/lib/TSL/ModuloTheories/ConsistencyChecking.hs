@@ -44,7 +44,6 @@ import TSL.ModuloTheories.Predicates( TheoryPredicate(..)
 
 -------------------------------------------------------------------------------
 
-
 eof :: String
 eof = ";; END OF FILE\n\n"
 

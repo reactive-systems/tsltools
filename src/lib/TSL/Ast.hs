@@ -23,11 +23,14 @@ module TSL.Ast( Ast(..)
               , fromPredicateTerm
               , getAstInfo
               , stringifyAst
+              , astByDepth
               ) where
 
 -------------------------------------------------------------------------------
 
 import Data.List(nub)
+
+import Data.Map(Map)
 
 import Control.Applicative (liftA2)
 
@@ -233,6 +236,16 @@ getAstInfo ast = AstInfo vars funcs preds
   where vars   = getVarInfos  ast
         funcs  = getFuncInfos ast
         preds  = getPredInfos ast
+
+-- TODO
+astByDepth :: Ast a -> [Ast a]
+astByDepth = \case
+  v@(Variable  _     ) -> [v]
+  f@(Function  _ args) -> f:(map astByDepth args)
+  p@(Predicate _ args) -> p:(map astByDepth args)
+
+levelOrderTraversal :: Int -> Ast a -> Map Int (Ast a) -> Map Int (Ast a)
+levelOrderTraversal = undefined
 
 stringifyAst :: (a -> String) -> Ast a -> String
 stringifyAst stringify = \case
