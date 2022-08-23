@@ -94,11 +94,9 @@ powerset xs = filterM (const [True, False]) xs
 
 -- FIXME: make this tractable
 enumeratePreds :: [TheoryPredicate] -> [TheoryPredicate]
-enumeratePreds preds = iterateAll $ preds' ++ map (NotPLit) preds'
+enumeratePreds preds = map andPreds $ filter (not . null) $ powerset preds'
   where
-    preds' = map andPreds $ filter (not . null) $ powerset preds
-    iterateAll []     = []
-    iterateAll (x:xs) = map (AndPLit x) xs ++ iterateAll xs
+    preds' = preds ++ map (NotPLit) preds
 
 predsFromSpec :: Theory -> Specification -> Either Error [TheoryPredicate]
 predsFromSpec theory (Specification a g s) = mapM toTheoryPred asts
