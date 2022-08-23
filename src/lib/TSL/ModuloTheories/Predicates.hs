@@ -24,8 +24,6 @@ import Control.Exception(assert)
 
 import TSL.Error(Error)
 
-import TSL.Logic(Formula(..))
-
 import TSL.Specification(Specification(..))
 
 import TSL.SymbolTable(SymbolTable(..))

@@ -23,15 +23,13 @@ import Control.Monad.Trans.Except
 
 import Control.Monad(liftM)
 
-import System.Process(readProcess, readProcessWithExitCode)
+import System.Process(readProcessWithExitCode)
 
 import System.Exit(ExitCode(..), die)
 
 import TSL.Error(Error, errSolver)
 
-import TSL.Ast(Ast)
-
-import TSL.ModuloTheories.Theories(Theory, TAst)
+-- import TSL.ModuloTheories.Theories(Theory, TAst)
 
 -------------------------------------------------------------------------------
 
@@ -58,15 +56,15 @@ runSolver solverPath args problem = do
     ExitFailure code ->
       die $ "Process Error " ++ show code ++ ":" ++ stderr ++ "\n" ++ stdout
 
--- TODO
-getModel :: Theory -> String -> Either Error (Maybe TAst)
-getModel theory problem = undefined
-  where model = "(set-option :produce-models true)"
+-- -- TODO
+-- getModel :: Theory -> String -> Either Error (Maybe TAst)
+-- getModel theory problem = undefined
+--   where model = "(set-option :produce-models true)"
 
--- TODO
-parseFunction :: Theory -> String -> TAst
-parseFunction theory fxnStr = undefined
+-- -- TODO
+-- parseFunction :: Theory -> String -> TAst
+-- parseFunction theory fxnStr = undefined
 
-sygus :: Theory -> Int -> String -> Either Error (Maybe TAst)
--- sygus theory maxDepth problem = _
-sygus theory maxDepth problem = Right Nothing
+-- sygus :: Theory -> Int -> String -> Either Error (Maybe TAst)
+-- -- sygus theory maxDepth problem = _
+-- sygus theory maxDepth problem = Right Nothing

@@ -24,7 +24,7 @@ import TSL.Error(Error)
 import TSL.Ast( AstInfo(..)
               , SymbolInfo(..)
               , deduplicate
-              , stringifyAst)
+              )
 
 import TSL.ModuloTheories.Theories( Theory
                                   , TheorySymbol
