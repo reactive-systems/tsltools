@@ -1,6 +1,0 @@
-#EUF
-always guarantee {
-    eq x a <-> [x <- y];
-    eq a x <-> [y <- x];
-    [x <- y] <-> [y <- x];
-}
