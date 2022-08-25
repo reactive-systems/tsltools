@@ -65,40 +65,5 @@ However, if you want more diagnostic information, you can use the following flag
 * `--assumptions`: Prints all the assumptions that are generated from the TSL-MT synthesis procedure.
 
 ## Limitations
-There are many limitations in synthesizing TSL-MT with `tslmt2tsl`.
-The limitations can be categorized in three different types:
-
-### Limitations of the tool
-* The temporal atom collection outlined in section 4.1 of the paper is substituted by an approximation.
-* The refinement loop given in section 4.4 is not fully implemented.
-### Limitations of the dependencies
-* As noted in section 5.1, currently (in 2022) state-of-the-art SyGuS solvers such as [CVC5 cannot synthesize recursive functions](https://github.com/cvc5/cvc5/issues/6182).
-Therefore, Syntax-Guided Synthesis of a recursive function is replaced with an approximation.
-### Limitations of the algorithm
-#### Simultaneous updates
-There is no clear way of supporting multiple SyGuS problems in a single query.
-Multi-function synthesis is supported by the SyGuS standard as well as by `CVC5`,
-but since the results are pure, mapping them over time may change the value of the functions.
-
-For instance, a function `f` that modifies that value of `x` and a function `g` that modifies the value of `y` may both take `x` and `y` as arguments.
-While the pure implementations of `f(x)` and `g(y)` may satisfy a post-condition, mapped over time, the function applications may interfere with each other and produce an erroneous result.
-This is an open research problem; more generally, a Functional Reactive Program (FRP)-targeted synthesis procedure for TSL may be needed.
-
-This means that current procedure does not support simultaneous updates.
-Consider the following TSL-MT specification:
-```
-always guarantee {
-	[var1 <- 4] && [var2 <- 5];
-	(eq (add var1 var2) 0 ) -> X [eq (add var1 var2) 9];
-}
-```
-The desired environmental assumption is
-```
-always assume {
-	((eq (add var1 var2) 0) && [var1 <- 4] && [var2 <- 5]) -> X (eq (add var1 var2) 9);
-}
-```
-However, since the algorithm only supports one single pure $\mathcal S$, this assumption cannot be generated.
-
-#### Constrained Grammar
-Section 4.5 describes some limitations of the grammar, e.g. no support for nested conditionals.
+There are many limitations in synthesizing TSL-MT with `tslmt2tsl`;
+please checkout [`tslmt2tsl-limitations.md`](./tslmt2tsl-limitations.md).
