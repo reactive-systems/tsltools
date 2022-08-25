@@ -8,45 +8,63 @@
 -- Maintainer  :  Wonhyuk Choi
 
 -------------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.Solver( SolverErr(..)
-                                , checkSat) where
-
--------------------------------------------------------------------------------
-
-import TSL.Ast(Ast)
-
-import TSL.ModuloTheories.Theories(Theory, TheorySymbol)
+module TSL.ModuloTheories.Solver (solveSat) where
 
 -------------------------------------------------------------------------------
 
-data SolverErr = SolverErr String deriving (Show)
+import qualified Data.Text as Text
 
--- TODO: I/O
-solve :: String -> String -> Either SolverErr String
--- solve args problem = Right ""
-solve _ _ = Right ""
+import Control.Monad.Trans.Except
 
-isSat :: String -> Either SolverErr Bool
+import Control.Monad(liftM)
+
+import System.Process(readProcessWithExitCode)
+
+import System.Exit(ExitCode(..), die)
+
+import TSL.Error(Error, errSolver)
+
+-- import TSL.ModuloTheories.Theories(Theory, TAst)
+
+-------------------------------------------------------------------------------
+
+strip :: String -> String
+strip = Text.unpack . Text.strip . Text.pack
+
+isSat :: String -> Either Error Bool
 isSat "sat"   = Right True
 isSat "unsat" = Right False
-isSat err     = Left $ SolverErr err
+isSat err     = errSolver err
 
-checkSat :: String -> Either SolverErr Bool
-checkSat problem = solve problem smt2 >>= isSat
-  where smt2 = "--lang=smt2"
+solveSat :: FilePath -> String -> ExceptT Error IO Bool
+solveSat solverPath problem = ExceptT satResult
+  where
+    smt2         = ["--lang=smt2"]
+    solverResult = runSolver solverPath smt2 problem
+    satResult    = liftM (isSat . strip) solverResult
 
--- TODO
-getModel :: Theory -> String -> Either SolverErr (Maybe (Ast TheorySymbol))
-getModel theory problem = undefined
+runSolver :: FilePath -> [String] -> String -> IO String
+runSolver solverPath args problem = do
+  (exitCode, stdout, stderr) <- readProcessWithExitCode solverPath args problem
+  case exitCode of
+    ExitSuccess      -> return stdout
+    ExitFailure code ->
+      die $ "Process Error " ++ show code ++ ":" ++ stderr ++ "\n" ++ stdout
 
--- TODO
-parseFunction :: Theory -> String -> (Ast TheorySymbol)
-parseFunction theory fxnStr = undefined
+-- -- TODO
+-- getModel :: Theory -> String -> Either Error (Maybe TAst)
+-- getModel theory problem = undefined
+--   where model = "(set-option :produce-models true)"
 
-sygus :: Theory -> Int -> String -> Either SolverErr (Maybe (Ast TheorySymbol))
--- sygus theory maxDepth problem = _
-sygus theory maxDepth problem = Right Nothing
+-- -- TODO
+-- parseFunction :: Theory -> String -> TAst
+-- parseFunction theory fxnStr = undefined
+
+-- sygus :: Theory -> Int -> String -> Either Error (Maybe TAst)
+-- -- sygus theory maxDepth problem = _
+-- sygus theory maxDepth problem = Right Nothing

@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 -- |
--- Module      :  TSL.ModuloTheories.CFG
--- Description :  Builds a CFG for cells and outputs from the specification.
+-- Module      :  TSL.ModuloTheories.Cfg
+-- Description :  Builds a Cfg for cells and outputs from the specification.
 -- Maintainer  :  Wonhyuk Choi
 --
 -- This module builds a Context-Free Grammar for cell and output signals
@@ -14,9 +14,9 @@
 {-# LANGUAGE RecordWildCards #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.CFG
-  ( CFG(..)
-  , fromSpec
+module TSL.ModuloTheories.Cfg
+  ( Cfg(..)
+  , cfgFromSpec
   ) where
 
 -------------------------------------------------------------------------------
@@ -38,16 +38,16 @@ import TSL.Ast(Ast, fromSignalTerm)
 
 -------------------------------------------------------------------------------
 
-data CFG = CFG
-    { -- | CFG implemented as an array of lists.
+data Cfg = Cfg
+    { -- | Cfg implemented as an array of lists.
       -- To get the possible production rules for each,
       -- index into the grammar with the appropriate signal Id.
         grammar  :: Array Id [Ast Id]
     ,   symTable :: SymbolTable
     }
 
-instance Show CFG where
-    show (CFG g s) = 
+instance Show Cfg where
+    show (Cfg g s) = 
         unlines $ map show' $ filter (\(fst, _) -> isUpdate fst) $ assocs g
       where
         show' (id, rules)  = unhashId id ++ " :\n" ++ show'' rules
@@ -55,9 +55,9 @@ instance Show CFG where
         isUpdate idx       = (stKind s) idx == Output
         unhashId           = stName s
 
-fromSpec :: Specification -> CFG
-fromSpec (Specification a g s) =
-    CFG {
+cfgFromSpec :: Specification -> Cfg
+cfgFromSpec (Specification a g s) =
+    Cfg {
             grammar     = fmap (map fromSTerm) grammar'
         ,   symTable    = s
         }

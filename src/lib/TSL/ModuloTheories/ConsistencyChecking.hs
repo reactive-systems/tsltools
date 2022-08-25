@@ -8,71 +8,100 @@
 -------------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections   #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.ConsistencyChecking(consistencyChecking) where
+module TSL.ModuloTheories.ConsistencyChecking( consistencyChecking
+                                             , consistencyDebug
+                                             ) where
 
 -------------------------------------------------------------------------------
 
-import TSL.Ast(stringifyAst)
+import Control.Monad.Trans.Except
+
+import TSL.Error(Error)
+
+import TSL.Ast( AstInfo(..)
+              , SymbolInfo(..)
+              , deduplicate
+              )
 
 import TSL.ModuloTheories.Theories( Theory
-                                  , TheorySymbol(..)
-                                  , toSmt
-                                  , toTsl
+                                  , TheorySymbol
+                                  , symbol2Smt
                                   , symbolType
+                                  , smtSortDecl
+                                  , isUninterpreted
                                   )
 
-import TSL.ModuloTheories.PredicateList( PredicateLiteral(..)
+import TSL.ModuloTheories.Predicates( TheoryPredicate(..)
                                        , enumeratePreds
-                                       , getPLitVars
+                                       , pred2Tsl
+                                       , pred2Smt
+                                       , predTheory
+                                       , predInfo
                                        )
-
-import TSL.ModuloTheories.Solver(SolverErr(..), checkSat)
 
 -------------------------------------------------------------------------------
 
--- consistencyChecking
---     :: Theory
---     -> [PredicateLiteral TheorySymbol]
---     -> Either SolverErr [String]
--- consistencyChecking theory =
---   (map toTslAssumption) . (filter notSat) . enumeratePreds
---     where notSat = not . checkSat . (checkSatSmt theory)
---           toTslAssumption p = "G " ++ pred2Tsl (NotPLit p) ++ ";"
-consistencyChecking
-    :: Theory
-    -> [PredicateLiteral TheorySymbol]
-    -> Either SolverErr [String]
-consistencyChecking theory = undefined
 
-checkSatSmt :: Theory -> PredicateLiteral TheorySymbol -> String
-checkSatSmt theory p = unlines $ [logic, variables, assert, checkSAT]
+eof :: String
+eof = ";; END OF FILE\n\n"
+
+pred2TslAssumption :: TheoryPredicate -> String
+pred2TslAssumption p = "G " ++ pred2Tsl (NotPLit p) ++ ";"
+
+consistencyDebug
+  :: (String -> ExceptT Error IO Bool)
+  -> [TheoryPredicate]
+  -> ExceptT Error IO [(String, String, Maybe String)]
+consistencyDebug satSolver preds = (map assumeOnlyUnsat) <$> zippedResults
   where
-    logic       = "(set-logic " ++ show theory ++ ")"
-    variables   = unlines $ map declConst $ getPLitVars p
-    assert      = "(assert " ++ pred2Smt p ++ ")"
-    checkSAT    = "(check-sat)"
-    declConst x =
-      "(declare-const " ++ toSmt x ++ " " ++ symbolType x ++ ")"
+    preds'                       = enumeratePreds preds
+    queries                      = map pred2SmtQuery preds'
+    zippedResults                = fmap (zip3 preds' queries) $ traverse satSolver queries
+    assumeOnlyUnsat (p, q, res)  =
+      if res then (show p, q, Nothing) else (show p, q, Just (pred2TslAssumption p))
 
-pred2Smt :: PredicateLiteral TheorySymbol -> String
-pred2Smt = \case
-  PLiteral p  -> stringifyAst toSmt p
-  NotPLit p   -> "(not " ++ pred2Smt p ++ ")"
-  OrPLit p q  -> "(or "  ++ pred2Smt p ++ " " ++ pred2Smt q ++ ")"
-  AndPLit p q -> "(and " ++ pred2Smt p ++ " " ++ pred2Smt q ++ ")"
+consistencyChecking
+  :: (String -> ExceptT Error IO Bool)
+  -> [TheoryPredicate]
+  -> ExceptT Error IO [String]
+consistencyChecking satSolver preds = (map pred2TslAssumption) <$> onlyUnsat
+  where
+    checkSat          = satSolver . pred2SmtQuery
+    preds'            = enumeratePreds preds
+    unsatZipFilter    = (map fst . filter (not . snd)) . (zip preds')
+    onlyUnsat         = unsatZipFilter <$> (traverse checkSat preds')
 
-pred2Tsl :: PredicateLiteral TheorySymbol -> String
-pred2Tsl = \case
-  PLiteral p  -> stringifyAst toTsl p
-  NotPLit p   -> "!" ++ pred2Tsl p
-  OrPLit p q  -> "(" ++ pred2Tsl p ++ " || " ++ pred2Tsl q ++ ")"
-  AndPLit p q -> "(" ++ pred2Tsl p ++ " && " ++ pred2Tsl q ++ ")"
+pred2SmtQuery :: TheoryPredicate -> String
+pred2SmtQuery p = unlines [smtDeclarations, assertion, checkSat, eof]
+  where
+    smtDeclarations   = smtDecls (predTheory p) $ deduplicate $ predInfo p
+    assertion         = "(assert " ++ pred2Smt p ++ ")"
+    checkSat          = "(check-sat)"
 
--- (set-logic LIA)
--- (declare-const vruntime2 Int)
--- (declare-const vruntime1 Int)
-
--- (assert (and (not (> vruntime2 vruntime1)) (not (> vruntime2 vruntime1))))
--- (check-sat)
+smtDecls :: Theory -> AstInfo TheorySymbol -> String
+smtDecls theory (AstInfo vars funcs preds) =
+  unlines [logic, sortDecl, varDecls, funcDecls, predDecls]
+  where
+    logic     = "(set-logic " ++ show theory ++ ")"
+    sortDecl  = smtSortDecl theory
+    varDecls  = unlines $ map declConst vars
+    funcDecls = unlines $ map declFunc funcs
+    predDecls = unlines $ map declPred preds
+    declConst (SymbolInfo x _) =
+      "(declare-const " ++ symbol2Smt x ++ " " ++ symbolType x  ++ ")"
+    declareFun retType (SymbolInfo f arity) = 
+      if not (isUninterpreted f)
+        then ""
+        else unwords
+      ["(declare-fun"
+      , symbol2Smt f
+      , "("
+      , unwords $ replicate arity $ show theory
+      , ")"
+      , retType ++ ")"
+      ]
+    declFunc = declareFun (show theory)
+    declPred = declareFun "Bool"

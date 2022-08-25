@@ -36,6 +36,8 @@ module TSL.Error
   , errExpect
   , errRange
   , errFormat
+  , errMtParse
+  , errSolver
   ) where
 
 -----------------------------------------------------------------------------
@@ -71,6 +73,8 @@ data Error
   | ErrCfg CfgError
   | ErrFormat FormatError
   | ErrGeneric GenericError
+  | ErrMtParse TheoryParseError
+  | ErrSolver SolverError
 
 -----------------------------------------------------------------------------
 
@@ -150,6 +154,22 @@ newtype CfgError =
 
 -----------------------------------------------------------------------------
 
+newtype TheoryParseError =
+  TheoryParseError
+    { mtRaw :: String
+    }
+  deriving (Eq, Ord)
+
+-----------------------------------------------------------------------------
+
+newtype SolverError =
+  SolverError
+    { solverErr :: String
+    }
+  deriving (Eq, Ord)
+
+-----------------------------------------------------------------------------
+
 instance Show Error where
   show = \case
     ErrParse x                   -> show x
@@ -164,6 +184,8 @@ instance Show Error where
     ErrFormat FormatError {..}   ->
       "\"Format Error\": Unexpected format" ++ "\n" ++ errFmt
     ErrGeneric GenericError {..} -> "Error: " ++ errGen
+    ErrMtParse TheoryParseError {..} -> "Modulo Theories Parse Error: " ++ mtRaw
+    ErrSolver SolverError {..} -> "Solver Error: " ++ solverErr
 
     where
       pr errname pos msgs =
@@ -504,5 +526,25 @@ errFormat
 
 errFormat =
   Left . ErrFormat . FormatError
+
+-----------------------------------------------------------------------------
+
+-- | Modulo Theories Theory Parse Error.
+
+errMtParse
+  :: String -> Either Error a
+
+errMtParse =
+  Left . ErrMtParse . TheoryParseError
+
+-----------------------------------------------------------------------------
+
+-- | SMT or SyGuS Solver Error.
+
+errSolver
+  :: String -> Either Error a
+
+errSolver =
+  Left . ErrSolver . SolverError
 
 -----------------------------------------------------------------------------

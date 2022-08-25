@@ -18,6 +18,7 @@ module FileUtils
   , writeContent
   , loadTSL
   , loadTSLMT
+  , loadTSLMTRaw
   , loadCFM
   ) where
 
@@ -33,13 +34,13 @@ import PrintUtils
   , printErrLn
   )
 
-import TSL (CFM, Error, Specification, Theory, fromCFM, fromTSL)
+import TSL (CFM, Error, Specification, Theory, fromCFM, fromTSL, readTheory)
 
 import Control.Monad (unless)
 
 import System.Directory (doesFileExist)
 
-import System.Exit (exitFailure)
+import System.Exit (exitFailure, die)
 
 -----------------------------------------------------------------------------
 -- | Checks if given FilePath belongs to an existing file.
@@ -102,18 +103,36 @@ loadTSL input =
   >>= rightOrInvalidInput input
 
 -----------------------------------------------------------------------------
+
+returnTuple :: Either Error a -> Either Error b -> IO (a, b)
+returnTuple (Left err) _ = die (show err)
+returnTuple _ (Left err) = die (show err)
+returnTuple (Right a) (Right b) = return (a,b)
+
+-----------------------------------------------------------------------------
 -- | 'loadTSLMT' is a helper function which loads and parses a TSLMT file and
 -- if this is not possible outputs a respective error on the command line
 -- and exits
 loadTSLMT :: Maybe FilePath -> IO (Theory, Specification)
-loadTSLMT = undefined
---loadTSLMT input = do
---  contents <- tryReadContent input
---  --TODO: function to get head
---  theory <- getHead contents
---  tslmt  <- getTail contents
---  spec   <- tslmt fromTSL
---  return (theory, spec)
+loadTSLMT input = do
+  content <- tryReadContent input
+  let linesList = lines content
+      theory    = readTheory $ head linesList
+      specStr   = unlines $ tail linesList -- FIXME: computationally wasteful
+  tslmt  <- fromTSL input specStr
+  returnTuple theory tslmt
+
+-----------------------------------------------------------------------------
+-- | 'loadTSLMT' is a helper function which loads and parses a TSLMT file and
+-- if this is not possible outputs a respective error on the command line
+-- and exits
+loadTSLMTRaw :: Maybe FilePath -> IO (Theory, String)
+loadTSLMTRaw input = do
+  content <- tryReadContent input
+  let linesList = lines content
+      theory    = readTheory $ head linesList
+      specStr   = unlines $ tail linesList -- FIXME: computationally wasteful
+  returnTuple theory $ Right specStr
 
 -----------------------------------------------------------------------------
 -- | 'loadCFM' is a helper function which loads and parses a CFM file and

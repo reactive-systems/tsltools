@@ -46,11 +46,12 @@ data Configuration =
   Configuration
   { -- | The input file containing the TSL-MT specification.
     -- If no input file is given we read from STDIN.
-    input  :: Maybe FilePath
+    input      :: Maybe FilePath
     -- | Output file path. 
     -- If no path is given, the output is written to STDOUT.
-  , output :: Maybe FilePath
-  , flag   :: Maybe Flag
+  , output     :: Maybe FilePath
+  , solverPath :: FilePath
+  , flag       :: Maybe Flag
   } deriving (Show)
 
 configParser :: Parser Configuration
@@ -65,6 +66,11 @@ configParser = Configuration
         <> short 'o'
         <> metavar "OUTFILE"
         <> help "output file (STDOUT, if not set)"
+        )
+      )
+  <*> (argument str
+        (  metavar "SolverPath"
+        <> help "Path to SMT and SyGuS solver"
         )
       )
   <*> optional 

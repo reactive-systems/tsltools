@@ -7,17 +7,16 @@
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.Theories.Base( TheoryParseErr(..)
-                                       , TheorySymbol(..)
-                                       ) where
+module TSL.ModuloTheories.Theories.Base(TheorySymbol(..)) where
 -------------------------------------------------------------------------------
 
--------------------------------------------------------------------------------
+import TSL.Error (Error)
 
-data TheoryParseErr = TheoryParseErr deriving (Show)
+-------------------------------------------------------------------------------
 
 class TheorySymbol a where
-  readT      :: String -> Either TheoryParseErr a
-  toSmt      :: a -> String
-  toTsl      :: a -> String
-  symbolType :: a -> String
+  readT           :: String -> Either Error a
+  toSmt           :: a -> String
+  toTsl           :: a -> String
+  symbolType      :: a -> String
+  isUninterpreted :: a -> Bool

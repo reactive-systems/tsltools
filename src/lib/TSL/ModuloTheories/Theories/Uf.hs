@@ -16,10 +16,11 @@ import TSL.ModuloTheories.Theories.Base(TheorySymbol(..))
 
 -------------------------------------------------------------------------------
 
-data UfSymbol = Uninterpreted String deriving (Show)
+data UfSymbol = Uninterpreted String deriving(Eq)
 
 instance TheorySymbol UfSymbol where
-    readT s                  = Right $ Uninterpreted s
-    toSmt (Uninterpreted a) = show a
-    toTsl (Uninterpreted a) = show a
-    symbolType _            = "Sort"
+    readT s                 = Right $ Uninterpreted s
+    toSmt (Uninterpreted a) = a
+    toTsl (Uninterpreted a) = a
+    symbolType _            = "UF"
+    isUninterpreted _       = True

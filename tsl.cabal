@@ -42,6 +42,8 @@ library
     , QuickCheck
     , process >= 1.6.3.0
     , ansi-terminal >= 0.6
+    , transformers >= 0.5.6.2
+    , process
     , fgl >= 5.6.0.0
     , hanoi
     , finite
@@ -101,12 +103,13 @@ library
     CoreGeneration.MinimalAssumptionCores
     CoreGeneration.FindFirstConcurrent
     TSL.Ast
-    TSL.ModuloTheories.CFG
-    TSL.ModuloTheories.PredicateList
+    TSL.ModuloTheories.Cfg
+    TSL.ModuloTheories.Predicates
     TSL.ModuloTheories.ConsistencyChecking
     TSL.ModuloTheories.Theories
     TSL.ModuloTheories.Theories.Base
     TSL.ModuloTheories.Theories.Uf
+    TSL.ModuloTheories.Theories.EUf
     TSL.ModuloTheories.Theories.Lia
     TSL.ModuloTheories.Solver
 
@@ -141,6 +144,8 @@ executable tslmt2tsl
     , containers >=0.5 && <0.7
     , ansi-terminal >= 0.6
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
 
   hs-source-dirs:
     src/tools/tslmt2tsl
@@ -164,6 +169,8 @@ executable tslcoregen
     , ansi-terminal >= 0.6
     , process
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
 
   main-is:
     Main.hs
@@ -196,6 +203,8 @@ executable tslminrealizable
     , ansi-terminal >= 0.6
     , process
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
 
   main-is:
     Main.hs
@@ -237,6 +246,8 @@ executable tslresolve
     , containers >=0.5 && <0.7
     , ansi-terminal >= 0.6
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
 
   hs-source-dirs:
     src/tools/tslresolve
@@ -269,6 +280,8 @@ executable tsl2tlsf
     , containers >=0.5 && <0.7
     , ansi-terminal >= 0.6
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
 
   hs-source-dirs:
     src/tools/tsl2tlsf
@@ -299,6 +312,8 @@ executable tsl2toml
     , containers >=0.5 && <0.7
     , ansi-terminal >= 0.6
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
 
   hs-source-dirs:
     src/tools/tsl2toml
@@ -332,6 +347,8 @@ executable tslsplit
     , containers >=0.5 && <0.7
     , ansi-terminal >= 0.6
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
 
   hs-source-dirs:
     src/tools/tslsplit
@@ -362,6 +379,8 @@ executable tslsym
     , directory >= 1.3
     , ansi-terminal >= 0.6
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
 
   hs-source-dirs:
     src/tools/tslsym
@@ -391,6 +410,8 @@ executable tslcheck
     , directory >= 1.3
     , ansi-terminal >= 0.6
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
 
   hs-source-dirs:
     src/tools/tslcheck
@@ -422,6 +443,8 @@ executable tslsize
     , ansi-terminal >= 0.6
     , filepath >= 1.4
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
 
   hs-source-dirs:
     src/tools/tslsize
@@ -451,6 +474,8 @@ executable cfmcheck
     , directory >= 1.3
     , ansi-terminal >= 0.6
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
 
   hs-source-dirs:
     src/tools/cfmcheck
@@ -482,6 +507,8 @@ executable cfminfo
     , ansi-terminal >= 0.6
     , filepath >= 1.4
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
 
   hs-source-dirs:
     src/tools/cfminfo
@@ -512,6 +539,8 @@ executable cfmsym
     , directory >= 1.3
     , ansi-terminal >= 0.6
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
 
   hs-source-dirs:
     src/tools/cfmsym
@@ -544,6 +573,8 @@ executable hoa2code
     , directory >= 1.3
     , ansi-terminal >= 0.6
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
     , hanoi
     , finite
     , containers
@@ -579,6 +610,8 @@ executable cfm2code
     , directory >= 1.3
     , ansi-terminal >= 0.6
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
 
   hs-source-dirs:
     src/tools/cfm2code
@@ -608,6 +641,8 @@ executable tslplay
     , filepath >= 1.4
     , directory >= 1.3
     , ansi-terminal >= 0.6
+    , transformers >= 0.5.6.2
+    , process
 
   hs-source-dirs:
     src/tools/tslplay
@@ -632,6 +667,8 @@ executable tslsynth
     , ansi-terminal >= 0.6
     , process
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
     , text
     , containers
     , hanoi
@@ -670,6 +707,8 @@ executable parsehoa
     , ansi-terminal >= 0.6
     , process
     , optparse-applicative
+    , transformers >= 0.5.6.2
+    , process
     , text
     , containers
     , hanoi
@@ -724,6 +763,8 @@ test-suite default
     , filepath >= 1.4
     , directory >= 1.3
     , ansi-terminal >= 0.6
+    , transformers >= 0.5.6.2
+    , process
     , hanoi
     , process
 
