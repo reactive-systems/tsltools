@@ -22,7 +22,7 @@ import Control.Exception(assert)
 
 import TSL.Ast(AstInfo(..), SymbolInfo(..))
 
-import TSL.ModuloTheories.CFG(CFG(..))
+import TSL.ModuloTheories.Cfg(Cfg(..))
 
 import TSL.ModuloTheories.Predicates( TheoryPredicate
                                     , predInfo
@@ -66,12 +66,12 @@ buildDTO pre post = DTO theory pre post
   where theory   = assert theoryEq $ predTheory pre
         theoryEq = predTheory pred == predTheory post
 
-preCondition2Sygus :: TheoryPredicate -> String
-preCondition2Sygus = assertSmt . pred2Smt
+preCond2Sygus :: TheoryPredicate -> String
+preCond2Sygus = assertSmt . pred2Smt
   where assertSmt smt = "(assert " ++ smt ++ ")"
 
-postCondition2Sygus :: TheoryPredicate -> String
-postCondition2Sygus = undefined
+postCond2Sygus :: TheoryPredicate -> String
+postCond2Sygus = undefined
 
 -- | Gets all signals that SyGuS may need to update
 -- to obtain a realizable underapproximation to TSL.
@@ -80,20 +80,25 @@ postCondition2Sygus = undefined
 getSygusTargets :: DTO -> [TheorySymbol]
 getSygusTargets (DTO _ _ post) = map symbol $ varInfos $ predInfo post
 
-cfg2Sygus :: CFG -> String
+cfg2Sygus :: Cfg -> TheorySymbol -> String
 cfg2Sygus = undefined
 
--- TODO
--- | Builds a SyGuS query from a
--- 1) Data Transformation Obligation (the "semantic  constraint") and
--- 2) Context-Free Grammar           (the "syntactic constraint")
-sygusQuery :: Temporal -> DTO -> CFG -> String
-sygusQuery temporal dto@(DTO theory pre post) (CFG g _) =
-  unlines [declTheory, checkSynth]
+fixedSizeQuery :: DTO -> Cfg -> String
+fixedSizeQuery dto@(DTO theory pre post) (Cfg g _) =
+  unlines [declTheory, toSynthesize, preCond, postCond, checkSynth]
   where
-    sygusTargets = getSygusTargets dto
+    toSynthesize = (cfg2Sygus cfg) <$> (getSygusTargets dto)
+    preCond      = preCond2Sygus  pre
+    postCond     = postCond2Sygus post
     declTheory   = "(set-logic " ++ show theory ++ ")"
     checkSynth   = "(check-synth)"
+
+recursiveQuery :: DTO -> Cfg -> String
+recursiveQuery = undefined
+
+findRecursion :: [TAst] -> TAst
+findRecursion [] = error "Empty list for recursion!"
+findRecursion _  = undefined
 
 tast2UpdateChain :: [TAst] -> String
 tast2UpdateChain = (zipWith strConcat nextChains) . tastByDepth
@@ -119,10 +124,13 @@ sygus2TslAss temporal (DTO _ pre post) tast = unwords
                      then updateChain
                      else updateChain ++ " W " ++ pred2Tsl post
 
+-- | A SyGuS Query is based off of:
+-- 1) Data Transformation Obligation (the "semantic  constraint") and
+-- 2) Context-Free Grammar           (the "syntactic constraint")
 sygusAssumptions
   :: (Int -> String -> ExceptT Error (IO (Maybe TAst)))
   -> [(TheoryPredicate, Temporal)]
-  -> CFG
+  -> Cfg
   -> ExceptT Error IO [String]
 sygusAssumptions sygusSolver preds cfg = undefined
 

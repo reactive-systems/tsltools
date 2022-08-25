@@ -238,11 +238,12 @@ getAstInfo ast = AstInfo vars funcs preds
         preds  = getPredInfos ast
 
 -- TODO
+-- NOT CORRECT
 astByDepth :: Ast a -> [Ast a]
 astByDepth = \case
   v@(Variable  _     ) -> [v]
-  f@(Function  _ args) -> f:(map astByDepth args)
-  p@(Predicate _ args) -> p:(map astByDepth args)
+  f@(Function  _ args) -> f:(concat $ map astByDepth args)
+  p@(Predicate _ args) -> p:(concat $ map astByDepth args)
 
 levelOrderTraversal :: Int -> Ast a -> Map Int (Ast a) -> Map Int (Ast a)
 levelOrderTraversal = undefined

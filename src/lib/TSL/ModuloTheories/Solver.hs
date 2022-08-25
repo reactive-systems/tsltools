@@ -29,7 +29,7 @@ import System.Exit(ExitCode(..), die)
 
 import TSL.Error(Error, errSolver)
 
--- import TSL.ModuloTheories.Theories(Theory, TAst)
+import TSL.ModuloTheories.Theories(Theory, TheorySymbol, TAst)
 
 -------------------------------------------------------------------------------
 
@@ -57,7 +57,7 @@ runSolver solverPath args problem = do
       die $ "Process Error " ++ show code ++ ":" ++ stderr ++ "\n" ++ stdout
 
 -- TODO
-getModel :: FilePath -> String -> ExceptT Error (IO Bool)
+getModel :: FilePath -> String -> ExceptT Error IO TheorySymbol
 getModel solverPath problem = undefined
   where model = "(set-option :produce-models true)"
 
@@ -66,5 +66,5 @@ parseFunction :: Theory -> String -> Either Error TAst
 parseFunction theory fxnStr = undefined
 
 -- TODO
-sygus :: FilePath -> Int -> String -> ExceptT Error (IO (Maybe TAst))
+sygus :: FilePath -> Int -> String -> ExceptT Error IO (Maybe TAst)
 sygus solverPath maxDepth problem = undefined

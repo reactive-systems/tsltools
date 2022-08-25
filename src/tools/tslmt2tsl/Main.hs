@@ -109,8 +109,6 @@ main = do
     (Just Predicates)  -> toOut $ fmap (unlines . (map show)) preds
     (Just Grammar)     -> toOut $ Right $ show $ cfgFromSpec spec
     (Just Consistency) -> consistency satSolver preds
+    (Just Sygus)       -> consistency satSolver preds
     (Just flag')       -> toOut $ genericError $ "Unimplemented flag: " ++ show flag'
-    Nothing            -> do -- end-to-end is currently just consistency checking.
-      consistency <- runExceptT $ (except preds >>= consistencyChecking satSolver)
-      let tslWithAssumptions = (tslmt2tsl specStr) <$> consistency
-      toOut tslWithAssumptions
+    Nothing            -> toOut $ genericError $ "SyGuS coming..."

@@ -18,24 +18,26 @@ However, as classic TSL is just TSL-MT with the Theory of Uninterpreted Function
 This allows TSL specifications (equivalently, TSL Modulo the Theory of Uninterpreted Functions) to _not underapproximate_ to Linear Temporal Logic (LTL) during synthesis as the TSL-MT synthesis procedure will capture the semantics of the update operator.
 More explanation is given in Example 4.3 of the [TSL-MT synthesis paper](https://www.marksantolucito.com/papers/pldi2022.pdf).
 
-## Installation
-In order to run `tslmt`, you will need a Satisfiability Modulo Theories (SMT) and Syntax-Guided Synthesis Solver (SyGuS) solver.
+## Getting Started
+
+### Installation
+In order to run `tslmt2tsl`, you will need a Satisfiability Modulo Theories (SMT) and Syntax-Guided Synthesis Solver (SyGuS) solver.
 The recommend solver is [CVC5](https://cvc5.github.io/).
 
-### Installing with CVC5
-First, you need to be in the top level directory (tsltools/.)
+### Running the tool
+The tool takes several arguments (flags are addressed in the next section):
+```
+Usage: tslmt2tsl [INFILE] [-o|--output OUTFILE] SolverPath ([--predicates] |
+                 [--cfg] | [--consistency] | [--sygus] | [--assumptions])
+```
+For instance, to run `tslmt2tsl`
+1. On the TSL-MT specification `~/kitchen-timer.tslmt`
+2. Output to `stdout`
+3. Using `cvc5` in `/usr/bin`
 
-Linux:
+You run the tool by:
 ```
-mkdir deps && cd deps
-wget https://github.com/cvc5/cvc5/releases/latest/download/cvc5-Linux -O cvc5
-chmod +x ./cvc5
-```
-MacOS:
-```
-mkdir deps && cd deps
-wget https://github.com/cvc5/cvc5/releases/latest/download/cvc5-macOS -O cvc5
-chmod +x ./cvc5
+./tslmt2tsl ~/kitchen-timer.tslmt /usr/bin/cvc5
 ```
 
 ## Supported first-order theories
@@ -73,8 +75,16 @@ The limitations can be categorized in three different types:
 * As noted in section 5.1, currently (in 2022) state-of-the-art SyGuS solvers such as [CVC5 cannot synthesize recursive functions](https://github.com/cvc5/cvc5/issues/6182).
 Therefore, Syntax-Guided Synthesis of a recursive function is replaced with an approximation.
 ### Limitations of the algorithm
-* Section 4.5 describes some limitations of the grammar, e.g. no support for nested conditionals.
-* Similarly, the current procedure does not support simultaneous updates.
+#### Simultaneous updates
+There is no clear way of supporting multiple SyGuS problems in a single query.
+Multi-function synthesis is supported by the SyGuS standard as well as by `CVC5`,
+but since the results are pure, mapping them over time may change the value of the functions.
+
+For instance, a function `f` that modifies that value of `x` and a function `g` that modifies the value of `y` may both take `x` and `y` as arguments.
+While the pure implementations of `f(x)` and `g(y)` may satisfy a post-condition, mapped over time, the function applications may interfere with each other and produce an erroneous result.
+This is an open research problem; more generally, a Functional Reactive Program (FRP)-targeted synthesis procedure for TSL may be needed.
+
+This means that current procedure does not support simultaneous updates.
 Consider the following TSL-MT specification:
 ```
 always guarantee {
@@ -89,3 +99,6 @@ always assume {
 }
 ```
 However, since the algorithm only supports one single pure $\mathcal S$, this assumption cannot be generated.
+
+#### Constrained Grammar
+Section 4.5 describes some limitations of the grammar, e.g. no support for nested conditionals.
