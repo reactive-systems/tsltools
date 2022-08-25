@@ -83,14 +83,23 @@ postCond2Sygus = undefined
 getSygusTargets :: DTO -> [TheorySymbol]
 getSygusTargets (DTO _ _ post) = map symbol $ varInfos $ predInfo post
 
-cfg2Sygus :: Cfg -> TheorySymbol -> String
+-- | Picks one target to synthesize SyGuS for.
+-- Unfortunately, the current procedure only synthesizes
+-- only one function for a single DTO.
+-- Unfortunately, the current procedure
+-- More information here:
+-- tsltools/docs/tslmt2tsl-limitations.md#simultaneous-updates
+pickTarget :: [TheorySymbol] -> TheorySymbol
+pickTarget = head
+
+cfg2Sygus :: TheorySymbol -> Cfg -> String
 cfg2Sygus = undefined
 
 fixedSizeQuery :: DTO -> Cfg -> String
 fixedSizeQuery dto@(DTO theory pre post) cfg =
   unlines [declTheory, toSynthesize, preCond, postCond, checkSynth]
   where
-    toSynthesize = unlines $ (cfg2Sygus cfg) <$> (getSygusTargets dto)
+    toSynthesize = cfg2Sygus cfg $ pickTarget $ getSygusTargets dto
     preCond      = preCond2Sygus  pre
     postCond     = postCond2Sygus post
     declTheory   = "(set-logic " ++ show theory ++ ")"
