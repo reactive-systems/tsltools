@@ -28,6 +28,7 @@ module TSL.ModuloTheories.Theories( Theory(..)
                                   , tast2Tsl
                                   , tast2Smt
                                   , tastInfo
+                                  , tastByDepth
                                   , symbol2Tsl
                                   , symbol2Smt
                                   , symbolType

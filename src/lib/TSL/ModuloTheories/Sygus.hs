@@ -12,13 +12,16 @@
 module TSL.ModuloTheories.Sygus
   ( DTO
   , buildDTO
-  , sygusQuery
   ) where
 
 -------------------------------------------------------------------------------
 import Data.List(inits)
 
 import Control.Exception(assert)
+
+import Control.Monad.Trans.Except
+
+import TSL.Error(Error, errSolver)
 
 import TSL.Ast(AstInfo(..), SymbolInfo(..))
 
@@ -55,7 +58,7 @@ instance Show Temporal where
     Eventually   -> "F"
 
 -- | Data Transformation Obligation.
-data DTO a = DTO 
+data DTO = DTO 
     {   theory        :: Theory
     ,   preCondition  :: TheoryPredicate
     ,   postCondition :: TheoryPredicate
@@ -64,7 +67,7 @@ data DTO a = DTO
 buildDTO :: TheoryPredicate -> TheoryPredicate -> DTO
 buildDTO pre post = DTO theory pre post
   where theory   = assert theoryEq $ predTheory pre
-        theoryEq = predTheory pred == predTheory post
+        theoryEq = (predTheory pre) == (predTheory post)
 
 preCond2Sygus :: TheoryPredicate -> String
 preCond2Sygus = assertSmt . pred2Smt
@@ -84,10 +87,10 @@ cfg2Sygus :: Cfg -> TheorySymbol -> String
 cfg2Sygus = undefined
 
 fixedSizeQuery :: DTO -> Cfg -> String
-fixedSizeQuery dto@(DTO theory pre post) (Cfg g _) =
+fixedSizeQuery dto@(DTO theory pre post) cfg =
   unlines [declTheory, toSynthesize, preCond, postCond, checkSynth]
   where
-    toSynthesize = (cfg2Sygus cfg) <$> (getSygusTargets dto)
+    toSynthesize = unlines $ (cfg2Sygus cfg) <$> (getSygusTargets dto)
     preCond      = preCond2Sygus  pre
     postCond     = postCond2Sygus post
     declTheory   = "(set-logic " ++ show theory ++ ")"
@@ -100,10 +103,11 @@ findRecursion :: [TAst] -> TAst
 findRecursion [] = error "Empty list for recursion!"
 findRecursion _  = undefined
 
-tast2UpdateChain :: [TAst] -> String
-tast2UpdateChain = (zipWith strConcat nextChains) . tastByDepth
-  where nextChains      = inits $ repeat $ show $ Next 1
-        strConcat s1 s2 = s1 ++ " " ++ s2
+tast2UpdateChain :: TAst -> String
+tast2UpdateChain = undefined
+-- (zipWith strConcat nextChains) . tastByDepth
+-- where nextChains      = inits $ repeat $ show $ Next 1
+--       strConcat s1 s2 = s1 ++ " " ++ s2
 
 sygus2TslAss :: Temporal -> DTO -> TAst -> String
 sygus2TslAss temporal (DTO _ pre post) tast = unwords
@@ -120,15 +124,15 @@ sygus2TslAss temporal (DTO _ pre post) tast = unwords
   ]
   where
     updateChain = tast2UpdateChain tast
-    updateTerm  = if (temporal == Next _)
-                     then updateChain
-                     else updateChain ++ " W " ++ pred2Tsl post
+    updateTerm  = if (temporal == Eventually)
+                     then updateChain ++ " W " ++ pred2Tsl post
+                     else updateChain
 
 -- | A SyGuS Query is based off of:
 -- 1) Data Transformation Obligation (the "semantic  constraint") and
 -- 2) Context-Free Grammar           (the "syntactic constraint")
 sygusAssumptions
-  :: (Int -> String -> ExceptT Error (IO (Maybe TAst)))
+  :: (Int -> String -> ExceptT Error IO (Maybe TAst))
   -> [(TheoryPredicate, Temporal)]
   -> Cfg
   -> ExceptT Error IO [String]
