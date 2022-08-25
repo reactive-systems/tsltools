@@ -23,15 +23,13 @@ import Control.Monad.Trans.Except
 
 import Control.Monad(liftM)
 
-import System.Process(readProcess, readProcessWithExitCode)
+import System.Process(readProcessWithExitCode)
 
 import System.Exit(ExitCode(..), die)
 
 import TSL.Error(Error, errSolver)
 
-import TSL.Ast(Ast)
-
-import TSL.ModuloTheories.Theories(Theory, TAst)
+-- import TSL.ModuloTheories.Theories(Theory, TAst)
 
 -------------------------------------------------------------------------------
 

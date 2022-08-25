@@ -22,9 +22,9 @@ module TSL.ModuloTheories.Predicates( TheoryPredicate(..)
 
 import Control.Exception(assert)
 
-import TSL.Error(Error)
+import Control.Monad(filterM)
 
-import TSL.Logic(Formula(..))
+import TSL.Error(Error)
 
 import TSL.Specification(Specification(..))
 
@@ -56,6 +56,11 @@ data TheoryPredicate =
 
 instance Show TheoryPredicate where show = pred2Smt
 
+andPreds :: [TheoryPredicate] -> TheoryPredicate
+andPreds []     = error "`mempty` undefined"
+andPreds [x]    = x
+andPreds (x:xs) = AndPLit x $ andPreds xs
+
 pred2Smt :: TheoryPredicate -> String
 pred2Smt = \case
   PLiteral tast  -> tast2Smt tast
@@ -84,12 +89,14 @@ predInfo = \case
   OrPLit p q    -> predInfo p +++ predInfo q
   AndPLit p q   -> predInfo p +++ predInfo q
 
+powerset :: [a] -> [[a]]
+powerset xs = filterM (const [True, False]) xs
+
 -- FIXME: make this tractable
 enumeratePreds :: [TheoryPredicate] -> [TheoryPredicate]
-enumeratePreds preds = iterateAll $ preds ++ map (NotPLit) preds
+enumeratePreds preds = map andPreds $ filter (not . null) $ powerset preds'
   where
-    iterateAll []     = []
-    iterateAll (x:xs) = map (AndPLit x) xs ++ iterateAll xs
+    preds' = preds ++ map (NotPLit) preds
 
 predsFromSpec :: Theory -> Specification -> Either Error [TheoryPredicate]
 predsFromSpec theory (Specification a g s) = mapM toTheoryPred asts

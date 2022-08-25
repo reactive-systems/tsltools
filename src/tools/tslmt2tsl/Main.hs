@@ -34,8 +34,7 @@ import PrintUtils ( Color(..)
                   , cPutOutLn
                   )
 
-import TSL ( SymbolTable(..)
-           , Error
+import TSL ( Error
            , TheoryPredicate
            , cfgFromSpec
            , predsFromSpec
@@ -43,7 +42,6 @@ import TSL ( SymbolTable(..)
            , consistencyDebug
            , solveSat
            , genericError
-           , fromTSL
            )
 
 -----------------------------------------------------------------------------
