@@ -35,8 +35,15 @@ module TSL.ModuloTheories.Theories( Theory(..)
                                   , isUninterpreted
                                   ) where
 -------------------------------------------------------------------------------
+import Data.Map (Map)
 
 import TSL.Error (Error, errMtParse)
+
+import TSL.Logic(foldFormula)
+
+import TSL.Specification(Specification(..))
+
+import TSL.SymbolTable(SymbolTable(..), Id, Kind)
 
 import TSL.Ast( Ast
               , AstInfo
@@ -143,3 +150,24 @@ symbolTheory (LiaSymbol _) = Lia
 
 symbolType :: TheorySymbol -> String
 symbolType = show . symbolTheory
+
+(<$<) :: Functor f => (b -> c) -> f (a -> b) -> f (a -> c)
+(<$<) a b = (a .) <$> b
+infixr 4 <$<
+{-# INLINE (<$<) #-}
+
+makeSymbolIdFunc
+  :: Theory
+  -> Specification
+  -> Either Error (TheorySymbol -> Id)
+makeSymbolIdFunc theory (Specification a g s) = 
+  where
+    unhash = stName s
+
+makeSymbolKindFunc
+  :: Theory
+  -> Specification
+  -> Either Error (TheorySymbol -> Kind)
+makeSymbolKindFunc t s = id2Kind <$< symbolId
+  where symbolId = makeSymbolIdFunc t s
+        id2Kind  = stKind $ symboltable s

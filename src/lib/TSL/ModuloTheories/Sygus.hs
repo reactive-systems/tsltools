@@ -23,6 +23,10 @@ import Control.Monad.Trans.Except
 
 import TSL.Error(Error, errSolver)
 
+import TSL.SymbolTable(Kind(..))
+
+import TSL.Specification(Specification(..))
+
 import TSL.Ast(AstInfo(..), SymbolInfo(..))
 
 import TSL.ModuloTheories.Cfg(Cfg(..))
