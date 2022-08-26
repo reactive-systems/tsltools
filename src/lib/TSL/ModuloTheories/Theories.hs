@@ -151,23 +151,8 @@ symbolTheory (LiaSymbol _) = Lia
 symbolType :: TheorySymbol -> String
 symbolType = show . symbolTheory
 
-(<$<) :: Functor f => (b -> c) -> f (a -> b) -> f (a -> c)
-(<$<) a b = (a .) <$> b
-infixr 4 <$<
-{-# INLINE (<$<) #-}
-
-makeSymbolIdFunc
-  :: Theory
-  -> Specification
-  -> Either Error (TheorySymbol -> Id)
-makeSymbolIdFunc theory (Specification a g s) = 
-  where
-    unhash = stName s
-
-makeSymbolKindFunc
-  :: Theory
-  -> Specification
-  -> Either Error (TheorySymbol -> Kind)
-makeSymbolKindFunc t s = id2Kind <$< symbolId
-  where symbolId = makeSymbolIdFunc t s
-        id2Kind  = stKind $ symboltable s
+-- TODO
+-- outputs :: Ord a => Formula a -> Set a
+-- Cfg     :: Array Id [Ast Id] --> Map TheorySymbol TAst ? Or a function?
+--            the keys of the CFG could be all the outputs as well.
+-- targets :: CFG -> [TheorySymbol]

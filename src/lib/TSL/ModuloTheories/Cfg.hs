@@ -28,6 +28,7 @@ import TSL.Types (arity)
 import TSL.Logic ( Formula(..)
                  , SignalTerm(..)
                  , foldFormula
+                 , outputs
                  )
 
 import TSL.Specification (Specification(..))
@@ -86,3 +87,9 @@ extendGrammar (Update dst src) oldGrammar = newGrammar
     newRules   = src:oldRules
     newGrammar = oldGrammar // [(dst, newRules)]
 extendGrammar _ g = g
+
+-- TODO
+-- outputs :: Ord a => Formula a -> Set a
+-- Cfg     :: Array Id [Ast Id] --> Map TheorySymbol TAst ? Or a function?
+--            the keys of the CFG could be all the outputs as well.
+-- targets :: CFG -> [TheorySymbol]

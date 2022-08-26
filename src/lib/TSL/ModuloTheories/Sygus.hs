@@ -100,14 +100,14 @@ cfg2Sygus :: TheorySymbol -> Cfg -> String
 cfg2Sygus = undefined
 
 fixedSizeQuery :: DTO -> Cfg -> String
-fixedSizeQuery dto@(DTO theory pre post) cfg =
-  unlines [declTheory, toSynthesize, preCond, postCond, checkSynth]
-  where
-    toSynthesize = cfg2Sygus cfg $ pickTarget $ getSygusTargets dto
-    preCond      = preCond2Sygus  pre
-    postCond     = postCond2Sygus post
-    declTheory   = "(set-logic " ++ show theory ++ ")"
-    checkSynth   = "(check-synth)"
+fixedSizeQuery dto@(DTO theory pre post) cfg = undefined
+  -- unlines [declTheory, toSynthesize, preCond, postCond, checkSynth]
+  -- where
+  --   toSynthesize = cfg2Sygus cfg $ pickTarget $ getSygusTargets dto
+  --   preCond      = preCond2Sygus  pre
+  --   postCond     = postCond2Sygus post
+  --   declTheory   = "(set-logic " ++ show theory ++ ")"
+  --   checkSynth   = "(check-synth)"
 
 recursiveQuery :: DTO -> Cfg -> String
 recursiveQuery = undefined
