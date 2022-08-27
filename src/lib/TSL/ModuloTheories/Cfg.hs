@@ -23,13 +23,11 @@ module TSL.ModuloTheories.Cfg
 
 -------------------------------------------------------------------------------
 
-import qualified Data.Array as Array
+import qualified Data.Set as Set
 
 import qualified Data.Map as Map
 
 import Control.Applicative (liftA2)
-
-import Data.Array (Array, (//), (!))
 
 import Data.Map (Map)
 
@@ -39,15 +37,14 @@ import TSL.Error (Error)
 
 import TSL.Types (arity)
 
-import TSL.Logic ( Formula(..)
-                 , SignalTerm(..)
-                 , foldFormula
+import TSL.Logic ( Formula
                  , outputs
+                 , updates
                  )
 
 import TSL.Specification (Specification(..))
 
-import TSL.SymbolTable (Id, SymbolTable(..), Kind(..))
+import TSL.SymbolTable (Id, SymbolTable(..))
 
 import TSL.Ast (Ast, fromSignalTerm)
 
@@ -70,60 +67,29 @@ instance Show Cfg where
       showPair (k,v) = showSymbol k ++ showRules v
 
 cfgFromSpec :: Theory -> Specification -> Either Error Cfg
-cfgFromSpec t s = cfgArr2Map t $ arrCfgFromSpec s
-
-cfgArr2Map :: Theory -> ArrCfg -> Either Error Cfg
-cfgArr2Map theory (ArrCfg grammar symTable) =
-  (Cfg . Map.fromList) <$> newGrammar
-  where
-    unhash          = stName symTable
+cfgFromSpec theory spec = Cfg <$> newGrammar
+  where 
+    unhash          = stName $ symboltable spec
+    idMap           = updatesMap spec
     toTAst          = (applySemantics theory) . (fmap unhash)
     toTSymbol       = read2Symbol theory . unhash
     theorize (k,vs) = liftA2 (,) (toTSymbol k) (traverse toTAst vs)
-    newGrammar      = traverse theorize $ Array.assocs grammar
+    newGrammar      = fmap Map.fromList $ traverse theorize $ Map.assocs idMap
+
+-- Ord k => (a -> a -> a) -> k -> a -> Map k a -> Map k a
+updatesMap :: Specification -> Map Id [Ast Id]
+updatesMap (Specification a g s) = Map.map (map toAst) updMap
+  where add (sink, rule) = mapConsInsert sink rule
+        updatesList      = concat $ map (Set.toList . updates) $ a ++ g
+        updMap           = foldr add Map.empty updatesList
+        toAst            = fromSignalTerm (arity . (stType s))
+
+mapConsInsert :: Ord k => k -> v -> Map k [v] -> Map k [v]
+mapConsInsert k v mp = Map.insert k (v:vs) mp
+  where vs = Map.findWithDefault [] k mp
 
 outputSignals :: Cfg -> Set TheorySymbol
 outputSignals (Cfg grammar) = Map.keysSet grammar
 
 productionRules :: TheorySymbol -> Cfg -> [TAst]
 productionRules ts (Cfg grammar) = Map.findWithDefault [] ts grammar 
-
-data ArrCfg = ArrCfg
-    { -- | ArrCfg implemented as an array of lists.
-      -- To get the possible production rules for each,
-      -- index into the grammar with the appropriate signal Id.
-        grammar  :: Array Id [Ast Id]
-    ,   symTable :: SymbolTable
-    }
-
-arrCfgFromSpec :: Specification -> ArrCfg
-arrCfgFromSpec (Specification a g s) =
-    ArrCfg {
-            grammar     = fmap (map fromSTerm) grammar'
-        ,   symTable    = s
-        }
-  where
-    symTableArr = symtable s
-    fromSTerm   = fromSignalTerm (arity . (stType s))
-    grammar'    = buildGrammar (a ++ g) grammarInit
-    grammarInit = Array.array (Array.bounds symTableArr) emptyRules
-    emptyRules  = [(idx, []) | idx <- Array.indices symTableArr]
-
-buildGrammar
-    :: [Formula Id]
-    -> Array Id [SignalTerm Id]
-    -> Array Id [SignalTerm Id]
-buildGrammar [] g     = g
-buildGrammar (x:xs) g = buildGrammar xs (foldFormula extendGrammar g x)
-
--- | Adds new production rules to the grammar.
-extendGrammar
-    :: Formula Id
-    -> Array Id [SignalTerm Id]
-    -> Array Id [SignalTerm Id]
-extendGrammar (Update dst src) oldGrammar = newGrammar
-  where
-    oldRules   = oldGrammar ! dst
-    newRules   = src:oldRules
-    newGrammar = oldGrammar // [(dst, newRules)]
-extendGrammar _ g = g
