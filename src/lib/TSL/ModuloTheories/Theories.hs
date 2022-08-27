@@ -24,11 +24,13 @@ module TSL.ModuloTheories.Theories( Theory(..)
                                   , readTheory
                                   , smtSortDecl
                                   , applySemantics
+                                  , read2Symbol
                                   , tastTheory
                                   , tast2Tsl
                                   , tast2Smt
                                   , tastInfo
                                   , tastByDepth
+                                  , tastSignals
                                   , symbol2Tsl
                                   , symbol2Smt
                                   , symbolType
@@ -50,6 +52,7 @@ import TSL.Ast( Ast
               , stringifyAst
               , getAstInfo
               , astByDepth
+              , getSignals
               )
 
 import qualified TSL.ModuloTheories.Theories.Base as Base(TheorySymbol(..))
@@ -120,13 +123,26 @@ data TheorySymbol =
     UfSymbol  Uf.UfSymbol
   | EUfSymbol EUf.EUfSymbol
   | LiaSymbol Lia.LiaSymbol
-  deriving(Eq)
+  deriving(Eq, Ord)
+
+instance Show TheorySymbol where show = symbol2Tsl
+
+read2Symbol :: Theory -> String -> Either Error TheorySymbol
+read2Symbol Uf  str = UfSymbol  <$> Base.readT str
+read2Symbol EUf str = EUfSymbol <$> Base.readT str
+read2Symbol Lia str = LiaSymbol <$> Base.readT str
 
 tastInfo :: TAst -> AstInfo TheorySymbol
 tastInfo = \case
   UfAst ast  -> fmap UfSymbol  $ getAstInfo ast
   EUfAst ast -> fmap EUfSymbol $ getAstInfo ast
   LiaAst ast -> fmap LiaSymbol $ getAstInfo ast
+
+tastSignals :: TAst -> [TheorySymbol]
+tastSignals = \case
+  UfAst ast  -> map UfSymbol  $ getSignals ast
+  EUfAst ast -> map EUfSymbol $ getSignals ast
+  LiaAst ast -> map LiaSymbol $ getSignals ast
 
 symbol2Tsl :: TheorySymbol -> String
 symbol2Tsl (UfSymbol  symbol) = Base.toTsl symbol

@@ -15,6 +15,9 @@ module TSL.ModuloTheories.Sygus
   ) where
 
 -------------------------------------------------------------------------------
+
+import qualified Data.Set as Set
+
 import Data.List(inits)
 
 import Control.Exception(assert)
@@ -29,13 +32,14 @@ import TSL.Specification(Specification(..))
 
 import TSL.Ast(AstInfo(..), SymbolInfo(..))
 
-import TSL.ModuloTheories.Cfg(Cfg(..))
+import TSL.ModuloTheories.Cfg(Cfg, outputSignals, productionRules)
 
 import TSL.ModuloTheories.Predicates( TheoryPredicate
                                     , predInfo
                                     , pred2Tsl
                                     , pred2Smt
                                     , predTheory
+                                    , predSignals
                                     )
 
 import TSL.ModuloTheories.Theories( Theory
@@ -80,34 +84,32 @@ preCond2Sygus = assertSmt . pred2Smt
 postCond2Sygus :: TheoryPredicate -> String
 postCond2Sygus = undefined
 
--- | Gets all signals that SyGuS may need to update
--- to obtain a realizable underapproximation to TSL.
--- Intuitively, these are the cell & output signals in the post-condition.
--- Currently, it is approximated as all the signals in post-condition.
-getSygusTargets :: DTO -> [TheorySymbol]
-getSygusTargets (DTO _ _ post) = map symbol $ varInfos $ predInfo post
+getSygusTargets :: DTO -> Cfg -> [TheorySymbol]
+getSygusTargets (DTO _ _ post) cfg = Set.toList intersection
+  where outputs      = outputSignals cfg
+        postSignals  = Set.fromList $ predSignals post
+        intersection = Set.intersection outputs postSignals
 
--- | Picks one target to synthesize SyGuS for.
--- Unfortunately, the current procedure only synthesizes
--- only one function for a single DTO.
--- Unfortunately, the current procedure
--- More information here:
+-- | Picks one signal to synthesize SyGuS for.
+-- Unfortunately, the current procedure only allows synthesis 
+-- of one single function. More info:
 -- tsltools/docs/tslmt2tsl-limitations.md#simultaneous-updates
 pickTarget :: [TheorySymbol] -> TheorySymbol
 pickTarget = head
 
-cfg2Sygus :: TheorySymbol -> Cfg -> String
-cfg2Sygus = undefined
+functionGrammar :: TheorySymbol -> Cfg -> String
+functionGrammar = undefined
 
 fixedSizeQuery :: DTO -> Cfg -> String
-fixedSizeQuery dto@(DTO theory pre post) cfg = undefined
-  -- unlines [declTheory, toSynthesize, preCond, postCond, checkSynth]
-  -- where
-  --   toSynthesize = cfg2Sygus cfg $ pickTarget $ getSygusTargets dto
-  --   preCond      = preCond2Sygus  pre
-  --   postCond     = postCond2Sygus post
-  --   declTheory   = "(set-logic " ++ show theory ++ ")"
-  --   checkSynth   = "(check-synth)"
+fixedSizeQuery dto@(DTO theory pre post) cfg =
+  unlines [declTheory, grammar, preCond, postCond, checkSynth]
+  where
+    synthTarget = pickTarget $ getSygusTargets dto cfg
+    grammar     = functionGrammar synthTarget cfg
+    preCond     = preCond2Sygus  pre
+    postCond    = postCond2Sygus post
+    declTheory  = "(set-logic " ++ show theory ++ ")"
+    checkSynth  = "(check-synth)"
 
 recursiveQuery :: DTO -> Cfg -> String
 recursiveQuery = undefined
@@ -116,30 +118,31 @@ findRecursion :: [TAst] -> TAst
 findRecursion [] = error "Empty list for recursion!"
 findRecursion _  = undefined
 
-tast2UpdateChain :: TAst -> String
+tast2UpdateChain :: TheorySymbol -> TAst -> String
 tast2UpdateChain = undefined
 -- (zipWith strConcat nextChains) . tastByDepth
 -- where nextChains      = inits $ repeat $ show $ Next 1
 --       strConcat s1 s2 = s1 ++ " " ++ s2
 
 sygus2TslAss :: Temporal -> DTO -> TAst -> String
-sygus2TslAss temporal (DTO _ pre post) tast = unwords
-  [ "G("
-  , "("
-  , "(" ++ pred2Tsl pre ++ ")"
-  , "&&"
-  , "(" ++ updateTerm ++ ")"
-  , ")"
-  , "->"
-  , show temporal
-  , "(" ++ pred2Tsl post ++ ")"
-  , ";"
-  ]
-  where
-    updateChain = tast2UpdateChain tast
-    updateTerm  = if (temporal == Eventually)
-                     then updateChain ++ " W " ++ pred2Tsl post
-                     else updateChain
+sygus2TslAss = undefined
+-- sygus2TslAss temporal (DTO _ pre post) tast = unwords
+--   [ "G("
+--   , "("
+--   , "(" ++ pred2Tsl pre ++ ")"
+--   , "&&"
+--   , "(" ++ updateTerm ++ ")"
+--   , ")"
+--   , "->"
+--   , show temporal
+--   , "(" ++ pred2Tsl post ++ ")"
+--   , ";"
+--   ]
+--   where
+--     updateChain = tast2UpdateChain tast
+--     updateTerm  = if (temporal == Eventually)
+--                      then updateChain ++ " W " ++ pred2Tsl post
+--                      else updateChain
 
 -- | A SyGuS Query is based off of:
 -- 1) Data Transformation Obligation (the "semantic  constraint") and

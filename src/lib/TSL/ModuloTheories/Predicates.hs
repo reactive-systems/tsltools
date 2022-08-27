@@ -1,7 +1,6 @@
 -------------------------------------------------------------------------------
 -- |
--- Module      :  TSL.ModuloTheories.Predicates
--- Description :  Predicate term operations for TSL-MT
+-- Module      :  TSL.ModuloTheories.Predicates Description :  Predicate term operations for TSL-MT
 -- Maintainer  :  Wonhyuk Choi
 
 -------------------------------------------------------------------------------
@@ -16,6 +15,7 @@ module TSL.ModuloTheories.Predicates( TheoryPredicate(..)
                                        , pred2Tsl
                                        , pred2Smt
                                        , predInfo
+                                       , predSignals
                                        ) where
 
 -------------------------------------------------------------------------------
@@ -44,6 +44,7 @@ import TSL.ModuloTheories.Theories( Theory
                                   , tast2Smt
                                   , tast2Tsl
                                   , tastInfo
+                                  , tastSignals
                                   )
 
 -------------------------------------------------------------------------------
@@ -88,6 +89,13 @@ predInfo = \case
   NotPLit p     -> predInfo p
   OrPLit p q    -> predInfo p +++ predInfo q
   AndPLit p q   -> predInfo p +++ predInfo q
+
+predSignals :: TheoryPredicate -> [TheorySymbol]
+predSignals = \case
+  PLiteral tast -> tastSignals tast
+  NotPLit p     -> predSignals p
+  OrPLit p q    -> predSignals p ++ predSignals q
+  AndPLit p q   -> predSignals p ++ predSignals q
 
 powerset :: [a] -> [[a]]
 powerset xs = filterM (const [True, False]) xs

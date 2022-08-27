@@ -24,6 +24,7 @@ module TSL.Ast( Ast(..)
               , getAstInfo
               , stringifyAst
               , astByDepth
+              , getSignals
               ) where
 
 -------------------------------------------------------------------------------
@@ -236,6 +237,13 @@ getAstInfo ast = AstInfo vars funcs preds
   where vars   = getVarInfos  ast
         funcs  = getFuncInfos ast
         preds  = getPredInfos ast
+
+-- (a -> [a] -> [a]) -> [a] -> Ast a -> [a]
+getSignals :: Ast a -> [a]
+getSignals = \case
+  Variable  a      -> [a]
+  Function  _ args -> concat (map getSignals args)
+  Predicate _ args -> concat (map getSignals args)
 
 -- TODO
 -- NOT CORRECT

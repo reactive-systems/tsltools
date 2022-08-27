@@ -30,7 +30,7 @@ data LiaSymbol =
   | Lt
   | Gte
   | Lte
-  deriving(Eq)
+  deriving(Eq, Ord)
 
 instance TheorySymbol LiaSymbol where
   readT = \case

@@ -107,7 +107,7 @@ main = do
 
   case flag of
     (Just Predicates)  -> toOut $ fmap (unlines . (map show)) preds
-    (Just Grammar)     -> toOut $ Right $ show $ cfgFromSpec spec
+    (Just Grammar)     -> toOut $ fmap show $ cfgFromSpec theory spec
     (Just Consistency) -> consistency satSolver preds
     (Just Sygus)       -> consistency satSolver preds
     (Just flag')       -> toOut $ genericError $ "Unimplemented flag: " ++ show flag'

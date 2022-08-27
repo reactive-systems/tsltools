@@ -17,11 +17,25 @@
 module TSL.ModuloTheories.Cfg
   ( Cfg(..)
   , cfgFromSpec
+  , outputSignals
+  , productionRules
   ) where
 
 -------------------------------------------------------------------------------
 
-import Data.Array(Array, array, assocs, bounds, indices, (//), (!))
+import qualified Data.Array as Array
+
+import qualified Data.Map as Map
+
+import Control.Applicative (liftA2)
+
+import Data.Array (Array, (//), (!))
+
+import Data.Map (Map)
+
+import Data.Set (Set)
+
+import TSL.Error (Error)
 
 import TSL.Types (arity)
 
@@ -35,30 +49,56 @@ import TSL.Specification (Specification(..))
 
 import TSL.SymbolTable (Id, SymbolTable(..), Kind(..))
 
-import TSL.Ast(Ast, fromSignalTerm)
+import TSL.Ast (Ast, fromSignalTerm)
+
+import TSL.ModuloTheories.Theories( TAst
+                                  , TheorySymbol
+                                  , Theory
+                                  , read2Symbol
+                                  , applySemantics
+                                  )
 
 -------------------------------------------------------------------------------
 
-data Cfg = Cfg
-    { -- | Cfg implemented as an array of lists.
+data Cfg = Cfg (Map TheorySymbol [TAst])
+
+instance Show Cfg where
+  show (Cfg cfg) = unlines $ map showPair $ Map.assocs cfg
+    where
+      showSymbol     = (++ " :\n") . show
+      showRules      = unlines . (map (('\t':) . show))
+      showPair (k,v) = showSymbol k ++ showRules v
+
+cfgFromSpec :: Theory -> Specification -> Either Error Cfg
+cfgFromSpec t s = cfgArr2Map t $ arrCfgFromSpec s
+
+cfgArr2Map :: Theory -> ArrCfg -> Either Error Cfg
+cfgArr2Map theory (ArrCfg grammar symTable) =
+  (Cfg . Map.fromList) <$> newGrammar
+  where
+    unhash          = stName symTable
+    toTAst          = (applySemantics theory) . (fmap unhash)
+    toTSymbol       = read2Symbol theory . unhash
+    theorize (k,vs) = liftA2 (,) (toTSymbol k) (traverse toTAst vs)
+    newGrammar      = traverse theorize $ Array.assocs grammar
+
+outputSignals :: Cfg -> Set TheorySymbol
+outputSignals (Cfg grammar) = Map.keysSet grammar
+
+productionRules :: TheorySymbol -> Cfg -> [TAst]
+productionRules ts (Cfg grammar) = Map.findWithDefault [] ts grammar 
+
+data ArrCfg = ArrCfg
+    { -- | ArrCfg implemented as an array of lists.
       -- To get the possible production rules for each,
       -- index into the grammar with the appropriate signal Id.
         grammar  :: Array Id [Ast Id]
     ,   symTable :: SymbolTable
     }
 
-instance Show Cfg where
-    show (Cfg g s) = 
-        unlines $ map show' $ filter (\(fst, _) -> isUpdate fst) $ assocs g
-      where
-        show' (id, rules)  = unhashId id ++ " :\n" ++ show'' rules
-        show''             = unlines . (map (('\t':) . show . (fmap unhashId)))
-        isUpdate idx       = (stKind s) idx == Output
-        unhashId           = stName s
-
-cfgFromSpec :: Specification -> Cfg
-cfgFromSpec (Specification a g s) =
-    Cfg {
+arrCfgFromSpec :: Specification -> ArrCfg
+arrCfgFromSpec (Specification a g s) =
+    ArrCfg {
             grammar     = fmap (map fromSTerm) grammar'
         ,   symTable    = s
         }
@@ -66,8 +106,8 @@ cfgFromSpec (Specification a g s) =
     symTableArr = symtable s
     fromSTerm   = fromSignalTerm (arity . (stType s))
     grammar'    = buildGrammar (a ++ g) grammarInit
-    grammarInit = array (bounds symTableArr) emptyRules
-    emptyRules  = [(idx, []) | idx <- indices symTableArr]
+    grammarInit = Array.array (Array.bounds symTableArr) emptyRules
+    emptyRules  = [(idx, []) | idx <- Array.indices symTableArr]
 
 buildGrammar
     :: [Formula Id]
@@ -87,9 +127,3 @@ extendGrammar (Update dst src) oldGrammar = newGrammar
     newRules   = src:oldRules
     newGrammar = oldGrammar // [(dst, newRules)]
 extendGrammar _ g = g
-
--- TODO
--- outputs :: Ord a => Formula a -> Set a
--- Cfg     :: Array Id [Ast Id] --> Map TheorySymbol TAst ? Or a function?
---            the keys of the CFG could be all the outputs as well.
--- targets :: CFG -> [TheorySymbol]

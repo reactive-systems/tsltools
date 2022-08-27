@@ -22,7 +22,7 @@ import TSL.ModuloTheories.Theories.Base(TheorySymbol(..))
 data EUfSymbol = 
       Eq
     | Uninterpreted String 
-    deriving(Eq)
+    deriving(Eq, Ord)
 
 instance TheorySymbol EUfSymbol where
     readT = \case
