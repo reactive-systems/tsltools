@@ -35,6 +35,7 @@ module TSL.ModuloTheories.Theories( Theory(..)
                                   , symbol2Smt
                                   , symbolType
                                   , isUninterpreted
+                                  , replaceSmtShow
                                   ) where
 -------------------------------------------------------------------------------
 import Data.Map (Map)
@@ -125,7 +126,7 @@ data TheorySymbol =
   | LiaSymbol Lia.LiaSymbol
   deriving(Eq, Ord)
 
-instance Show TheorySymbol where show = symbol2Tsl
+instance Show TheorySymbol where show = symbol2Smt
 
 read2Symbol :: Theory -> String -> Either Error TheorySymbol
 read2Symbol Uf  str = UfSymbol  <$> Base.readT str
@@ -167,8 +168,16 @@ symbolTheory (LiaSymbol _) = Lia
 symbolType :: TheorySymbol -> String
 symbolType = show . symbolTheory
 
--- TODO
--- outputs :: Ord a => Formula a -> Set a
--- Cfg     :: Array Id [Ast Id] --> Map TheorySymbol TAst ? Or a function?
---            the keys of the CFG could be all the outputs as well.
--- targets :: CFG -> [TheorySymbol]
+-- FIXME: Not good design pattern
+replaceSmtShow :: TheorySymbol -> TAst -> String -> String
+replaceSmtShow (UfSymbol symbol) (UfAst ast) replacer =
+  stringifyAst (replaceApply Base.toSmt symbol replacer) ast
+replaceSmtShow (EUfSymbol symbol) (EUfAst ast) replacer =
+  stringifyAst (replaceApply Base.toSmt symbol replacer) ast
+replaceSmtShow (LiaSymbol symbol) (LiaAst ast) replacer =
+  stringifyAst (replaceApply Base.toSmt symbol replacer) ast
+replaceSmtShow _ _ _ = error "Invalid theory combo for replaceSmtShow!"
+
+replaceApply :: (Eq a) => (a -> b) -> a -> b -> a -> b
+replaceApply f toReplace newVersion input =
+  if toReplace == input then newVersion else f input

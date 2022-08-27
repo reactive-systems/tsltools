@@ -16,6 +16,7 @@ module TSL.ModuloTheories.Predicates( TheoryPredicate(..)
                                        , pred2Smt
                                        , predInfo
                                        , predSignals
+                                       , predReplacedSmt
                                        ) where
 
 -------------------------------------------------------------------------------
@@ -45,6 +46,7 @@ import TSL.ModuloTheories.Theories( Theory
                                   , tast2Tsl
                                   , tastInfo
                                   , tastSignals
+                                  , replaceSmtShow
                                   )
 
 -------------------------------------------------------------------------------
@@ -68,6 +70,15 @@ pred2Smt = \case
   NotPLit p      -> "(not " ++ pred2Smt p ++ ")"
   OrPLit p q     -> "(or "  ++ pred2Smt p ++ " " ++ pred2Smt q ++ ")"
   AndPLit p q    -> "(and " ++ pred2Smt p ++ " " ++ pred2Smt q ++ ")"
+
+predReplacedSmt :: TheorySymbol -> String -> TheoryPredicate -> String
+predReplacedSmt symbol replacer = \case
+  PLiteral tast  -> replaceSmtShow symbol tast replacer
+  NotPLit p      -> "(not " ++ predReplacedSmt symbol replacer p ++ ")"
+  OrPLit p q     -> "(or "  ++ predReplacedSmt symbol replacer p
+    ++ " " ++ predReplacedSmt symbol replacer q ++ ")"
+  AndPLit p q    -> "(and " ++ predReplacedSmt symbol replacer p
+    ++ " " ++ predReplacedSmt symbol replacer q ++ ")"
 
 pred2Tsl :: TheoryPredicate -> String
 pred2Tsl = \case

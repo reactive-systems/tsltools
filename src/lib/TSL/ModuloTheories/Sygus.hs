@@ -40,6 +40,7 @@ import TSL.ModuloTheories.Predicates( TheoryPredicate
                                     , pred2Smt
                                     , predTheory
                                     , predSignals
+                                    , predReplacedSmt
                                     )
 
 import TSL.ModuloTheories.Theories( Theory
@@ -77,12 +78,23 @@ buildDTO pre post = DTO theory pre post
   where theory   = assert theoryEq $ predTheory pre
         theoryEq = (predTheory pre) == (predTheory post)
 
+functionName :: String
+functionName = "function"
+
+parenthize :: String -> String
+parenthize str = '(':str ++ ")"
+
 preCond2Sygus :: TheoryPredicate -> String
 preCond2Sygus = assertSmt . pred2Smt
-  where assertSmt smt = "(assert " ++ smt ++ ")"
+  where assertSmt smt = parenthize $ "assert " ++ smt
 
-postCond2Sygus :: TheoryPredicate -> String
-postCond2Sygus = undefined
+-- (constraint (>= (function users) 0))
+-- Replace all instances of the TheorySymbol to function application
+postCond2Sygus :: TheorySymbol -> TheoryPredicate -> String
+postCond2Sygus signal postCond = parenthize $ unwords [constraint, clause]
+  where fApplied   = parenthize $ unwords [functionName, show signal]
+        clause     = predReplacedSmt signal fApplied postCond
+        constraint = "constraint"
 
 getSygusTargets :: DTO -> Cfg -> [TheorySymbol]
 getSygusTargets (DTO _ _ post) cfg = Set.toList intersection
@@ -107,7 +119,7 @@ fixedSizeQuery dto@(DTO theory pre post) cfg =
     synthTarget = pickTarget $ getSygusTargets dto cfg
     grammar     = functionGrammar synthTarget cfg
     preCond     = preCond2Sygus  pre
-    postCond    = postCond2Sygus post
+    postCond    = postCond2Sygus synthTarget post
     declTheory  = "(set-logic " ++ show theory ++ ")"
     checkSynth  = "(check-synth)"
 
