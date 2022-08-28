@@ -57,10 +57,10 @@ import TSL.ModuloTheories.Theories( TAst
 
 -------------------------------------------------------------------------------
 
-data Cfg = Cfg (Map TheorySymbol [TAst])
+newtype Cfg = Cfg { grammar :: Map TheorySymbol [TAst]}
 
 instance Show Cfg where
-  show (Cfg cfg) = unlines $ map showPair $ Map.assocs cfg
+  show cfg = unlines $ map showPair $ Map.assocs $ grammar cfg
     where
       showSymbol     = (++ " :\n") . show
       showRules      = unlines . (map (('\t':) . show))
@@ -76,7 +76,6 @@ cfgFromSpec theory spec = Cfg <$> newGrammar
     theorize (k,vs) = liftA2 (,) (toTSymbol k) (traverse toTAst vs)
     newGrammar      = fmap Map.fromList $ traverse theorize $ Map.assocs idMap
 
--- Ord k => (a -> a -> a) -> k -> a -> Map k a -> Map k a
 updatesMap :: Specification -> Map Id [Ast Id]
 updatesMap (Specification a g s) = Map.map (map toAst) updMap
   where add (sink, rule) = mapConsInsert sink rule
@@ -89,7 +88,7 @@ mapConsInsert k v mp = Map.insert k (v:vs) mp
   where vs = Map.findWithDefault [] k mp
 
 outputSignals :: Cfg -> Set TheorySymbol
-outputSignals (Cfg grammar) = Map.keysSet grammar
+outputSignals cfg = Map.keysSet $ grammar cfg
 
 productionRules :: TheorySymbol -> Cfg -> [TAst]
-productionRules ts (Cfg grammar) = Map.findWithDefault [] ts grammar 
+productionRules ts cfg = Map.findWithDefault [] ts $ grammar cfg
