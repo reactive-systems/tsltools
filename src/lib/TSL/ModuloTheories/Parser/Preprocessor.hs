@@ -1,6 +1,6 @@
--------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- |
--- Module      :  TSL.ModuloTheories.Parser.Preprocessor
+-- Module      :  TSL.ModuloTheories.Preprocessor
 -- Description :  
 -- Maintainer  :  Wonhyuk Choi
 
@@ -12,9 +12,9 @@
 
 -------------------------------------------------------------------------------
 
-module TSL.ModuloTheories.Preprocessor () where
-
 -------------------------------------------------------------------------------
+
+import Control.Monad (liftM2)
 
 import Control.Applicative ((<|>))
 
@@ -32,11 +32,14 @@ import Debug.Trace (trace)
 
 -------------------------------------------------------------------------------
 
+debug :: (Monad m, Show a) => m a -> m a
+debug = (liftM2 trace show return =<<)
+
 sampleLIA :: String
 sampleLIA = unlines 
   [ "#LIA"
   , "always guarantee {"
-  , "< 1 2;"
+  , "1 < 2;"
   , "}"
   ]
 
@@ -52,9 +55,37 @@ sampleEq :: String
 sampleEq = unlines 
   [ "#EUF"
   , "always guarantee {"
-  , "= x y;"
+  , "x = y;"
   , "}"
   ]
+
+sampleParen :: String
+sampleParen = unlines 
+  [ "#LIA"
+  , "always guarantee {"
+  , "(x + y) = (y + x) ;"
+  , "}"
+  ]
+
+sampleLogic :: String
+sampleLogic = unlines 
+  [ "#EUF"
+  , "always guarantee {"
+  , "[m <- ((p u z && x) = (a y))] && ( ((f y) = (g z h) ) || (y = w));"
+  , "}"
+  ]
+
+sampleTsl :: String
+sampleTsl = unlines 
+  [ "#UF"
+  , "always guarantee {"
+  , "[a <- b c d] || [e <- f g];"
+  , " (h i j (k&& l) ) ;"
+  , "}"
+  ]
+
+samples = [sampleEq, sampleLIA, sampleReal, sampleParen, sampleLogic, sampleTsl]
+sample = sampleTsl
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -145,14 +176,17 @@ data Value =
       TSLInt  Int
     | TSLReal Float
     | Symbol String
+    | SymbolList [Value]
     | BinOp Op Value Value
     | Paren Value
+  -- deriving (Show)
 
 instance Show Value where
   show = \case
     TSLInt i         -> "int"  ++ show i ++ "()"
     TSLReal r        -> "real" ++ show r ++ "()"
     Symbol s         -> s
+    SymbolList slist -> unwords $ map show slist
     BinOp op lhs rhs -> unwords $ [show op, show lhs, show rhs]
     Paren v          -> "(" ++ show v ++ ")"
 
@@ -168,37 +202,64 @@ real = do
     afterPoint <- Parsec.many1 Parsec.digit
     return $ TSLReal $ read $ beforePoint ++ ('.':afterPoint)
 
-binOpTerm :: Parser Value
+binOpTerm :: Parser (Value -> Value -> Value)
 binOpTerm = do
-    lhs <- tslValue
-    Parsec.spaces
+    maybeSpaces
     op <- binOp
-    Parsec.spaces
-    rhs <- tslValue
-    return $ BinOp op lhs rhs
+    maybeSpaces
+    return $ BinOp op
 
 parens :: Parser Value
-parens = Parsec.between lpar rpar $ tslValue
-  where lpar = Parsec.string "("
-        rpar = Parsec.string ")"
+parens = do
+  Parsec.string "("
+  maybeSpaces
+  val <- tslSequence
+  maybeSpaces
+  Parsec.string ")"
+  return $ Paren val
 
--- Can we safely ignore && and || ?
 symbol :: Parser Value
 symbol = do
-    str <- Parsec.many1 $ Parsec.satisfy $ not . Char.isSpace
+    str <- Parsec.many1 $ Parsec.noneOf "() \n\r"
     return $ Symbol str
 
-primitive :: Parser Value
-primitive = try real <|> int <|> symbol
+atom :: Parser Value
+atom = try real <|> int <|> symbol
 
-onlySpaces :: Parsec.Stream s m Char => Parsec.ParsecT s u m [Char]
-onlySpaces = Parsec.many $ Parsec.char ' '
+-- primitive :: Parser Value
+-- primitive = SymbolList <$> (atom >>= recursion)
+--   where recursion this = do { maybeSpaces -- try?
+--                             ; next <- atom
+--                             ; rest <- recursion next
+--                             ; return $ this:rest
+--                             }
+--                            <|> return [this]
+
+-- sequence :: Parser Value
+-- can be of form 
+-- h i j (k && (a + b) )
+-- need to handle tslValues inside (i.e. parens).
+
+factor :: Parser Value
+factor = parens <|> atom
+
+maybeSpaces :: Parsec.Stream s m Char => Parsec.ParsecT s u m [Char]
+maybeSpaces = Parsec.many $ Parsec.char ' '
 
 tslValue :: Parser Value
-tslValue = chainl1 (primitive <* onlySpaces) (try (BinOp <$> binOp <* onlySpaces))
+tslValue = chainl1 (factor <* maybeSpaces) (try binOpTerm)
+
+tslSequence :: Parser Value
+tslSequence = SymbolList <$> (tslValue >>= recursion)
+  where recursion this = do { maybeSpaces
+                            ; next <- tslValue
+                            ; rest <- recursion next
+                            ; return $ this:rest
+                            }
+                           <|> return [this]
 
 lineParser :: Parser [Value]
-lineParser = sepBy tslValue $ Parsec.many $ Parsec.char ' '
+lineParser = maybeSpaces *> sepBy tslSequence maybeSpaces
     
 fileParser :: Parser [[Value]]
 fileParser = endBy lineParser Parsec.endOfLine
@@ -206,12 +267,17 @@ fileParser = endBy lineParser Parsec.endOfLine
 parse :: String -> Either ParseError [[Value]]
 parse = Parsec.parse (fileParser <* eof) "Parser Failed!"
 
-spec :: [Char]
-spec = sampleReal
-
-main :: IO ()
-main = do
+eval :: String -> IO ()
+eval spec = do
+    putStrLn "\n---Originally--"
     putStrLn spec
+    putStrLn "---After Parse--\n"
     case parse spec of
       Right res -> putStrLn $ unlines $ map (unwords . map show) res
+      -- Right res -> mapM_ print res
       Left e -> error $ show e
+    putStrLn "---End---\n"
+
+main :: IO ()
+main = mapM_ eval samples
+-- main = eval sampleTsl
