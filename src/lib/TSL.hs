@@ -78,6 +78,7 @@ module TSL
   , consistencyDebug
   , solveSat
   , readTheory
+  , preprocess
   ) where
 
 -----------------------------------------------------------------------------
@@ -132,6 +133,7 @@ import TSL.ModuloTheories.Theories(Theory, readTheory)
 import TSL.ModuloTheories.Solver(solveSat)
 import TSL.ModuloTheories.Cfg(Cfg(..), cfgFromSpec)
 import TSL.ModuloTheories.Predicates(TheoryPredicate, predsFromSpec)
+import TSL.ModuloTheories.Parsers.Parser(preprocess)
 
 import qualified TSL.Writer.CFM.Clash as Clash (implement)
 import qualified TSL.Writer.CFM.Applicative as Applicative (implement)

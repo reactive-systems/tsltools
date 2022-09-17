@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
--- |
+	-- |
 -- Module      :  TSL.ModuloTheories.Preprocessor
 -- Description :  
 -- Maintainer  :  Wonhyuk Choi
@@ -11,6 +11,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 -------------------------------------------------------------------------------
+
+module TSL.ModuloTheories.Parser.Preprocessor(preprocess) where
 
 -------------------------------------------------------------------------------
 
@@ -24,70 +26,12 @@ import Text.Parsec.Combinator (chainl1)
 
 import Text.Parsec.String (Parser)
 
+import TSL.Error (Error, parseError)
+
 import qualified Data.Char as Char
 
 import qualified Text.Parsec as Parsec
 
-import Debug.Trace (trace)
-
--------------------------------------------------------------------------------
-
-debug :: (Monad m, Show a) => m a -> m a
-debug = (liftM2 trace show return =<<)
-
-sampleLIA :: String
-sampleLIA = unlines 
-  [ "#LIA"
-  , "always guarantee {"
-  , "1 < 2;"
-  , "}"
-  ]
-
-sampleReal :: String
-sampleReal = unlines 
-  [ "#RA"
-  , "always guarantee {"
-  , "[x <- 3.14 + 2.72];"
-  , "}"
-  ]
-
-sampleEq :: String
-sampleEq = unlines 
-  [ "#EUF"
-  , "always guarantee {"
-  , "x = y;"
-  , "}"
-  ]
-
-sampleParen :: String
-sampleParen = unlines 
-  [ "#LIA"
-  , "always guarantee {"
-  , "(x + y) = (y + x) ;"
-  , "}"
-  ]
-
-sampleLogic :: String
-sampleLogic = unlines 
-  [ "#EUF"
-  , "always guarantee {"
-  , "[m <- ((p u z && x) = (a y))] && ( ((f y) = (g z h) ) || (y = w));"
-  , "}"
-  ]
-
-sampleTsl :: String
-sampleTsl = unlines 
-  [ "#UF"
-  , "always guarantee {"
-  , "[a <- b c d] || [e <- f g];"
-  , " (h i j (k&& l) ) ;"
-  , "}"
-  ]
-
-samples = [sampleEq, sampleLIA, sampleReal, sampleParen, sampleLogic, sampleTsl]
-sample = sampleTsl
-
--------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
 data Op = 
@@ -170,7 +114,6 @@ binOp :: Parser Op
 binOp = comparator <|> arithmetic
 
 -------------------------------------------------------------------------------
--------------------------------------------------------------------------------
 
 data Value =
       TSLInt  Int
@@ -179,7 +122,6 @@ data Value =
     | SymbolList [Value]
     | BinOp Op Value Value
     | Paren Value
-  -- deriving (Show)
 
 instance Show Value where
   show = \case
@@ -226,20 +168,6 @@ symbol = do
 atom :: Parser Value
 atom = try real <|> int <|> symbol
 
--- primitive :: Parser Value
--- primitive = SymbolList <$> (atom >>= recursion)
---   where recursion this = do { maybeSpaces -- try?
---                             ; next <- atom
---                             ; rest <- recursion next
---                             ; return $ this:rest
---                             }
---                            <|> return [this]
-
--- sequence :: Parser Value
--- can be of form 
--- h i j (k && (a + b) )
--- need to handle tslValues inside (i.e. parens).
-
 factor :: Parser Value
 factor = parens <|> atom
 
@@ -267,17 +195,7 @@ fileParser = endBy lineParser Parsec.endOfLine
 parse :: String -> Either ParseError [[Value]]
 parse = Parsec.parse (fileParser <* eof) "Parser Failed!"
 
-eval :: String -> IO ()
-eval spec = do
-    putStrLn "\n---Originally--"
-    putStrLn spec
-    putStrLn "---After Parse--\n"
-    case parse spec of
-      Right res -> putStrLn $ unlines $ map (unwords . map show) res
-      -- Right res -> mapM_ print res
-      Left e -> error $ show e
-    putStrLn "---End---\n"
-
-main :: IO ()
-main = mapM_ eval samples
--- main = eval sampleTsl
+preprocess :: String -> Either Error String
+preprocess s = case parse s of
+  Right values -> return $ unlines $ map (unwords . map show) values
+  Left err     -> parseError err

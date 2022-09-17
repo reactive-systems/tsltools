@@ -38,6 +38,7 @@ data Flag = Predicates
           | Consistency
           | Sygus
           | Assumptions
+		  | Preprocess
           deriving (Show)
 
 -- | The data type contains all flags and settings
@@ -74,7 +75,8 @@ configParser = Configuration
         )
       )
   <*> optional 
-      ( flag' Predicates  (long "predicates"  <> help "All predicate terms and their dependent cell & output signals")
+      ( flag' Preprocess  (long "preprocess"  <> help "Desugar arithemtic functions into a TSL-compliant format")
+    <|> flag' Predicates  (long "predicates"  <> help "All predicate terms and their dependent cell & output signals")
     <|> flag' Grammar     (long "cfg"         <> help "Context-Free Grammar for all cell & output terms")
     <|> flag' Consistency (long "consistency" <> help "All consistency checking problems and their satisfiability")
     <|> flag' Sygus       (long "sygus"       <> help "All SyGuS problems, and solutions if found.")

@@ -42,6 +42,7 @@ import TSL ( Error
            , consistencyDebug
            , solveSat
            , genericError
+		   , preprocess
            )
 
 -----------------------------------------------------------------------------
@@ -106,9 +107,10 @@ main = do
       toOut     = writeOutput output
 
   case flag of
+    (Just Preprocess)  -> toOut $ preprocess specStr
     (Just Predicates)  -> toOut $ fmap (unlines . (map show)) preds
     (Just Grammar)     -> toOut $ fmap show $ cfgFromSpec theory spec
     (Just Consistency) -> consistency satSolver preds
     (Just Sygus)       -> consistency satSolver preds
-    (Just flag')       -> toOut $ genericError $ "Unimplemented flag: " ++ show flag'
+    (Just flag')       -> toOut $ genericError $ "Unsupported Flag: " ++ show flag'
     Nothing            -> toOut $ genericError $ "SyGuS coming..."
