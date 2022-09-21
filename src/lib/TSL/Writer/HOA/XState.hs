@@ -54,9 +54,10 @@ printHOALines hoa@HOA {..} =
                   ++ [": {"]
                   ++ ["\n on: {"]
               ) :
-            zipWith (curry printEdge) (filterDupes (toList $ edges s)) [1 ..] ++ ["}"] ++ ["},"]
+            zipWith (curry printEdge) (filterDupes' (toList $ edges s)) [1 ..] ++ ["}"] ++ ["},"]
 
           -- take only one transition for each edge between states
+          filterDupes' = id
           filterDupes :: [([State], Maybe Label, Maybe a)] -> [([State], Maybe Label, Maybe a)]
           filterDupes xs = filterDupesHelper (reverse xs) []
           filterDupesHelper :: [([State], Maybe Label, Maybe a)] -> [([State], Maybe Label, Maybe a)] -> [([State], Maybe Label, Maybe a)]

@@ -90,7 +90,8 @@ See [Installation](#installation) for further instructions.
   helping to understand why some specification are unrealizable. The strategies
   are in the form of a CFM.
 * `tslcoregen` generate so called *TSL unrealizability cores*, i.e. the minimal
-  amount of guarantees of some specification that render it unrealizable.
+  amount of guarantees of some specification that render it unrealizable. Can 
+  be run with e.g. `./tslcoregen spec.tsl -r /home/msantolu/Github/tsltools/tlsfSynth_stdin.sh`. Needs full path.
 * `tslminrealizable` generate so called *minimal assumption cores*, i.e. the 
   minimal amount of assumptions of some specification that render it realizable.
 
