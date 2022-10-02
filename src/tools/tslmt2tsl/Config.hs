@@ -38,7 +38,7 @@ data Flag = Predicates
           | Consistency
           | Sygus
           | Assumptions
-		  | Preprocess
+          | Preprocess
           deriving (Show)
 
 -- | The data type contains all flags and settings
@@ -51,7 +51,7 @@ data Configuration =
     -- | Output file path. 
     -- If no path is given, the output is written to STDOUT.
   , output     :: Maybe FilePath
-  , solverPath :: FilePath
+  , solverPath :: Maybe FilePath
   , flag       :: Maybe Flag
   } deriving (Show)
 
@@ -69,7 +69,7 @@ configParser = Configuration
         <> help "output file (STDOUT, if not set)"
         )
       )
-  <*> (argument str
+  <*> optional (argument str
         (  metavar "SolverPath"
         <> help "Path to SMT and SyGuS solver"
         )

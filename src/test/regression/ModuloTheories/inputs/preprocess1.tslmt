@@ -1,0 +1,4 @@
+#EUF
+always guarantee {
+x = y;
+}

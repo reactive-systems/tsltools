@@ -12,7 +12,7 @@
 
 -------------------------------------------------------------------------------
 
-module TSL.ModuloTheories.Parser.Preprocessor(preprocess) where
+module TSL.ModuloTheories.Parsers.Preprocessor(preprocess) where
 
 -------------------------------------------------------------------------------
 

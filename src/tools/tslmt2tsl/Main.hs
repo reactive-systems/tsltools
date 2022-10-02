@@ -27,7 +27,7 @@ import Config (Configuration(..), Flag(..), parseArguments)
 
 import EncodingUtils (initEncoding)
 
-import FileUtils (writeContent, loadTSLMT, loadTSLMTRaw)
+import FileUtils (writeContent, loadTSLMT, tryReadContent)
 
 import PrintUtils ( Color(..)
                   , ColorIntensity(..)
@@ -94,23 +94,30 @@ consistency satSolver preds = do
     Left  errMsg   -> die $ show errMsg
     Right cResults -> mapM_ printTuple cResults
 
+preprocessor :: Maybe FilePath -> Maybe FilePath -> IO ()
+preprocessor inputPath outputPath = do
+  content <- tryReadContent inputPath
+  writeOutput outputPath $ preprocess $ unlines $ tail $ lines $ content
+
 main :: IO ()
 main = do
   initEncoding
   Configuration{input, output, flag, solverPath} <- parseArguments
 
-  (theory, specStr) <- loadTSLMTRaw input
-  (_, spec)         <- loadTSLMT input -- XXX
-  
-  let satSolver = solveSat solverPath
-      preds     = predsFromSpec theory spec
-      toOut     = writeOutput output
-
   case flag of
-    (Just Preprocess)  -> toOut $ preprocess specStr
-    (Just Predicates)  -> toOut $ fmap (unlines . (map show)) preds
-    (Just Grammar)     -> toOut $ fmap show $ cfgFromSpec theory spec
-    (Just Consistency) -> consistency satSolver preds
-    (Just Sygus)       -> consistency satSolver preds
-    (Just flag')       -> toOut $ genericError $ "Unsupported Flag: " ++ show flag'
-    Nothing            -> toOut $ genericError $ "SyGuS coming..."
+    (Just Preprocess)  -> preprocessor input output
+    Nothing            -> error "No flag option not yet supported; please provide a flag."
+
+    (Just flag')       -> do
+      (theory, spec) <- loadTSLMT input
+      let toOut              = writeOutput output
+      let preds              = predsFromSpec theory spec
+          smtSolver          = case solverPath of
+                                 Just path -> solveSat path
+                                 Nothing   -> error "Please provide a solver path."
+      case flag' of 
+        Predicates  -> toOut $ fmap (unlines . (map show)) preds
+        Grammar     -> toOut $ fmap show $ cfgFromSpec theory spec
+        Consistency -> consistency smtSolver preds
+        Sygus       -> consistency smtSolver preds
+        flag''      -> toOut $ genericError $ "Unsupported Flag: " ++ show flag''
