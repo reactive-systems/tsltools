@@ -1,4 +1,0 @@
-#RA
-always guarantee {
-[x <- 3.14 + 2.72];
-}

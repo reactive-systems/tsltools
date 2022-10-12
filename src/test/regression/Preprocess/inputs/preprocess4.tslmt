@@ -1,4 +1,0 @@
-#LIA
-always guarantee {
-(x + y) = (y + x) ;
-}
