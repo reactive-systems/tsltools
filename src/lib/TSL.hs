@@ -128,12 +128,13 @@ import TSL.TOML (toTOML)
 
 import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
 
+import TSL.Preprocessor(preprocess)
+
 import TSL.ModuloTheories.ConsistencyChecking(consistencyChecking, consistencyDebug)
 import TSL.ModuloTheories.Theories(Theory, readTheory)
 import TSL.ModuloTheories.Solver(solveSat)
 import TSL.ModuloTheories.Cfg(Cfg(..), cfgFromSpec)
 import TSL.ModuloTheories.Predicates(TheoryPredicate, predsFromSpec)
-import TSL.ModuloTheories.Parsers.Preprocessor(preprocess)
 
 import qualified TSL.Writer.CFM.Clash as Clash (implement)
 import qualified TSL.Writer.CFM.Applicative as Applicative (implement)

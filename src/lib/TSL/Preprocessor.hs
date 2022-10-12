@@ -12,7 +12,7 @@
 
 -------------------------------------------------------------------------------
 
-module TSL.ModuloTheories.Parsers.Preprocessor(preprocess) where
+module TSL.Preprocessor(preprocess) where
 
 -------------------------------------------------------------------------------
 
@@ -193,7 +193,8 @@ fileParser :: Parser [[Value]]
 fileParser = endBy lineParser Parsec.endOfLine
 
 parse :: String -> Either ParseError [[Value]]
-parse = Parsec.parse (fileParser <* eof) "Parser Failed!"
+parse input = Parsec.parse (fileParser <* eof) err input
+  where err = "Parser Failed!:\n>>>>>\n" ++ input ++ "\n<<<<<\n"
 
 preprocess :: String -> Either Error String
 preprocess s = case parse s of

@@ -42,7 +42,6 @@ import TSL ( Error
            , consistencyDebug
            , solveSat
            , genericError
-		   , preprocess
            )
 
 -----------------------------------------------------------------------------
@@ -94,20 +93,13 @@ consistency satSolver preds = do
     Left  errMsg   -> die $ show errMsg
     Right cResults -> mapM_ printTuple cResults
 
-preprocessor :: Maybe FilePath -> Maybe FilePath -> IO ()
-preprocessor inputPath outputPath = do
-  content <- tryReadContent inputPath
-  writeOutput outputPath $ preprocess $ unlines $ tail $ lines $ content
-
 main :: IO ()
 main = do
   initEncoding
   Configuration{input, output, flag, solverPath} <- parseArguments
 
   case flag of
-    (Just Preprocess)  -> preprocessor input output
     Nothing            -> error "No flag option not yet supported; please provide a flag."
-
     (Just flag')       -> do
       (theory, spec) <- loadTSLMT input
       let toOut              = writeOutput output
@@ -120,4 +112,4 @@ main = do
         Grammar     -> toOut $ fmap show $ cfgFromSpec theory spec
         Consistency -> consistency smtSolver preds
         Sygus       -> consistency smtSolver preds
-        flag''      -> toOut $ genericError $ "Unsupported Flag: " ++ show flag''
+        invalidFlag -> toOut $ genericError $ "Invalid Flag: " ++ show invalidFlag
