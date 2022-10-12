@@ -16,6 +16,7 @@ PARSEHOA=parsehoa
 HOA2CODE=hoa2code
 TSLSYNTH=tslsynth
 TSLMT2TSL=tslmt2tsl
+TSLPREPROCESS=tslpreprocess
 
 TOOLS=\
   ${TSLCHECK}\
@@ -35,7 +36,8 @@ TOOLS=\
   ${PARSEHOA}\
   ${HOA2CODE}\
   ${TSLSYNTH}\
-  ${TSLMT2TSL}
+  ${TSLMT2TSL}\
+  ${TSLPREPROCESS}
 
 STACKPATH=$(shell if [ -d "dist" ]; then echo ""; else stack path | grep local-install-root | sed 's/local-install-root: //'; fi)
 BLDTOOL=$(shell if [ -d "dist" ]; then echo "cabal"; else echo "stack"; fi)
@@ -113,6 +115,10 @@ ${TSLSYNTH}:
 	@if [ -d "dist" ]; then cp ./dist/build/$@/$@ $@; else cp ${STACKPATH}/bin/$@ $@; fi
 
 ${TSLMT2TSL}:
+	${BLDTOOL} build :$@
+	@if [ -d "dist" ]; then cp ./dist/build/$@/$@ $@; else cp ${STACKPATH}/bin/$@ $@; fi
+
+${TSLPREPROCESS}:
 	${BLDTOOL} build :$@
 	@if [ -d "dist" ]; then cp ./dist/build/$@/$@ $@; else cp ${STACKPATH}/bin/$@ $@; fi
 

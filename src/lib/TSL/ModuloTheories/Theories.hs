@@ -24,20 +24,37 @@ module TSL.ModuloTheories.Theories( Theory(..)
                                   , readTheory
                                   , smtSortDecl
                                   , applySemantics
+                                  , read2Symbol
                                   , tastTheory
                                   , tast2Tsl
                                   , tast2Smt
                                   , tastInfo
+                                  , tastByDepth
+                                  , tastSignals
                                   , symbol2Tsl
                                   , symbol2Smt
                                   , symbolType
                                   , isUninterpreted
+                                  , replaceSmtShow
                                   ) where
 -------------------------------------------------------------------------------
+import Data.Map (Map)
 
 import TSL.Error (Error, errMtParse)
 
-import TSL.Ast(Ast, AstInfo, stringifyAst, getAstInfo)
+import TSL.Logic(foldFormula)
+
+import TSL.Specification(Specification(..))
+
+import TSL.SymbolTable(SymbolTable(..), Id, Kind)
+
+import TSL.Ast( Ast
+              , AstInfo
+              , stringifyAst
+              , getAstInfo
+              , astByDepth
+              , getSignals
+              )
 
 import qualified TSL.ModuloTheories.Theories.Base as Base(TheorySymbol(..))
 
@@ -78,6 +95,11 @@ data TAst =
 
 instance Show TAst where show = tast2Smt
 
+tastByDepth :: TAst -> [TAst]
+tastByDepth (UfAst  ast) = map UfAst  $ astByDepth ast 
+tastByDepth (EUfAst ast) = map EUfAst $ astByDepth ast
+tastByDepth (LiaAst ast) = map LiaAst $ astByDepth ast
+
 tastTheory :: TAst -> Theory
 tastTheory (UfAst  _) = Uf
 tastTheory (EUfAst _) = EUf
@@ -102,13 +124,26 @@ data TheorySymbol =
     UfSymbol  Uf.UfSymbol
   | EUfSymbol EUf.EUfSymbol
   | LiaSymbol Lia.LiaSymbol
-  deriving(Eq)
+  deriving(Eq, Ord)
+
+instance Show TheorySymbol where show = symbol2Smt
+
+read2Symbol :: Theory -> String -> Either Error TheorySymbol
+read2Symbol Uf  str = UfSymbol  <$> Base.readT str
+read2Symbol EUf str = EUfSymbol <$> Base.readT str
+read2Symbol Lia str = LiaSymbol <$> Base.readT str
 
 tastInfo :: TAst -> AstInfo TheorySymbol
 tastInfo = \case
   UfAst ast  -> fmap UfSymbol  $ getAstInfo ast
   EUfAst ast -> fmap EUfSymbol $ getAstInfo ast
   LiaAst ast -> fmap LiaSymbol $ getAstInfo ast
+
+tastSignals :: TAst -> [TheorySymbol]
+tastSignals = \case
+  UfAst ast  -> map UfSymbol  $ getSignals ast
+  EUfAst ast -> map EUfSymbol $ getSignals ast
+  LiaAst ast -> map LiaSymbol $ getSignals ast
 
 symbol2Tsl :: TheorySymbol -> String
 symbol2Tsl (UfSymbol  symbol) = Base.toTsl symbol
@@ -132,3 +167,17 @@ symbolTheory (LiaSymbol _) = Lia
 
 symbolType :: TheorySymbol -> String
 symbolType = show . symbolTheory
+
+-- FIXME: Not good design pattern
+replaceSmtShow :: TheorySymbol -> TAst -> String -> String
+replaceSmtShow (UfSymbol symbol) (UfAst ast) replacer =
+  stringifyAst (replaceApply Base.toSmt symbol replacer) ast
+replaceSmtShow (EUfSymbol symbol) (EUfAst ast) replacer =
+  stringifyAst (replaceApply Base.toSmt symbol replacer) ast
+replaceSmtShow (LiaSymbol symbol) (LiaAst ast) replacer =
+  stringifyAst (replaceApply Base.toSmt symbol replacer) ast
+replaceSmtShow _ _ _ = error "Invalid theory combo for replaceSmtShow!"
+
+replaceApply :: (Eq a) => (a -> b) -> a -> b -> a -> b
+replaceApply f toReplace newVersion input =
+  if toReplace == input then newVersion else f input

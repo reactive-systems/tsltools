@@ -27,7 +27,7 @@ import Config (Configuration(..), Flag(..), parseArguments)
 
 import EncodingUtils (initEncoding)
 
-import FileUtils (writeContent, loadTSLMT, loadTSLMTRaw)
+import FileUtils (writeContent, loadTSLMT, tryReadContent)
 
 import PrintUtils ( Color(..)
                   , ColorIntensity(..)
@@ -98,19 +98,18 @@ main = do
   initEncoding
   Configuration{input, output, flag, solverPath} <- parseArguments
 
-  (theory, specStr) <- loadTSLMTRaw input
-  (_, spec)         <- loadTSLMT input -- XXX
-  
-  let satSolver = solveSat solverPath
-      preds     = predsFromSpec theory spec
-      toOut     = writeOutput output
-
   case flag of
-    (Just Predicates)  -> toOut $ fmap (unlines . (map show)) preds
-    (Just Grammar)     -> toOut $ Right $ show $ cfgFromSpec spec
-    (Just Consistency) -> consistency satSolver preds
-    (Just flag')       -> toOut $ genericError $ "Unimplemented flag: " ++ show flag'
-    Nothing            -> do -- end-to-end is currently just consistency checking.
-      consistency <- runExceptT $ (except preds >>= consistencyChecking satSolver)
-      let tslWithAssumptions = (tslmt2tsl specStr) <$> consistency
-      toOut tslWithAssumptions
+    Nothing            -> error "No flag option not yet supported; please provide a flag."
+    (Just flag')       -> do
+      (theory, spec) <- loadTSLMT input
+      let toOut              = writeOutput output
+      let preds              = predsFromSpec theory spec
+          smtSolver          = case solverPath of
+                                 Just path -> solveSat path
+                                 Nothing   -> error "Please provide a solver path."
+      case flag' of 
+        Predicates  -> toOut $ fmap (unlines . (map show)) preds
+        Grammar     -> toOut $ fmap show $ cfgFromSpec theory spec
+        Consistency -> consistency smtSolver preds
+        Sygus       -> consistency smtSolver preds
+        invalidFlag -> toOut $ genericError $ "Invalid Flag: " ++ show invalidFlag

@@ -78,6 +78,7 @@ module TSL
   , consistencyDebug
   , solveSat
   , readTheory
+  , preprocess
   ) where
 
 -----------------------------------------------------------------------------
@@ -126,6 +127,8 @@ import TSL.Simulation (simulate)
 import TSL.TOML (toTOML)
 
 import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
+
+import TSL.Preprocessor(preprocess)
 
 import TSL.ModuloTheories.ConsistencyChecking(consistencyChecking, consistencyDebug)
 import TSL.ModuloTheories.Theories(Theory, readTheory)

@@ -1,7 +1,6 @@
 -------------------------------------------------------------------------------
 -- |
--- Module      :  TSL.ModuloTheories.Predicates
--- Description :  Predicate term operations for TSL-MT
+-- Module      :  TSL.ModuloTheories.Predicates Description :  Predicate term operations for TSL-MT
 -- Maintainer  :  Wonhyuk Choi
 
 -------------------------------------------------------------------------------
@@ -16,6 +15,8 @@ module TSL.ModuloTheories.Predicates( TheoryPredicate(..)
                                        , pred2Tsl
                                        , pred2Smt
                                        , predInfo
+                                       , predSignals
+                                       , predReplacedSmt
                                        ) where
 
 -------------------------------------------------------------------------------
@@ -44,6 +45,8 @@ import TSL.ModuloTheories.Theories( Theory
                                   , tast2Smt
                                   , tast2Tsl
                                   , tastInfo
+                                  , tastSignals
+                                  , replaceSmtShow
                                   )
 
 -------------------------------------------------------------------------------
@@ -68,6 +71,15 @@ pred2Smt = \case
   OrPLit p q     -> "(or "  ++ pred2Smt p ++ " " ++ pred2Smt q ++ ")"
   AndPLit p q    -> "(and " ++ pred2Smt p ++ " " ++ pred2Smt q ++ ")"
 
+predReplacedSmt :: TheorySymbol -> String -> TheoryPredicate -> String
+predReplacedSmt symbol replacer = \case
+  PLiteral tast  -> replaceSmtShow symbol tast replacer
+  NotPLit p      -> "(not " ++ predReplacedSmt symbol replacer p ++ ")"
+  OrPLit p q     -> "(or "  ++ predReplacedSmt symbol replacer p
+    ++ " " ++ predReplacedSmt symbol replacer q ++ ")"
+  AndPLit p q    -> "(and " ++ predReplacedSmt symbol replacer p
+    ++ " " ++ predReplacedSmt symbol replacer q ++ ")"
+
 pred2Tsl :: TheoryPredicate -> String
 pred2Tsl = \case
   PLiteral tast -> tast2Tsl tast
@@ -89,14 +101,20 @@ predInfo = \case
   OrPLit p q    -> predInfo p +++ predInfo q
   AndPLit p q   -> predInfo p +++ predInfo q
 
+predSignals :: TheoryPredicate -> [TheorySymbol]
+predSignals = \case
+  PLiteral tast -> tastSignals tast
+  NotPLit p     -> predSignals p
+  OrPLit p q    -> predSignals p ++ predSignals q
+  AndPLit p q   -> predSignals p ++ predSignals q
+
 powerset :: [a] -> [[a]]
 powerset xs = filterM (const [True, False]) xs
 
 -- FIXME: make this tractable
 enumeratePreds :: [TheoryPredicate] -> [TheoryPredicate]
 enumeratePreds preds = map andPreds $ filter (not . null) $ powerset preds'
-  where
-    preds' = preds ++ map (NotPLit) preds
+  where preds' = preds ++ map (NotPLit) preds
 
 predsFromSpec :: Theory -> Specification -> Either Error [TheoryPredicate]
 predsFromSpec theory (Specification a g s) = mapM toTheoryPred asts

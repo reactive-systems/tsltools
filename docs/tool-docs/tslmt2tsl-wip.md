@@ -18,24 +18,26 @@ However, as classic TSL is just TSL-MT with the Theory of Uninterpreted Function
 This allows TSL specifications (equivalently, TSL Modulo the Theory of Uninterpreted Functions) to _not underapproximate_ to Linear Temporal Logic (LTL) during synthesis as the TSL-MT synthesis procedure will capture the semantics of the update operator.
 More explanation is given in Example 4.3 of the [TSL-MT synthesis paper](https://www.marksantolucito.com/papers/pldi2022.pdf).
 
-## Installation
-In order to run `tslmt`, you will need a Satisfiability Modulo Theories (SMT) and Syntax-Guided Synthesis Solver (SyGuS) solver.
+## Getting Started
+
+### Installation
+In order to run `tslmt2tsl`, you will need a Satisfiability Modulo Theories (SMT) and Syntax-Guided Synthesis Solver (SyGuS) solver.
 The recommend solver is [CVC5](https://cvc5.github.io/).
 
-### Installing with CVC5
-First, you need to be in the top level directory (tsltools/.)
+### Running the tool
+The tool takes several arguments (flags are addressed in the next section):
+```
+Usage: tslmt2tsl [INFILE] [-o|--output OUTFILE] SolverPath ([--predicates] |
+                 [--cfg] | [--consistency] | [--sygus] | [--assumptions])
+```
+For instance, to run `tslmt2tsl`
+1. On the TSL-MT specification `~/kitchen-timer.tslmt`
+2. Output to `stdout`
+3. Using `cvc5` in `/usr/bin`
 
-Linux:
+You run the tool by:
 ```
-mkdir deps && cd deps
-wget https://github.com/cvc5/cvc5/releases/latest/download/cvc5-Linux -O cvc5
-chmod +x ./cvc5
-```
-MacOS:
-```
-mkdir deps && cd deps
-wget https://github.com/cvc5/cvc5/releases/latest/download/cvc5-macOS -O cvc5
-chmod +x ./cvc5
+./tslmt2tsl ~/kitchen-timer.tslmt /usr/bin/cvc5
 ```
 
 ## Supported first-order theories
@@ -63,29 +65,5 @@ However, if you want more diagnostic information, you can use the following flag
 * `--assumptions`: Prints all the assumptions that are generated from the TSL-MT synthesis procedure.
 
 ## Limitations
-There are many limitations in synthesizing TSL-MT with `tslmt2tsl`.
-The limitations can be categorized in three different types:
-
-### Limitations of the tool
-* The temporal atom collection outlined in section 4.1 of the paper is substituted by an approximation.
-* The refinement loop given in section 4.4 is not fully implemented.
-### Limitations of the dependencies
-* As noted in section 5.1, currently (in 2022) state-of-the-art SyGuS solvers such as [CVC5 cannot synthesize recursive functions](https://github.com/cvc5/cvc5/issues/6182).
-Therefore, Syntax-Guided Synthesis of a recursive function is replaced with an approximation.
-### Limitations of the algorithm
-* Section 4.5 describes some limitations of the grammar, e.g. no support for nested conditionals.
-* Similarly, the current procedure does not support simultaneous updates.
-Consider the following TSL-MT specification:
-```
-always guarantee {
-	[var1 <- 4] && [var2 <- 5];
-	(eq (add var1 var2) 0 ) -> X [eq (add var1 var2) 9];
-}
-```
-The desired environmental assumption is
-```
-always assume {
-	((eq (add var1 var2) 0) && [var1 <- 4] && [var2 <- 5]) -> X (eq (add var1 var2) 9);
-}
-```
-However, since the algorithm only supports one single pure $\mathcal S$, this assumption cannot be generated.
+There are many limitations in synthesizing TSL-MT with `tslmt2tsl`;
+please checkout [`tslmt2tsl-limitations.md`](./tslmt2tsl-limitations.md).

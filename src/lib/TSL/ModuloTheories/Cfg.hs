@@ -17,72 +17,78 @@
 module TSL.ModuloTheories.Cfg
   ( Cfg(..)
   , cfgFromSpec
+  , outputSignals
+  , productionRules
   ) where
 
 -------------------------------------------------------------------------------
 
-import Data.Array(Array, array, assocs, bounds, indices, (//), (!))
+import qualified Data.Set as Set
+
+import qualified Data.Map as Map
+
+import Control.Applicative (liftA2)
+
+import Data.Map (Map)
+
+import Data.Set (Set)
+
+import TSL.Error (Error)
 
 import TSL.Types (arity)
 
-import TSL.Logic ( Formula(..)
-                 , SignalTerm(..)
-                 , foldFormula
+import TSL.Logic ( Formula
+                 , outputs
+                 , updates
                  )
 
 import TSL.Specification (Specification(..))
 
-import TSL.SymbolTable (Id, SymbolTable(..), Kind(..))
+import TSL.SymbolTable (Id, SymbolTable(..))
 
-import TSL.Ast(Ast, fromSignalTerm)
+import TSL.Ast (Ast, fromSignalTerm)
+
+import TSL.ModuloTheories.Theories( TAst
+                                  , TheorySymbol
+                                  , Theory
+                                  , read2Symbol
+                                  , applySemantics
+                                  )
 
 -------------------------------------------------------------------------------
 
-data Cfg = Cfg
-    { -- | Cfg implemented as an array of lists.
-      -- To get the possible production rules for each,
-      -- index into the grammar with the appropriate signal Id.
-        grammar  :: Array Id [Ast Id]
-    ,   symTable :: SymbolTable
-    }
+newtype Cfg = Cfg { grammar :: Map TheorySymbol [TAst]}
 
 instance Show Cfg where
-    show (Cfg g s) = 
-        unlines $ map show' $ filter (\(fst, _) -> isUpdate fst) $ assocs g
-      where
-        show' (id, rules)  = unhashId id ++ " :\n" ++ show'' rules
-        show''             = unlines . (map (('\t':) . show . (fmap unhashId)))
-        isUpdate idx       = (stKind s) idx == Output
-        unhashId           = stName s
+  show cfg = unlines $ map showPair $ Map.assocs $ grammar cfg
+    where
+      showSymbol     = (++ " :\n") . show
+      showRules      = unlines . (map (('\t':) . show))
+      showPair (k,v) = showSymbol k ++ showRules v
 
-cfgFromSpec :: Specification -> Cfg
-cfgFromSpec (Specification a g s) =
-    Cfg {
-            grammar     = fmap (map fromSTerm) grammar'
-        ,   symTable    = s
-        }
-  where
-    symTableArr = symtable s
-    fromSTerm   = fromSignalTerm (arity . (stType s))
-    grammar'    = buildGrammar (a ++ g) grammarInit
-    grammarInit = array (bounds symTableArr) emptyRules
-    emptyRules  = [(idx, []) | idx <- indices symTableArr]
+cfgFromSpec :: Theory -> Specification -> Either Error Cfg
+cfgFromSpec theory spec = Cfg <$> newGrammar
+  where 
+    unhash          = stName $ symboltable spec
+    idMap           = updatesMap spec
+    toTAst          = (applySemantics theory) . (fmap unhash)
+    toTSymbol       = read2Symbol theory . unhash
+    theorize (k,vs) = liftA2 (,) (toTSymbol k) (traverse toTAst vs)
+    newGrammar      = fmap Map.fromList $ traverse theorize $ Map.assocs idMap
 
-buildGrammar
-    :: [Formula Id]
-    -> Array Id [SignalTerm Id]
-    -> Array Id [SignalTerm Id]
-buildGrammar [] g     = g
-buildGrammar (x:xs) g = buildGrammar xs (foldFormula extendGrammar g x)
+updatesMap :: Specification -> Map Id [Ast Id]
+updatesMap (Specification a g s) = Map.map (map toAst) updMap
+  where add (sink, rule) = mapConsInsert sink rule
+        updatesList      = concat $ map (Set.toList . updates) $ a ++ g
+        updMap           = foldr add Map.empty updatesList
+        toAst            = fromSignalTerm (arity . (stType s))
 
--- | Adds new production rules to the grammar.
-extendGrammar
-    :: Formula Id
-    -> Array Id [SignalTerm Id]
-    -> Array Id [SignalTerm Id]
-extendGrammar (Update dst src) oldGrammar = newGrammar
-  where
-    oldRules   = oldGrammar ! dst
-    newRules   = src:oldRules
-    newGrammar = oldGrammar // [(dst, newRules)]
-extendGrammar _ g = g
+mapConsInsert :: Ord k => k -> v -> Map k [v] -> Map k [v]
+mapConsInsert k v mp = Map.insert k (v:vs) mp
+  where vs = Map.findWithDefault [] k mp
+
+outputSignals :: Cfg -> Set TheorySymbol
+outputSignals cfg = Map.keysSet $ grammar cfg
+
+productionRules :: TheorySymbol -> Cfg -> [TAst]
+productionRules ts cfg = Map.findWithDefault [] ts $ grammar cfg

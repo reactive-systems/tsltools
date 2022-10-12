@@ -13,7 +13,6 @@
 
 module Config
   ( Configuration(..)
-  , Flag(..)
   , parseArguments
   ) where
 
@@ -33,13 +32,6 @@ import System.Directory (doesFileExist)
 
 -----------------------------------------------------------------------------
 
-data Flag = Predicates
-          | Grammar
-          | Consistency
-          | Sygus
-          | Assumptions
-          deriving (Show)
-
 -- | The data type contains all flags and settings
 -- that can be adjusted to influence the behavior of the library:
 data Configuration =
@@ -50,8 +42,6 @@ data Configuration =
     -- | Output file path. 
     -- If no path is given, the output is written to STDOUT.
   , output     :: Maybe FilePath
-  , solverPath :: Maybe FilePath
-  , flag       :: Maybe Flag
   } deriving (Show)
 
 configParser :: Parser Configuration
@@ -68,23 +58,11 @@ configParser = Configuration
         <> help "output file (STDOUT, if not set)"
         )
       )
-  <*> optional (argument str
-        (  metavar "SolverPath"
-        <> help "Path to SMT and SyGuS solver"
-        )
-      )
-  <*> optional 
-      ( flag' Predicates  (long "predicates"  <> help "All predicate terms and their dependent cell & output signals")
-    <|> flag' Grammar     (long "cfg"         <> help "Context-Free Grammar for all cell & output terms")
-    <|> flag' Consistency (long "consistency" <> help "All consistency checking problems and their satisfiability")
-    <|> flag' Sygus       (long "sygus"       <> help "All SyGuS problems, and solutions if found.")
-    <|> flag' Assumptions (long "assumptions" <> help "All assumptions from the procedure")
-    )
 
 configParserInfo :: ParserInfo Configuration
 configParserInfo = info (configParser <**> helper)
   (  fullDesc
-  <> header "tslmt2tsl - transforms a TSL-MT specification to a TSL specification"
+  <> header "tslpreprocess - desugars some basic constructs for tsl specifications"
   )
 
 parseArguments :: IO Configuration
