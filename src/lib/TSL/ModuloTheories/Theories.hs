@@ -38,15 +38,7 @@ module TSL.ModuloTheories.Theories( Theory(..)
                                   , replaceSmtShow
                                   ) where
 -------------------------------------------------------------------------------
-import Data.Map (Map)
-
 import TSL.Error (Error, errMtParse)
-
-import TSL.Logic(foldFormula)
-
-import TSL.Specification(Specification(..))
-
-import TSL.SymbolTable(SymbolTable(..), Id, Kind)
 
 import TSL.Ast( Ast
               , AstInfo

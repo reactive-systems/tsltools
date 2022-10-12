@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
-	-- |
+-- |
 -- Module      :  TSL.ModuloTheories.Preprocessor
 -- Description :  
 -- Maintainer  :  Wonhyuk Choi
@@ -16,19 +16,15 @@ module TSL.Preprocessor(preprocess) where
 
 -------------------------------------------------------------------------------
 
-import Control.Monad (liftM2)
-
 import Control.Applicative ((<|>))
 
-import Text.Parsec (ParseError, endBy, sepBy, try, choice, eof)
+import Text.Parsec (ParseError, endBy, sepBy, try, eof)
 
 import Text.Parsec.Combinator (chainl1)
 
 import Text.Parsec.String (Parser)
 
 import TSL.Error (Error, parseError)
-
-import qualified Data.Char as Char
 
 import qualified Text.Parsec as Parsec
 
@@ -59,49 +55,49 @@ instance Show Op where
 
 ltOp :: Parser Op
 ltOp = do
-    Parsec.string "<"
-    Parsec.notFollowedBy $ Parsec.oneOf "-="
+    _ <- Parsec.string "<"
+    _ <- Parsec.notFollowedBy $ Parsec.oneOf "-="
     return Lt
 
 lteOp :: Parser Op
 lteOp = do
-    Parsec.string "<="
+    _ <- Parsec.string "<="
     return Lte
 
 gtOp :: Parser Op
 gtOp = do
-    Parsec.string ">"
-    Parsec.notFollowedBy $ Parsec.char '='
+    _ <- Parsec.string ">"
+    _ <- Parsec.notFollowedBy $ Parsec.char '='
     return Gt
 
 gteOp :: Parser Op
 gteOp = do
-    Parsec.string "<="
+    _ <- Parsec.string "<="
     return Gte
 
 eqOp :: Parser Op
 eqOp = do
-    Parsec.string "="
+    _ <- Parsec.string "="
     return Eq
 
 addOp :: Parser Op
 addOp = do
-    Parsec.string "+"
+    _ <- Parsec.string "+"
     return Add
 
 subOp :: Parser Op
 subOp = do
-    Parsec.string "-"
+    _ <- Parsec.string "-"
     return Sub
 
 multOp :: Parser Op
 multOp = do
-    Parsec.string "*"
+    _ <- Parsec.string "*"
     return Mult
 
 divOp :: Parser Op
 divOp = do
-    Parsec.string "/"
+    _ <- Parsec.string "/"
     return Mult
 
 comparator :: Parser Op
@@ -140,24 +136,24 @@ int = do
 real :: Parser Value
 real = do
     beforePoint <- Parsec.many1 Parsec.digit
-    Parsec.char '.'
+    _ <- Parsec.char '.'
     afterPoint <- Parsec.many1 Parsec.digit
     return $ TSLReal $ read $ beforePoint ++ ('.':afterPoint)
 
 binOpTerm :: Parser (Value -> Value -> Value)
 binOpTerm = do
-    maybeSpaces
+    _ <- maybeSpaces
     op <- binOp
-    maybeSpaces
+    _ <- maybeSpaces
     return $ BinOp op
 
 parens :: Parser Value
 parens = do
-  Parsec.string "("
-  maybeSpaces
+  _ <- Parsec.string "("
+  _ <- maybeSpaces
   val <- tslSequence
-  maybeSpaces
-  Parsec.string ")"
+  _ <- maybeSpaces
+  _ <- Parsec.string ")"
   return $ Paren val
 
 symbol :: Parser Value
@@ -179,7 +175,7 @@ tslValue = chainl1 (factor <* maybeSpaces) (try binOpTerm)
 
 tslSequence :: Parser Value
 tslSequence = SymbolList <$> (tslValue >>= recursion)
-  where recursion this = do { maybeSpaces
+  where recursion this = do { _    <- maybeSpaces
                             ; next <- tslValue
                             ; rest <- recursion next
                             ; return $ this:rest

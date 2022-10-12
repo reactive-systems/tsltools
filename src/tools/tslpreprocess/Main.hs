@@ -19,8 +19,6 @@ module Main
 
 -----------------------------------------------------------------------------
 
-import Control.Monad.Trans.Except
-
 import System.Exit(die)
 
 import Config (Configuration(..), parseArguments)
@@ -29,14 +27,7 @@ import EncodingUtils (initEncoding)
 
 import FileUtils (writeContent, tryReadContent)
 
-import PrintUtils ( Color(..)
-                  , ColorIntensity(..)
-                  , cPutOutLn
-                  )
-
-import TSL ( Error
-		   , preprocess
-           )
+import TSL (preprocess)
 
 -----------------------------------------------------------------------------
 

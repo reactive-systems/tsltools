@@ -37,10 +37,7 @@ import TSL.Error (Error)
 
 import TSL.Types (arity)
 
-import TSL.Logic ( Formula
-                 , outputs
-                 , updates
-                 )
+import TSL.Logic (updates)
 
 import TSL.Specification (Specification(..))
 

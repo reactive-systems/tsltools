@@ -41,6 +41,7 @@ hoa2code
 parsehoa
 tslsynth
 tslmt2tsl
+tslpreprocess
 .commit
 .stack-work
 stack.yaml.lock
