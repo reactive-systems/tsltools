@@ -75,7 +75,6 @@ data Error
   | ErrGeneric GenericError
   | ErrMtParse TheoryParseError
   | ErrSolver SolverError
-  | ErrPreprocess ParseError
 
 -----------------------------------------------------------------------------
 

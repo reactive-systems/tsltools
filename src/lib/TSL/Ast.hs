@@ -31,7 +31,7 @@ module TSL.Ast( Ast(..)
 
 import Data.List(nub)
 
-import Data.Map(Map)
+-- import Data.Map(Map)
 
 import Control.Applicative (liftA2)
 
@@ -253,8 +253,8 @@ astByDepth = \case
   f@(Function  _ args) -> f:(concat $ map astByDepth args)
   p@(Predicate _ args) -> p:(concat $ map astByDepth args)
 
-levelOrderTraversal :: Int -> Ast a -> Map Int (Ast a) -> Map Int (Ast a)
-levelOrderTraversal = undefined
+-- levelOrderTraversal :: Int -> Ast a -> Map Int (Ast a) -> Map Int (Ast a)
+-- levelOrderTraversal = undefined
 
 stringifyAst :: (a -> String) -> Ast a -> String
 stringifyAst stringify = \case

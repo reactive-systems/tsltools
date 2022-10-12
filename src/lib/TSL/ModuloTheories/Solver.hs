@@ -29,7 +29,7 @@ import System.Exit(ExitCode(..), die)
 
 import TSL.Error(Error, errSolver)
 
-import TSL.ModuloTheories.Theories(Theory, TheorySymbol, TAst)
+-- import TSL.ModuloTheories.Theories(Theory, TheorySymbol, TAst)
 
 -------------------------------------------------------------------------------
 
