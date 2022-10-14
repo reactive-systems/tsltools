@@ -21,7 +21,9 @@ module Main
 
 import Control.Monad.Trans.Except
 
-import System.Exit(die)
+import Control.Monad (liftM2)
+
+import System.Exit (die)
 
 import Config (Configuration(..), Flag(..), parseArguments)
 
@@ -36,11 +38,15 @@ import PrintUtils ( Color(..)
 
 import TSL ( Error
            , TheoryPredicate
+           , Dto
+           , Cfg
            , cfgFromSpec
            , predsFromSpec
            , consistencyChecking
            , consistencyDebug
            , solveSat
+           , buildDto
+           , fixedSizeQuery
            , genericError
            )
 
@@ -93,6 +99,15 @@ consistency satSolver preds = do
     Left  errMsg   -> die $ show errMsg
     Right cResults -> mapM_ printTuple cResults
 
+sygusDebug :: [TheoryPredicate] -> Cfg -> String
+sygusDebug predicates = fixedSizeQuery dto
+  where pred = head predicates
+        dto  = buildDto pred pred 
+
+-- preds :: Either Error [TheoryPredicate]
+-- cfgFromSpec :: Theory -> Specification -> Either Error Cfg
+--
+
 main :: IO ()
 main = do
   initEncoding
@@ -111,5 +126,5 @@ main = do
         Predicates  -> toOut $ fmap (unlines . (map show)) preds
         Grammar     -> toOut $ fmap show $ cfgFromSpec theory spec
         Consistency -> consistency smtSolver preds
-        Sygus       -> consistency smtSolver preds
+        Sygus       -> toOut $ liftM2 sygusDebug preds $ cfgFromSpec theory spec
         invalidFlag -> toOut $ genericError $ "Invalid Flag: " ++ show invalidFlag

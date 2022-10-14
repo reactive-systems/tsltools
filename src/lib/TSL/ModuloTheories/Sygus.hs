@@ -10,8 +10,9 @@
 
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.Sygus
-  ( DTO
-  , buildDTO
+  ( Dto
+  , buildDto
+  , fixedSizeQuery
   ) where
 
 -------------------------------------------------------------------------------
@@ -67,14 +68,14 @@ instance Show Temporal where
     Eventually   -> "F"
 
 -- | Data Transformation Obligation.
-data DTO = DTO 
+data Dto = Dto 
     {   theory        :: Theory
     ,   preCondition  :: TheoryPredicate
     ,   postCondition :: TheoryPredicate
     }
 
-buildDTO :: TheoryPredicate -> TheoryPredicate -> DTO
-buildDTO pre post = DTO theory pre post
+buildDto :: TheoryPredicate -> TheoryPredicate -> Dto
+buildDto pre post = Dto theory pre post
   where theory   = assert theoryEq $ predTheory pre
         theoryEq = (predTheory pre) == (predTheory post)
 
@@ -96,8 +97,8 @@ postCond2Sygus signal postCond = parenthize $ unwords [constraint, clause]
         clause     = predReplacedSmt signal fApplied postCond
         constraint = "constraint"
 
-getSygusTargets :: DTO -> Cfg -> [TheorySymbol]
-getSygusTargets (DTO _ _ post) cfg = Set.toList intersection
+getSygusTargets :: Dto -> Cfg -> [TheorySymbol]
+getSygusTargets (Dto _ _ post) cfg = Set.toList intersection
   where outputs      = outputSignals cfg
         postSignals  = Set.fromList $ predSignals post
         intersection = Set.intersection outputs postSignals
@@ -109,11 +110,15 @@ getSygusTargets (DTO _ _ post) cfg = Set.toList intersection
 pickTarget :: [TheorySymbol] -> TheorySymbol
 pickTarget = head
 
+-- TODO
+-- newtype Cfg = Cfg { grammar :: Map TheorySymbol [TAst]}
+-- data TAst = UfAst  (Ast Uf.UfSymbol)
+-- data Ast a = Variable  a | Function  a [Ast a] | Predicate a [Ast a]
 functionGrammar :: TheorySymbol -> Cfg -> String
 functionGrammar = undefined
 
-fixedSizeQuery :: DTO -> Cfg -> String
-fixedSizeQuery dto@(DTO theory pre post) cfg =
+fixedSizeQuery :: Dto -> Cfg -> String
+fixedSizeQuery dto@(Dto theory pre post) cfg =
   unlines [declTheory, grammar, preCond, postCond, checkSynth]
   where
     synthTarget = pickTarget $ getSygusTargets dto cfg
@@ -123,7 +128,7 @@ fixedSizeQuery dto@(DTO theory pre post) cfg =
     declTheory  = "(set-logic " ++ show theory ++ ")"
     checkSynth  = "(check-synth)"
 
-recursiveQuery :: DTO -> Cfg -> String
+recursiveQuery :: Dto -> Cfg -> String
 recursiveQuery = undefined
 
 findRecursion :: [TAst] -> TAst
@@ -136,9 +141,9 @@ tast2UpdateChain = undefined
 -- where nextChains      = inits $ repeat $ show $ Next 1
 --       strConcat s1 s2 = s1 ++ " " ++ s2
 
-sygus2TslAss :: Temporal -> DTO -> TAst -> String
+sygus2TslAss :: Temporal -> Dto -> TAst -> String
 sygus2TslAss = undefined
--- sygus2TslAss temporal (DTO _ pre post) tast = unwords
+-- sygus2TslAss temporal (Dto _ pre post) tast = unwords
 --   [ "G("
 --   , "("
 --   , "(" ++ pred2Tsl pre ++ ")"
