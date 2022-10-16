@@ -21,6 +21,8 @@ module Main
 
 import Control.Monad.Trans.Except
 
+import Data.Maybe (isJust)
+
 import Control.Monad (liftM2)
 
 import System.Exit (die)
@@ -46,9 +48,12 @@ import TSL ( Error
            , consistencyDebug
            , solveSat
            , buildDto
+           , buildDtoList
            , fixedSizeQuery
            , genericError
            )
+
+import Debug.Trace (trace)
 
 -----------------------------------------------------------------------------
 
@@ -99,14 +104,13 @@ consistency satSolver preds = do
     Left  errMsg   -> die $ show errMsg
     Right cResults -> mapM_ printTuple cResults
 
+-- fixedSizeQuery :: Dto -> Cfg -> Maybe String
 sygusDebug :: [TheoryPredicate] -> Cfg -> String
-sygusDebug predicates = fixedSizeQuery dto
-  where pred = head predicates
-        dto  = buildDto pred pred 
-
--- preds :: Either Error [TheoryPredicate]
--- cfgFromSpec :: Theory -> Specification -> Either Error Cfg
---
+sygusDebug predicates cfg = unlines $ map getQuery dtos
+  where dtos    = buildDtoList predicates
+        getQuery dto = case fixedSizeQuery dto cfg of
+                         Nothing    -> ""
+                         Just query -> query
 
 main :: IO ()
 main = do

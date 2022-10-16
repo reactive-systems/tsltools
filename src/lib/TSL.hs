@@ -81,6 +81,7 @@ module TSL
   , preprocess
   , Dto
   , buildDto
+  , buildDtoList
   , fixedSizeQuery
   ) where
 
@@ -137,7 +138,7 @@ import TSL.ModuloTheories.ConsistencyChecking(consistencyChecking, consistencyDe
 import TSL.ModuloTheories.Theories(Theory, readTheory)
 import TSL.ModuloTheories.Solver(solveSat)
 import TSL.ModuloTheories.Cfg(Cfg(..), cfgFromSpec)
-import TSL.ModuloTheories.Sygus (Dto, buildDto, fixedSizeQuery)
+import TSL.ModuloTheories.Sygus (Dto, buildDto, buildDtoList, fixedSizeQuery)
 import TSL.ModuloTheories.Predicates(TheoryPredicate, predsFromSpec)
 
 import qualified TSL.Writer.CFM.Clash as Clash (implement)

@@ -12,6 +12,7 @@
 module TSL.ModuloTheories.Sygus
   ( Dto
   , buildDto
+  , buildDtoList
   , fixedSizeQuery
   ) where
 
@@ -25,7 +26,7 @@ import qualified Data.Map as Map
 
 import Data.Map (Map)
 
-import Data.List(inits)
+import Data.List (inits)
 
 import Control.Exception(assert)
 
@@ -46,6 +47,7 @@ import TSL.ModuloTheories.Predicates( TheoryPredicate
                                     , predTheory
                                     , predSignals
                                     , predReplacedSmt
+                                    , enumeratePreds
                                     )
 
 import TSL.ModuloTheories.Theories( Theory
@@ -87,8 +89,16 @@ buildDto pre post = Dto theory pre post
   where theory   = assert theoryEq $ predTheory pre
         theoryEq = (predTheory pre) == (predTheory post)
 
+buildDtoList :: [TheoryPredicate] -> [Dto]
+buildDtoList preds = concat $ map buildWith preds
+  where buildWith pred = map (buildDto pred) preds
+
 tabulate :: Int -> String -> String
 tabulate n = (++) (replicate n '\t')
+
+minitab :: Int -> String -> String
+minitab n = (++) (replicate (2 * n) ' ')
+
 
 functionName :: String
 functionName = "function"
@@ -126,7 +136,7 @@ pickTarget = head
 getProductionRules :: TheorySymbol -> Cfg -> [TAst]
 getProductionRules nonterminal cfg =
     case Map.lookup nonterminal (grammar cfg) of
-      Nothing    -> error $ show nonterminal ++ " not in CFG"
+      Nothing    -> []
       Just rules -> rules
 
 nonterminalsUsed :: TheorySymbol -> Cfg -> Set TheorySymbol
@@ -155,32 +165,31 @@ nonterminalsUsed symbol cfg = helper symbol Set.empty
 
 productionRules2Sygus :: TheorySymbol -> [TAst] -> String
 productionRules2Sygus nonterminal rules = unlines
-  [ parenthize 1 declaration
-  , "("
+  [ minitab 1 $ (parenthize 2 declaration) ++ "("
   , expansion
-  , ")"
+  , minitab 1 ")"
   ]
-  where declaration = show nonterminal ++ show (symbolTheory nonterminal)       
-        expansion   = (unlines . map (tabulate 1))
+  where declaration = unwords [show nonterminal, show (symbolTheory nonterminal)]
+        expansion   = minitab 2 $ parenthize 1 $ unwords
           [ "(" ++ declaration
           , rulesSygus
           , ")"
           ]
-        rulesSygus  =  unlines $ map ((tabulate 1) . tast2Smt) rules
+        rulesSygus  =  unwords $ map tast2Smt rules
 
 syntaxConstraint :: TheorySymbol -> Cfg -> String
 syntaxConstraint functionInput cfg = unlines
-  ["("
-  , declaration
-  , unlines $ map (tabulate 1) $ grammars
+  ["("  ++ declaration
+  , unlines grammars
   , ")" ]
   where sygusGrammar nonterminal =
           productionRules2Sygus nonterminal $ getProductionRules nonterminal cfg
 
-        declaration = tabulate 1 $ unwords 
+        declaration = unwords 
           [ "synth-fun"
           , functionName
-          , "((input"
+          , "(("
+          , "input"
           , theoryStr
           , "))"
           , theoryStr
@@ -188,16 +197,19 @@ syntaxConstraint functionInput cfg = unlines
         theoryStr    = show $ symbolTheory functionInput
         grammars     = fmap sygusGrammar $ Set.toList $ nonterminalsUsed functionInput cfg
 
-fixedSizeQuery :: Dto -> Cfg -> String
+fixedSizeQuery :: Dto -> Cfg -> Maybe String
 fixedSizeQuery dto@(Dto theory pre post) cfg =
-  unlines [declTheory, grammar, preCond, postCond, checkSynth]
+  if null sygusTargets
+    then Nothing
+    else Just $ unlines [declTheory, grammar, preCond, postCond, checkSynth]
   where
-    synthTarget = pickTarget $ getSygusTargets dto cfg
-    grammar     = syntaxConstraint synthTarget cfg
-    preCond     = preCond2Sygus  pre
-    postCond    = postCond2Sygus synthTarget post
-    declTheory  = "(set-logic " ++ show theory ++ ")"
-    checkSynth  = "(check-synth)"
+    sygusTargets = getSygusTargets dto cfg
+    synthTarget  = pickTarget sygusTargets
+    grammar      = syntaxConstraint synthTarget cfg
+    preCond      = preCond2Sygus  pre
+    postCond     = postCond2Sygus synthTarget post
+    declTheory   = "(set-logic " ++ show theory ++ ")"
+    checkSynth   = "(check-synth)"
 
 recursiveQuery :: Dto -> Cfg -> String
 recursiveQuery = undefined
