@@ -31,9 +31,11 @@ module TSL.ModuloTheories.Theories( Theory(..)
                                   , tastInfo
                                   , tastByDepth
                                   , tastSignals
+                                  , getAst
                                   , symbol2Tsl
                                   , symbol2Smt
                                   , symbolType
+                                  , symbolTheory
                                   , isUninterpreted
                                   , replaceSmtShow
                                   ) where
@@ -106,6 +108,11 @@ tast2Smt :: TAst -> String
 tast2Smt (UfAst  ast) = stringifyAst Base.toSmt ast
 tast2Smt (EUfAst ast) = stringifyAst Base.toSmt ast
 tast2Smt (LiaAst ast) = stringifyAst Base.toSmt ast
+
+getAst :: TAst -> Ast TheorySymbol
+getAst (UfAst  ast) = fmap UfSymbol  $ ast
+getAst (EUfAst ast) = fmap EUfSymbol $ ast
+getAst (LiaAst ast) = fmap LiaSymbol $ ast
 
 applySemantics :: Theory -> Ast String -> Either Error TAst
 applySemantics Uf  ast = UfAst  <$> traverse Base.readT ast

@@ -19,6 +19,12 @@ module TSL.ModuloTheories.Sygus
 
 import qualified Data.Set as Set
 
+import Data.Set (Set)
+
+import qualified Data.Map as Map
+
+import Data.Map (Map)
+
 import Data.List(inits)
 
 import Control.Exception(assert)
@@ -27,13 +33,11 @@ import Control.Monad.Trans.Except
 
 import TSL.Error(Error, errSolver)
 
-import TSL.SymbolTable(Kind(..))
-
 import TSL.Specification(Specification(..))
 
-import TSL.Ast(AstInfo(..), SymbolInfo(..))
+import TSL.Ast(Ast(..), AstInfo(..), SymbolInfo(..))
 
-import TSL.ModuloTheories.Cfg(Cfg, outputSignals, productionRules)
+import TSL.ModuloTheories.Cfg(Cfg(..), outputSignals, productionRules)
 
 import TSL.ModuloTheories.Predicates( TheoryPredicate
                                     , predInfo
@@ -49,10 +53,14 @@ import TSL.ModuloTheories.Theories( Theory
                                   , TAst
                                   , tastByDepth
                                   , tast2Tsl
+                                  , tastSignals
+                                  , tast2Smt
                                   , symbol2Smt
                                   , symbolType
+                                  , symbolTheory
                                   , smtSortDecl
                                   , isUninterpreted
+                                  , getAst
                                   )
 
 -------------------------------------------------------------------------------
@@ -79,21 +87,26 @@ buildDto pre post = Dto theory pre post
   where theory   = assert theoryEq $ predTheory pre
         theoryEq = (predTheory pre) == (predTheory post)
 
+tabulate :: Int -> String -> String
+tabulate n = (++) (replicate n '\t')
+
 functionName :: String
 functionName = "function"
 
-parenthize :: String -> String
-parenthize str = '(':str ++ ")"
+parenthize :: Int -> String -> String
+parenthize repeats str = lpars ++ str ++ rpars
+  where lpars = replicate repeats '(' 
+        rpars = replicate repeats ')'
 
 preCond2Sygus :: TheoryPredicate -> String
 preCond2Sygus = assertSmt . pred2Smt
-  where assertSmt smt = parenthize $ "assert " ++ smt
+  where assertSmt smt = parenthize 1 $ "assert " ++ smt
 
 -- (constraint (>= (function users) 0))
 -- Replace all instances of the TheorySymbol to function application
 postCond2Sygus :: TheorySymbol -> TheoryPredicate -> String
-postCond2Sygus signal postCond = parenthize $ unwords [constraint, clause]
-  where fApplied   = parenthize $ unwords [functionName, show signal]
+postCond2Sygus signal postCond = parenthize 1 $ unwords [constraint, clause]
+  where fApplied   = parenthize 1 $ unwords [functionName, show signal]
         clause     = predReplacedSmt signal fApplied postCond
         constraint = "constraint"
 
@@ -110,19 +123,77 @@ getSygusTargets (Dto _ _ post) cfg = Set.toList intersection
 pickTarget :: [TheorySymbol] -> TheorySymbol
 pickTarget = head
 
--- TODO
+getProductionRules :: TheorySymbol -> Cfg -> [TAst]
+getProductionRules nonterminal cfg =
+    case Map.lookup nonterminal (grammar cfg) of
+      Nothing    -> error $ show nonterminal ++ " not in CFG"
+      Just rules -> rules
+
+nonterminalsUsed :: TheorySymbol -> Cfg -> Set TheorySymbol
+nonterminalsUsed symbol cfg = helper symbol Set.empty
+  where
+    helper :: TheorySymbol -> Set TheorySymbol -> Set TheorySymbol
+    helper symbol set =
+      Set.union set $ Set.fromList $ concat $ map tastSignals rules
+      where rules        = getProductionRules symbol cfg
+
 -- newtype Cfg = Cfg { grammar :: Map TheorySymbol [TAst]}
+
 -- data TAst = UfAst  (Ast Uf.UfSymbol)
+
 -- data Ast a = Variable  a | Function  a [Ast a] | Predicate a [Ast a]
-functionGrammar :: TheorySymbol -> Cfg -> String
-functionGrammar = undefined
+
+-- (synth-fun function ((vruntime1 Int)) Int
+-- 	((I Int))(
+-- 		(I Int (
+-- 				(+ vruntime1 1)
+-- 				(+ I 1)
+-- 			)
+-- 		)
+-- 	)
+-- )
+
+productionRules2Sygus :: TheorySymbol -> [TAst] -> String
+productionRules2Sygus nonterminal rules = unlines
+  [ parenthize 1 declaration
+  , "("
+  , expansion
+  , ")"
+  ]
+  where declaration = show nonterminal ++ show (symbolTheory nonterminal)       
+        expansion   = (unlines . map (tabulate 1))
+          [ "(" ++ declaration
+          , rulesSygus
+          , ")"
+          ]
+        rulesSygus  =  unlines $ map ((tabulate 1) . tast2Smt) rules
+
+syntaxConstraint :: TheorySymbol -> Cfg -> String
+syntaxConstraint functionInput cfg = unlines
+  ["("
+  , declaration
+  , unlines $ map (tabulate 1) $ grammars
+  , ")" ]
+  where sygusGrammar nonterminal =
+          productionRules2Sygus nonterminal $ getProductionRules nonterminal cfg
+
+        declaration = tabulate 1 $ unwords 
+          [ "synth-fun"
+          , functionName
+          , "((input"
+          , theoryStr
+          , "))"
+          , theoryStr
+          ]
+        theoryStr    = show $ symbolTheory functionInput
+        grammars     = fmap sygusGrammar $ Set.toList $ nonterminalsUsed functionInput cfg
 
 fixedSizeQuery :: Dto -> Cfg -> String
 fixedSizeQuery dto@(Dto theory pre post) cfg =
   unlines [declTheory, grammar, preCond, postCond, checkSynth]
   where
     synthTarget = pickTarget $ getSygusTargets dto cfg
-    grammar     = functionGrammar synthTarget cfg
+    grammar     = syntaxConstraint synthTarget cfg
     preCond     = preCond2Sygus  pre
     postCond    = postCond2Sygus synthTarget post
     declTheory  = "(set-logic " ++ show theory ++ ")"
