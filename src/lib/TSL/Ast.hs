@@ -42,6 +42,8 @@ import TSL.Logic ( SignalTerm(..)
                  , PredicateTerm(..)
                  )
 
+import Debug.Trace (trace)
+
 -------------------------------------------------------------------------------
 
 -- | The Abstract Syntax Tree (AST) datatype.
@@ -260,6 +262,8 @@ stringifyAst :: (a -> String) -> Ast a -> String
 stringifyAst stringify = \case
   Variable  v      -> stringify v
   Function  f args ->
-    "(" ++ stringify f ++ " " ++ unwords (map (stringifyAst stringify) args) ++ ")"
-  Predicate p args ->
+      case args of 
+        [] -> stringify f
+        _  -> "(" ++ stringify f ++ " " ++ unwords (map (stringifyAst stringify) args) ++ ")"
+  Predicate p args -> 
     "(" ++ stringify p ++ " " ++ unwords (map (stringifyAst stringify) args) ++ ")"

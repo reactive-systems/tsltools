@@ -43,12 +43,10 @@ instance TheorySymbol LiaSymbol where
     "lt"  -> Right Lt 
     "gte" -> Right Gte
     "lte" -> Right Lte
-    value -> case scan regex value of
+    value -> case scan [re|int([0-9]+)|] value of
                []          -> Right $ Var value
                [(_,[int])] -> Right $ Int $ read int
                _           -> error $ "Invalid: " ++ value
-
-    where regex = [re|int([0-9]+)\(\)|]
 
   toSmt = \case
     (Int i) -> show i
