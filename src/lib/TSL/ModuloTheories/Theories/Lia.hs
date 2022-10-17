@@ -6,7 +6,9 @@
 
 -------------------------------------------------------------------------------
 
-{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE FlexibleContexts  #-}
 
 -------------------------------------------------------------------------------
 
@@ -14,7 +16,7 @@ module TSL.ModuloTheories.Theories.Lia(LiaSymbol) where
 
 -------------------------------------------------------------------------------
 
-import TSL.Error (errMtParse)
+import Text.Regex.PCRE.Heavy (scan, re)
 
 import TSL.ModuloTheories.Theories.Base (TheorySymbol(..))
 
@@ -34,25 +36,30 @@ data LiaSymbol =
 
 instance TheorySymbol LiaSymbol where
   readT = \case
-    "+"  -> Right Add
-    "-"  -> Right Sub
-    "="  -> Right Eq
-    ">"  -> Right Gt
-    "<"  -> Right Lt
-    ">=" -> Right Gte
-    "<=" -> Right Lte
-    str  -> errMtParse str
+    "add" -> Right Add
+    "sub" -> Right Sub
+    "eq"  -> Right Eq 
+    "gt"  -> Right Gt 
+    "lt"  -> Right Lt 
+    "gte" -> Right Gte
+    "lte" -> Right Lte
+    value -> case scan regex value of
+               []          -> Right $ Var value
+               [(_,[int])] -> Right $ Int $ read int
+               _           -> error $ "Invalid: " ++ value
+
+    where regex = [re|int([0-9]+)\(\)|]
 
   toSmt = \case
     (Int i) -> show i
     (Var v) -> show v
     Add     -> "+"
     Sub     -> "-"
-    Eq      -> "->"
+    Eq      -> "="
     Gt      -> ">"
     Lt      -> "<"
-    Gte     -> ">->"
-    Lte     -> "<->"
+    Gte     -> ">="
+    Lte     -> "<="
 
   toTsl = \case
     (Int i) -> show i

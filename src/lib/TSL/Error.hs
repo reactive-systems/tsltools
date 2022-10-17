@@ -172,20 +172,20 @@ newtype SolverError =
 
 instance Show Error where
   show = \case
-    ErrParse x                   -> show x
-    ErrType TypeError {..}       -> pr "Type Error" errTPos errTMsgs
-    ErrBnd BindingError {..}     -> pr "Binding Error" errBPos errBMsgs
-    ErrDep DependencyError {..}  -> pr "Dependency Error" errDPos errDMsgs
-    ErrSyntax SyntaxError {..}   -> pr "Syntax Error" errSPos errSMsgs
-    ErrRunT RunTimeError {..}    -> pr "Evaluation Error" errRPos errRMsgs
-    ErrCfg ConfigError {..}      -> "\"Error\":\n" ++ fmsg
-    ErrConv ConvError {..}       ->
+    ErrParse x                       -> show x
+    ErrType TypeError {..}           -> pr "Type Error" errTPos errTMsgs
+    ErrBnd BindingError {..}         -> pr "Binding Error" errBPos errBMsgs
+    ErrDep DependencyError {..}      -> pr "Dependency Error" errDPos errDMsgs
+    ErrSyntax SyntaxError {..}       -> pr "Syntax Error" errSPos errSMsgs
+    ErrRunT RunTimeError {..}        -> pr "Evaluation Error" errRPos errRMsgs
+    ErrCfg ConfigError {..}          -> "\"Error\":\n" ++ fmsg
+    ErrConv ConvError {..}           ->
       "\"Conversion Error\": " ++ title ++ "\n" ++ cmsg
-    ErrFormat FormatError {..}   ->
+    ErrFormat FormatError {..}       ->
       "\"Format Error\": Unexpected format" ++ "\n" ++ errFmt
-    ErrGeneric GenericError {..} -> "Error: " ++ errGen
+    ErrGeneric GenericError {..}     -> "Error: " ++ errGen
     ErrMtParse TheoryParseError {..} -> "Modulo Theories Parse Error: " ++ mtRaw
-    ErrSolver SolverError {..} -> "Solver Error: " ++ solverErr
+    ErrSolver SolverError {..}       -> "Solver Error: " ++ solverErr
 
     where
       pr errname pos msgs =

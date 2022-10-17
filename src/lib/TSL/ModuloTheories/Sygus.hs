@@ -99,7 +99,6 @@ tabulate n = (++) (replicate n '\t')
 minitab :: Int -> String -> String
 minitab n = (++) (replicate (2 * n) ' ')
 
-
 functionName :: String
 functionName = "function"
 
@@ -133,35 +132,26 @@ getSygusTargets (Dto _ _ post) cfg = Set.toList intersection
 pickTarget :: [TheorySymbol] -> TheorySymbol
 pickTarget = head
 
-getProductionRules :: TheorySymbol -> Cfg -> [TAst]
-getProductionRules nonterminal cfg =
-    case Map.lookup nonterminal (grammar cfg) of
-      Nothing    -> []
-      Just rules -> rules
+getProductionRules :: TheorySymbol -> Cfg -> Maybe [TAst]
+getProductionRules nonterminal cfg = Map.lookup nonterminal (grammar cfg)
 
 nonterminalsUsed :: TheorySymbol -> Cfg -> Set TheorySymbol
 nonterminalsUsed symbol cfg = helper symbol Set.empty
   where
     helper :: TheorySymbol -> Set TheorySymbol -> Set TheorySymbol
     helper symbol set =
-      Set.union set $ Set.fromList $ concat $ map tastSignals rules
-      where rules        = getProductionRules symbol cfg
+        case getProductionRules symbol cfg of
+          Nothing    -> set
+          Just rules -> Set.union set $ Set.fromList $ concat $ map tastSignals rules
 
--- newtype Cfg = Cfg { grammar :: Map TheorySymbol [TAst]}
-
--- data TAst = UfAst  (Ast Uf.UfSymbol)
-
--- data Ast a = Variable  a | Function  a [Ast a] | Predicate a [Ast a]
-
--- (synth-fun function ((vruntime1 Int)) Int
--- 	((I Int))(
--- 		(I Int (
--- 				(+ vruntime1 1)
--- 				(+ I 1)
--- 			)
--- 		)
--- 	)
--- )
+-- ((I Int (x y 0 1
+--          (+ I I) (- I I)
+--          (ite B I I)))
+--  (B Bool ((and B B) (or B B) (not B)
+--           (= I I) (<= I I) (>= I I))))
+--
+-- ((x UF (x))
+--  (y UF (x y)))
 
 productionRules2Sygus :: TheorySymbol -> [TAst] -> String
 productionRules2Sygus nonterminal rules = unlines
@@ -171,37 +161,60 @@ productionRules2Sygus nonterminal rules = unlines
   ]
   where declaration = unwords [show nonterminal, show (symbolTheory nonterminal)]
         expansion   = minitab 2 $ parenthize 1 $ unwords
-          [ "(" ++ declaration
-          , rulesSygus
-          , ")"
+          [ declaration
+          , parenthize 1 rulesSygus
           ]
         rulesSygus  =  unwords $ map tast2Smt rules
 
 syntaxConstraint :: TheorySymbol -> Cfg -> String
 syntaxConstraint functionInput cfg = unlines
-  ["("  ++ declaration
-  , unlines grammars
+  [ funDeclComment
+  , "("  ++ functionDeclaration
+  , varDeclComment
+  , varDecls
+  , ""
+  , unlines $ fmap sygusGrammar nonterminals
   , ")" ]
-  where sygusGrammar nonterminal =
-          productionRules2Sygus nonterminal $ getProductionRules nonterminal cfg
+  where
+    sygusGrammar :: TheorySymbol -> String
+    sygusGrammar nonterminal =
+      case (getProductionRules nonterminal cfg) of
+        Nothing    -> minitab 2 $ ";; No grammar for " ++ show nonterminal ++ "\n"
+        Just rules -> productionRules2Sygus nonterminal rules
 
-        declaration = unwords 
-          [ "synth-fun"
-          , functionName
-          , "(("
-          , "input"
-          , theoryStr
-          , "))"
-          , theoryStr
-          ]
-        theoryStr    = show $ symbolTheory functionInput
-        grammars     = fmap sygusGrammar $ Set.toList $ nonterminalsUsed functionInput cfg
+    declareVar :: TheorySymbol -> String
+    declareVar symbol = 
+        parenthize 1 $ unwords [show symbol, show (symbolTheory symbol)]
+
+    functionDeclaration = unwords 
+      [ "synth-fun"
+      , functionName
+      , "(("
+      , "input"
+      , theoryShow
+      , "))"
+      , theoryShow
+      ]
+    nonterminals = Set.toList $ nonterminalsUsed functionInput cfg
+    theoryShow   = show $ symbolTheory functionInput
+    varDecls     = parenthize 1 $ unwords $ map declareVar nonterminals
+
+    funDeclComment = "\r\n;; Name and signature of the function to be synthesized"
+    varDeclComment = "\r\n;; Declare the nonterminals used in the grammar"
+
 
 fixedSizeQuery :: Dto -> Cfg -> Maybe String
 fixedSizeQuery dto@(Dto theory pre post) cfg =
   if null sygusTargets
     then Nothing
-    else Just $ unlines [declTheory, grammar, preCond, postCond, checkSynth]
+    else Just $ unlines 
+      [declTheory
+      , sortDecl
+      , grammar
+      , preCond
+      , postCond
+      , checkSynth
+      ]
   where
     sygusTargets = getSygusTargets dto cfg
     synthTarget  = pickTarget sygusTargets
@@ -210,6 +223,7 @@ fixedSizeQuery dto@(Dto theory pre post) cfg =
     postCond     = postCond2Sygus synthTarget post
     declTheory   = "(set-logic " ++ show theory ++ ")"
     checkSynth   = "(check-synth)"
+    sortDecl     = smtSortDecl theory
 
 recursiveQuery :: Dto -> Cfg -> String
 recursiveQuery = undefined

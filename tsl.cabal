@@ -48,6 +48,7 @@ library
     , hanoi
     , finite
     , text
+    , pcre-heavy
 
   exposed-modules:
     TSL
@@ -148,6 +149,7 @@ executable tslmt2tsl
     , optparse-applicative
     , transformers >= 0.5.6.2
     , process
+    , pcre-heavy
 
   hs-source-dirs:
     src/tools/tslmt2tsl
