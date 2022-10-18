@@ -50,7 +50,7 @@ instance TheorySymbol LiaSymbol where
 
   toSmt = \case
     (Int i) -> show i
-    (Var v) -> show v
+    (Var v) -> v
     Add     -> "+"
     Sub     -> "-"
     Eq      -> "="
@@ -61,7 +61,7 @@ instance TheorySymbol LiaSymbol where
 
   toTsl = \case
     (Int i) -> show i
-    (Var v) -> show v
+    (Var v) -> v
     Add     -> "add"
     Sub     -> "sub"
     Eq      -> "eq"

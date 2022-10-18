@@ -211,7 +211,8 @@ symbolInfosFromList
     :: (Ast a -> [SymbolInfo a])
     -> [Ast a]
     -> [SymbolInfo a]
-symbolInfosFromList infoGetter = (foldr1 (++)) . (map infoGetter)
+symbolInfosFromList _ [] = []
+symbolInfosFromList infoGetter asts = ((foldr1 (++)) . (map infoGetter)) asts
 
 -- TODO: Better time complexity
 getVarInfos :: Ast a -> [SymbolInfo a]

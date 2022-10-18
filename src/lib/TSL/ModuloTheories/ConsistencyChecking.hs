@@ -29,7 +29,7 @@ import TSL.Ast( AstInfo(..)
 import TSL.ModuloTheories.Theories( Theory
                                   , TheorySymbol
                                   , symbol2Smt
-                                  , symbolTheory
+                                  , symbolType
                                   , smtSortDecl
                                   , isUninterpreted
                                   )
@@ -90,7 +90,7 @@ smtDecls theory (AstInfo vars funcs preds) =
     funcDecls = unlines $ map declFunc funcs
     predDecls = unlines $ map declPred preds
     declConst (SymbolInfo x _) =
-      "(declare-const " ++ symbol2Smt x ++ " " ++ show (symbolTheory x)  ++ ")"
+      "(declare-const " ++ symbol2Smt x ++ " " ++ symbolType x  ++ ")"
     declareFun retType (SymbolInfo f arity) = 
       if not (isUninterpreted f)
         then ""
