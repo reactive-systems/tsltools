@@ -36,6 +36,7 @@ module TSL.ModuloTheories.Theories( Theory(..)
                                   , symbol2Smt
                                   , symbolType
                                   , symbolTheory
+                                  , makeSignal
                                   , isUninterpreted
                                   , replaceSmtShow
                                   ) where
@@ -144,6 +145,11 @@ tastSignals = \case
   EUfAst ast -> map EUfSymbol $ getSignals ast
   LiaAst ast -> map LiaSymbol $ getSignals ast
 
+makeSignal :: Theory -> String -> TAst
+makeSignal Uf  signal = UfAst  $ pure (Base.makeSignal signal)
+makeSignal EUf signal = EUfAst $ pure (Base.makeSignal signal)
+makeSignal Lia signal = LiaAst $ pure (Base.makeSignal signal)
+
 symbol2Tsl :: TheorySymbol -> String
 symbol2Tsl (UfSymbol  symbol) = Base.toTsl symbol
 symbol2Tsl (EUfSymbol symbol) = Base.toTsl symbol
@@ -165,7 +171,9 @@ symbolTheory (EUfSymbol _) = EUf
 symbolTheory (LiaSymbol _) = Lia
 
 symbolType :: TheorySymbol -> String
-symbolType = show . symbolTheory
+symbolType (UfSymbol  symbol) = Base.symbolType symbol
+symbolType (EUfSymbol symbol) = Base.symbolType symbol
+symbolType (LiaSymbol symbol) = Base.symbolType symbol
 
 -- FIXME: Not good design pattern
 replaceSmtShow :: TheorySymbol -> TAst -> String -> String

@@ -72,3 +72,4 @@ instance TheorySymbol LiaSymbol where
 
   symbolType      _  = "Int"
   isUninterpreted _  = False
+  makeSignal         = Var

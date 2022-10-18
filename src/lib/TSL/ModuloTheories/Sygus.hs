@@ -38,7 +38,11 @@ import TSL.Specification(Specification(..))
 
 import TSL.Ast(Ast(..), AstInfo(..), SymbolInfo(..))
 
-import TSL.ModuloTheories.Cfg(Cfg(..), outputSignals, productionRules)
+import TSL.ModuloTheories.Cfg ( Cfg(..)
+                              , outputSignals
+                              , productionRules
+                              , extendCfg
+                              )
 
 import TSL.ModuloTheories.Predicates( TheoryPredicate
                                     , predInfo
@@ -61,6 +65,7 @@ import TSL.ModuloTheories.Theories( Theory
                                   , symbolType
                                   , symbolTheory
                                   , smtSortDecl
+                                  , makeSignal
                                   , isUninterpreted
                                   , getAst
                                   )
@@ -107,17 +112,27 @@ parenthize repeats str = lpars ++ str ++ rpars
   where lpars = replicate repeats '(' 
         rpars = replicate repeats ')'
 
-preCond2Sygus :: TheoryPredicate -> String
-preCond2Sygus = assertSmt . pred2Smt
-  where assertSmt smt = parenthize 1 $ "assert " ++ smt
+declareVar :: TheorySymbol -> String
+declareVar symbol = parenthize 1 $ unwords [show symbol, symbolType symbol]
 
--- (constraint (>= (function users) 0))
--- Replace all instances of the TheorySymbol to function application
-postCond2Sygus :: TheorySymbol -> TheoryPredicate -> String
-postCond2Sygus signal postCond = parenthize 1 $ unwords [constraint, clause]
-  where fApplied   = parenthize 1 $ unwords [functionName, show signal]
-        clause     = predReplacedSmt signal fApplied postCond
-        constraint = "constraint"
+dto2Sygus :: TheorySymbol -> Dto -> String
+dto2Sygus synthTarget (Dto _ pre post) = 
+  unlines [ "(constraint"
+          ,  forallExpr
+          , ")"
+          ]
+  where 
+    precondSygus  = pred2Smt pre
+    fApplied      = parenthize 1 $ unwords [functionName, show synthTarget]
+    postcondSygus = predReplacedSmt synthTarget fApplied post
+    forallExpr    = unlines [forallDecl, forallBody, minitab 1 ")"]
+    -- FIXME: should instead be "all nonterminals used"
+    forallDecl    = minitab 1 $ unwords ["(forall", parenthize 1 (declareVar synthTarget)]
+    forallBody    = unlines $ map (minitab 2) [ "(=>"
+                                              , minitab 1 precondSygus
+                                              , minitab 1 postcondSygus
+                                              , ")"
+                                              ]
 
 getSygusTargets :: Dto -> Cfg -> [TheorySymbol]
 getSygusTargets (Dto _ _ post) cfg = Set.toList intersection
@@ -144,27 +159,15 @@ nonterminalsUsed symbol cfg = helper symbol Set.empty
           Nothing    -> set
           Just rules -> Set.union set $ Set.fromList $ concat $ map tastSignals rules
 
--- ((I Int (x y 0 1
---          (+ I I) (- I I)
---          (ite B I I)))
---  (B Bool ((and B B) (or B B) (not B)
---           (= I I) (<= I I) (>= I I))))
---
--- ((x UF (x))
---  (y UF (x y)))
-
 productionRules2Sygus :: TheorySymbol -> [TAst] -> String
 productionRules2Sygus nonterminal rules = unlines
-  [ minitab 1 $ (parenthize 2 declaration) ++ "("
+  [ minitab 2 $ "(" ++ declaration
   , expansion
-  , minitab 1 ")"
+  , minitab 2 ")"
   ]
-  where declaration = unwords [show nonterminal, show (symbolTheory nonterminal)]
-        expansion   = minitab 2 $ parenthize 1 $ unwords
-          [ declaration
-          , parenthize 1 rulesSygus
-          ]
-        rulesSygus  =  unwords $ map tast2Smt rules
+  where declaration = unwords [show nonterminal, symbolType nonterminal]
+        expansion   = minitab 3 $ parenthize 1 rulesSygus
+        rulesSygus  = unwords $ map tast2Smt rules
 
 syntaxConstraint :: TheorySymbol -> Cfg -> String
 syntaxConstraint functionInput cfg = unlines
@@ -173,31 +176,32 @@ syntaxConstraint functionInput cfg = unlines
   , varDeclComment
   , varDecls
   , ""
+  , minitab 1 "("
   , unlines $ fmap sygusGrammar nonterminals
+  , minitab 1 ")"
   , ")" ]
   where
     sygusGrammar :: TheorySymbol -> String
     sygusGrammar nonterminal =
-      case (getProductionRules nonterminal cfg) of
+      case (getProductionRules nonterminal cfg') of
         Nothing    -> minitab 2 $ ";; No grammar for " ++ show nonterminal ++ "\n"
         Just rules -> productionRules2Sygus nonterminal rules
-
-    declareVar :: TheorySymbol -> String
-    declareVar symbol = 
-        parenthize 1 $ unwords [show symbol, show (symbolTheory symbol)]
 
     functionDeclaration = unwords 
       [ "synth-fun"
       , functionName
       , "(("
-      , "input"
-      , theoryShow
+      , inputName
+      , varType
       , "))"
-      , theoryShow
+      , varType
       ]
     nonterminals = Set.toList $ nonterminalsUsed functionInput cfg
-    theoryShow   = show $ symbolTheory functionInput
     varDecls     = parenthize 1 $ unwords $ map declareVar nonterminals
+    varType      = symbolType functionInput
+    inputName    = "input"
+    inputTast    = makeSignal (symbolTheory functionInput) inputName
+    cfg'         = extendCfg (functionInput, inputTast) cfg
 
     funDeclComment = "\r\n;; Name and signature of the function to be synthesized"
     varDeclComment = "\r\n;; Declare the nonterminals used in the grammar"
@@ -208,19 +212,17 @@ fixedSizeQuery dto@(Dto theory pre post) cfg =
   if null sygusTargets
     then Nothing
     else Just $ unlines 
-      [declTheory
+      [ declTheory
       , sortDecl
       , grammar
-      , preCond
-      , postCond
+      , constraint
       , checkSynth
       ]
   where
     sygusTargets = getSygusTargets dto cfg
     synthTarget  = pickTarget sygusTargets
     grammar      = syntaxConstraint synthTarget cfg
-    preCond      = preCond2Sygus  pre
-    postCond     = postCond2Sygus synthTarget post
+    constraint   = dto2Sygus synthTarget dto
     declTheory   = "(set-logic " ++ show theory ++ ")"
     checkSynth   = "(check-synth)"
     sortDecl     = smtSortDecl theory

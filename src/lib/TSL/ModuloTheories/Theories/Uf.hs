@@ -24,3 +24,4 @@ instance TheorySymbol UfSymbol where
     toTsl (Uninterpreted a) = a
     symbolType _            = "UF"
     isUninterpreted _       = True
+    makeSignal              = Uninterpreted
