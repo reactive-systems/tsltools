@@ -95,7 +95,7 @@ uncurryFxnCall :: T.Text -> T.Text
 uncurryFxnCall x = let
   constsSaved = T.replace "()" "cccccc" $ x
   noBrackets = T.filter (\c -> not $ c `elem` ['(',')']) constsSaved
-  fxnParts = map T.strip $ T.splitOn " " noBrackets
+  fxnParts = map (replaceTSLMT . T.strip) $ T.splitOn " " noBrackets
   params = if tail fxnParts == []
            then ""
            else T.concat ["(", (T.intercalate ", " $ tail fxnParts), ")"] 

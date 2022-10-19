@@ -17,9 +17,9 @@ module Main
 
 import Config (Configuration(..), parseArguments)
 import EncodingUtils (initEncoding)
-import FileUtils (loadTSL)
+import FileUtils (loadTSL, tryReadContent)
  
-import TSL (toTLSF, implementHoa)
+import TSL (toTLSF, implementHoa, preprocess)
 
 import Hanoi (parse)
 
@@ -43,8 +43,14 @@ main = do
   Configuration{input, output, codeTarget, moduleName, functionName, writeHoa} <- parseArguments
   let fileBasename = takeBaseName $ fromJust input
 
+  -- tslmt2tsl
+  content <- tryReadContent input
+  case preprocess content of 
+    Left  errMsg    -> die $ show errMsg
+    Right processed -> writeFile "tmp.tsl" processed
+
   -- tsl2tlsf
-  spec <- loadTSL input
+  spec <- loadTSL (Just "tmp.tsl")
   let tlsfSpec = toTLSF fileBasename spec
   writeFile "test.tlsf" tlsfSpec
  
