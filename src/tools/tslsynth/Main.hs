@@ -1,74 +1,69 @@
 ----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+{-# LANGUAGE NamedFieldPuns #-}
+
+-----------------------------------------------------------------------------
+
 -- |
 -- Module      :  Main
 -- Maintainer  :  Mark Santolucito
 --
 -- Runs the full synthesis pipeline
---
------------------------------------------------------------------------------
-{-# LANGUAGE NamedFieldPuns #-}
------------------------------------------------------------------------------
-
 module Main
-  ( main
-  ) where
+  ( main,
+  )
+where
 
 -----------------------------------------------------------------------------
 
-import Config (Configuration(..), parseArguments)
+import Config (Configuration (..), parseArguments)
+import Data.List (isPrefixOf)
+import Data.Maybe (fromJust)
 import EncodingUtils (initEncoding)
 import FileUtils (loadTSL, tryReadContent)
- 
-import TSL (toTLSF, implementHoa, preprocess)
-
 import Hanoi (parse)
-
-import Data.Maybe (fromJust)
-import Data.List (isPrefixOf)
-
-import System.FilePath.Posix (takeBaseName)
-
-import System.Process (readProcessWithExitCode)
-import System.Exit 
-
 import qualified Syfco as S
+import System.Exit
+import System.FilePath.Posix (takeBaseName)
+import System.Process (readProcessWithExitCode)
+import TSL (implementHoa, preprocess, toTLSF)
+
 -----------------------------------------------------------------------------
 
-main
-  :: IO ()
-
+main ::
+  IO ()
 main = do
   initEncoding
 
-  Configuration{input, output, codeTarget, moduleName, functionName, writeHoa} <- parseArguments
+  Configuration {input, output, codeTarget, moduleName, functionName, writeHoa} <- parseArguments
   let fileBasename = takeBaseName $ fromJust input
 
   -- tslmt2tsl
   content <- tryReadContent input
-  case preprocess content of 
-    Left  errMsg    -> die $ show errMsg
+  case preprocess (content ++ "\n") of
+    Left errMsg -> die $ show errMsg
     Right processed -> writeFile "tmp.tsl" processed
 
   -- tsl2tlsf
   spec <- loadTSL (Just "tmp.tsl")
   let tlsfSpec = toTLSF fileBasename spec
   writeFile "test.tlsf" tlsfSpec
- 
+
   -- call ltlSynt
   hoaOutput <- callLtlsynt tlsfSpec
 
-  hoaContents <- 
+  hoaContents <-
     if isPrefixOf "REALIZABLE" hoaOutput
-    then do
-      return $ unlines $ tail $ lines $ hoaOutput
-    else do
-      print hoaOutput 
-      error "unrealizable spec?"
-      --error $ tslCoreGen $ fromJust input
+      then do
+        return $ unlines $ tail $ lines $ hoaOutput
+      else do
+        print hoaOutput
+        error "unrealizable spec?"
+  --error $ tslCoreGen $ fromJust input
 
   if writeHoa /= ""
-  then writeFile writeHoa hoaContents
-  else return ()
+    then writeFile writeHoa hoaContents
+    else return ()
 
   let hoa = parse hoaContents
   putStrLn $ either id (implementHoa codeTarget) hoa
@@ -86,51 +81,42 @@ tslCoreGen spec = generateCore (createContext poolSize verbosity' realizableComm
 
 callLtlsynt :: String -> IO String
 callLtlsynt tlsfContents = do
-  let tlsfSpec = 
+  let tlsfSpec =
         case S.fromTLSF tlsfContents of
           Left err -> error $ show err
-          Right spec -> spec 
-  let  
-    ltlIns      = prInputs S.defaultCfg tlsfSpec
-    ltlOuts     = prOutputs S.defaultCfg tlsfSpec
-    ltlFormulae = prFormulae S.defaultCfg{ S.outputMode = S.Fully, S.outputFormat = S.LTLXBA } tlsfSpec
-    ltlCommandArgs = [ltlFormulae, ltlIns, ltlOuts]
+          Right spec -> spec
+  let ltlIns = prInputs S.defaultCfg tlsfSpec
+      ltlOuts = prOutputs S.defaultCfg tlsfSpec
+      ltlFormulae = prFormulae S.defaultCfg {S.outputMode = S.Fully, S.outputFormat = S.LTLXBA} tlsfSpec
+      ltlCommandArgs = [ltlFormulae, ltlIns, ltlOuts]
   (exitCode, stdout, stderr) <- readProcessWithExitCode "./tlsfSynt.sh" ltlCommandArgs []
   if exitCode /= ExitSuccess
-  then
-    print "TSL spec UNREALIZABLE" >>
-    return "UNREALIZABLE"
-  else
-    return stdout
+    then
+      print "TSL spec UNREALIZABLE"
+        >> return "UNREALIZABLE"
+    else return stdout
 
-
-prFormulae 
-  :: S.Configuration -> S.Specification -> String
-
+prFormulae ::
+  S.Configuration -> S.Specification -> String
 prFormulae c s = case S.apply c s of
-  Left err     -> show err
+  Left err -> show err
   Right formulae -> formulae
 
 -----------------------------------------------------------------------------
 
 -- | Prints the input signals of the given specification.
-
-prInputs
-  :: S.Configuration -> S.Specification -> String
-
+prInputs ::
+  S.Configuration -> S.Specification -> String
 prInputs c s = case S.inputs c s of
-  Left err     -> show err
-  Right ([])   -> ""
-  Right (x:xr) -> x ++ concatMap ((:) ',' . (:) ' ') xr
+  Left err -> show err
+  Right ([]) -> ""
+  Right (x : xr) -> x ++ concatMap ((:) ',' . (:) ' ') xr
 
 -----------------------------------------------------------------------------
 
 -- | Prints the output signals of the given specification.
-
-prOutputs
-  :: S.Configuration -> S.Specification -> String
-
+prOutputs ::
+  S.Configuration -> S.Specification -> String
 prOutputs c s = case S.outputs c s of
-  Left err     -> show err
-  Right (x:xr) -> x ++ concatMap ((:) ',' . (:) ' ') xr
-
+  Left err -> show err
+  Right (x : xr) -> x ++ concatMap ((:) ',' . (:) ' ') xr
