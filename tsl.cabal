@@ -115,6 +115,10 @@ library
     TSL.ModuloTheories.Theories.Lia
     TSL.ModuloTheories.Solver
     TSL.ModuloTheories.Sygus
+    TSL.ModuloTheories.Sygus.Query
+    TSL.ModuloTheories.Sygus.Assumption
+    TSL.ModuloTheories.Sygus.Common
+    TSL.ModuloTheories.Sygus.Parser
 
   hs-source-dirs:
     src/lib

@@ -23,7 +23,6 @@ module TSL.Ast( Ast(..)
               , fromPredicateTerm
               , getAstInfo
               , stringifyAst
-              , astByDepth
               , getSignals
               ) where
 
@@ -247,17 +246,6 @@ getSignals = \case
   Variable  a      -> [a]
   Function  _ args -> concat (map getSignals args)
   Predicate _ args -> concat (map getSignals args)
-
--- TODO
--- NOT CORRECT
-astByDepth :: Ast a -> [Ast a]
-astByDepth = \case
-  v@(Variable  _     ) -> [v]
-  f@(Function  _ args) -> f:(concat $ map astByDepth args)
-  p@(Predicate _ args) -> p:(concat $ map astByDepth args)
-
--- levelOrderTraversal :: Int -> Ast a -> Map Int (Ast a) -> Map Int (Ast a)
--- levelOrderTraversal = undefined
 
 stringifyAst :: (a -> String) -> Ast a -> String
 stringifyAst stringify = \case
