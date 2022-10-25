@@ -83,6 +83,7 @@ module TSL
   , buildDto
   , buildDtoList
   , fixedSizeQuery
+  , parseSolution
   ) where
 
 -----------------------------------------------------------------------------
@@ -138,8 +139,13 @@ import TSL.ModuloTheories.ConsistencyChecking(consistencyChecking, consistencyDe
 import TSL.ModuloTheories.Theories(Theory, readTheory)
 import TSL.ModuloTheories.Solver(solveSat)
 import TSL.ModuloTheories.Cfg(Cfg(..), cfgFromSpec)
-import TSL.ModuloTheories.Sygus.Query(Dto, buildDto, buildDtoList, fixedSizeQuery)
 import TSL.ModuloTheories.Predicates(TheoryPredicate, predsFromSpec)
+import TSL.ModuloTheories.Sygus.Common (Dto)
+import TSL.ModuloTheories.Sygus.Query ( buildDto
+                                      , buildDtoList
+                                      , fixedSizeQuery
+                                      )
+import TSL.ModuloTheories.Sygus.Parser (parseSolution)
 
 import qualified TSL.Writer.CFM.Clash as Clash (implement)
 import qualified TSL.Writer.CFM.Applicative as Applicative (implement)

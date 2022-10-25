@@ -12,11 +12,15 @@
 module TSL.ModuloTheories.Sygus.Common
   ( Temporal (..)
   , Dto (..)
+  , Expansion (..)
+  , Term (..)
   ) where
 
 -------------------------------------------------------------------------------
 
 import TSL.ModuloTheories.Theories( Theory )
+
+import TSL.ModuloTheories.Predicates( TheoryPredicate )
 
 -------------------------------------------------------------------------------
 

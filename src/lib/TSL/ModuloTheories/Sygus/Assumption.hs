@@ -15,6 +15,8 @@ module TSL.ModuloTheories.Sygus.Assumption
 
 -------------------------------------------------------------------------------
 
+import Data.List (intersperse, transpose)
+
 import TSL.ModuloTheories.Sygus.Common (Dto(..)
                                        , Temporal (..)
                                        , Expansion (..)

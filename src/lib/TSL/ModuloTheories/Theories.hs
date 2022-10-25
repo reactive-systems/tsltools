@@ -29,7 +29,6 @@ module TSL.ModuloTheories.Theories( Theory(..)
                                   , tast2Tsl
                                   , tast2Smt
                                   , tastInfo
-                                  , tastByDepth
                                   , tastSignals
                                   , getAst
                                   , symbol2Tsl
@@ -47,7 +46,6 @@ import TSL.Ast( Ast
               , AstInfo
               , stringifyAst
               , getAstInfo
-              , astByDepth
               , getSignals
               )
 
@@ -89,11 +87,6 @@ data TAst =
   | LiaAst (Ast Lia.LiaSymbol)
 
 instance Show TAst where show = tast2Smt
-
-tastByDepth :: TAst -> [TAst]
-tastByDepth (UfAst  ast) = map UfAst  $ astByDepth ast 
-tastByDepth (EUfAst ast) = map EUfAst $ astByDepth ast
-tastByDepth (LiaAst ast) = map LiaAst $ astByDepth ast
 
 tastTheory :: TAst -> Theory
 tastTheory (UfAst  _) = Uf

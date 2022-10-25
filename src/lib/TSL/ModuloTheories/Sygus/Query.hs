@@ -56,7 +56,6 @@ import TSL.ModuloTheories.Predicates( TheoryPredicate
 import TSL.ModuloTheories.Theories( Theory
                                   , TheorySymbol
                                   , TAst
-                                  , tastByDepth
                                   , tast2Tsl
                                   , tastSignals
                                   , tast2Smt

@@ -130,5 +130,6 @@ main = do
         Predicates  -> toOut $ fmap (unlines . (map show)) preds
         Grammar     -> toOut $ fmap show $ cfgFromSpec theory spec
         Consistency -> consistency smtSolver preds
+        -- Sygus       -> toOut $ liftM2 sygusDebug preds $ cfgFromSpec theory spec
         Sygus       -> toOut $ liftM2 sygusDebug preds $ cfgFromSpec theory spec
         invalidFlag -> toOut $ genericError $ "Invalid Flag: " ++ show invalidFlag

@@ -10,7 +10,7 @@
 
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.Sygus.Parser
-  (
+  ( parseSolution
   ) where
 
 -------------------------------------------------------------------------------
@@ -106,10 +106,3 @@ parseSolution :: String -> Either Parsec.ParseError (Term String)
 parseSolution input =
   Parsec.parse (solutionParser <* Parsec.eof) errMsg input
   where errMsg = "Parser Failed!:\n>>>>>\n" ++ input ++ "\n<<<<<\n"
-
-main :: IO ()
-main = mapM_ (throw . parseSolution) examples
-  where 
-    throw :: (Show a) => (Show b) => Either a b -> IO ()
-    throw (Left  a) = error    $ show a 
-    throw (Right b) = putStrLn $ "\nSUCCESS!\n\t" ++ show b ++ "\nNEXT ONE ... \n"
