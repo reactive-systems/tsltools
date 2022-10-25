@@ -23,40 +23,22 @@ import Data.Set (Set)
 
 import qualified Data.Map as Map
 
-import Data.Map (Map)
-
-import Data.List (inits)
-
 import Control.Exception(assert)
-
-import Control.Monad.Trans.Except
-
-import TSL.Error(Error, errSolver)
-
-import TSL.Specification(Specification(..))
-
-import TSL.Ast(Ast(..), AstInfo(..), SymbolInfo(..))
 
 import TSL.ModuloTheories.Cfg ( Cfg(..)
                               , outputSignals
-                              , productionRules
                               , extendCfg
                               )
 
 import TSL.ModuloTheories.Predicates( TheoryPredicate
-                                    , predInfo
-                                    , pred2Tsl
                                     , pred2Smt
                                     , predTheory
                                     , predSignals
                                     , predReplacedSmt
-                                    , enumeratePreds
                                     )
 
-import TSL.ModuloTheories.Theories( Theory
-                                  , TheorySymbol
+import TSL.ModuloTheories.Theories( TheorySymbol
                                   , TAst
-                                  , tast2Tsl
                                   , tastSignals
                                   , tast2Smt
                                   , symbol2Smt
@@ -64,8 +46,6 @@ import TSL.ModuloTheories.Theories( Theory
                                   , symbolTheory
                                   , smtSortDecl
                                   , makeSignal
-                                  , isUninterpreted
-                                  , getAst
                                   )
 
 import TSL.ModuloTheories.Sygus.Common( Dto(..) )
@@ -81,9 +61,6 @@ buildDto pre post = Dto theory pre post
 buildDtoList :: [TheoryPredicate] -> [Dto]
 buildDtoList preds = concat $ map buildWith preds
   where buildWith pred = map (buildDto pred) preds
-
-tabulate :: Int -> String -> String
-tabulate n = (++) (replicate n '\t')
 
 minitab :: Int -> String -> String
 minitab n = (++) (replicate (2 * n) ' ')
@@ -118,10 +95,10 @@ dto2Sygus synthTarget (Dto _ pre post) =
                                               , ")"
                                               ]
 
-getSygusTargets :: Dto -> Cfg -> [TheorySymbol]
-getSygusTargets (Dto _ _ post) cfg = Set.toList intersection
+getSygusTargets :: TheoryPredicate -> Cfg -> [TheorySymbol]
+getSygusTargets postCondition cfg = Set.toList intersection
   where outputs      = outputSignals cfg
-        postSignals  = Set.fromList $ predSignals post
+        postSignals  = Set.fromList $ predSignals postCondition
         intersection = Set.intersection outputs postSignals
 
 -- | Picks one signal to synthesize SyGuS for.
@@ -192,7 +169,7 @@ syntaxConstraint functionInput cfg = unlines
 
 
 fixedSizeQuery :: Dto -> Cfg -> Maybe String
-fixedSizeQuery dto@(Dto theory pre post) cfg =
+fixedSizeQuery dto@(Dto theory _ post) cfg =
   if null sygusTargets
     then Nothing
     else Just $ unlines 
@@ -203,7 +180,7 @@ fixedSizeQuery dto@(Dto theory pre post) cfg =
       , checkSynth
       ]
   where
-    sygusTargets = getSygusTargets dto cfg
+    sygusTargets = getSygusTargets post cfg
     synthTarget  = pickTarget sygusTargets
     grammar      = syntaxConstraint synthTarget cfg
     constraint   = dto2Sygus synthTarget dto

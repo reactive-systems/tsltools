@@ -13,7 +13,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.Solver (solveSat) where
+module TSL.ModuloTheories.Solver (solveSat, runSolver) where
 
 -------------------------------------------------------------------------------
 
@@ -28,8 +28,6 @@ import System.Process(readProcessWithExitCode)
 import System.Exit(ExitCode(..), die)
 
 import TSL.Error(Error, errSolver)
-
--- import TSL.ModuloTheories.Theories(Theory, TheorySymbol, TAst)
 
 -------------------------------------------------------------------------------
 
@@ -55,16 +53,3 @@ runSolver solverPath args problem = do
     ExitSuccess      -> return stdout
     ExitFailure code ->
       die $ "Process Error " ++ show code ++ ":" ++ stderr ++ "\n" ++ stdout
-
--- -- TODO
--- getModel :: FilePath -> String -> ExceptT Error IO TheorySymbol
--- getModel solverPath problem = undefined
---   where model = "(set-option :produce-models true)"
-
--- -- TODO
--- parseFunction :: Theory -> String -> Either Error TAst
--- parseFunction theory fxnStr = undefined
-
--- -- TODO
--- sygus :: FilePath -> Int -> String -> ExceptT Error IO (Maybe TAst)
--- sygus solverPath maxDepth problem = undefined

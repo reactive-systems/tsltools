@@ -41,6 +41,13 @@ data Dto = Dto
     ,   postCondition :: TheoryPredicate
     }
 
+instance Show Dto where
+  show Dto{..} = unlines [ "DTO:"
+                         , '\t':show preCondition
+                         , '\t':show postCondition
+                         , ""
+                         ]
+
 data Expansion a = Expansion {nonterminal :: a, rule :: Term a} deriving (Show)
 
 instance Functor Expansion where

@@ -38,6 +38,7 @@ module TSL.Error
   , errFormat
   , errMtParse
   , errSolver
+  , errSygus
   ) where
 
 -----------------------------------------------------------------------------
@@ -75,6 +76,7 @@ data Error
   | ErrGeneric GenericError
   | ErrMtParse TheoryParseError
   | ErrSolver SolverError
+  | ErrSygus SygusError
 
 -----------------------------------------------------------------------------
 
@@ -170,6 +172,14 @@ newtype SolverError =
 
 -----------------------------------------------------------------------------
 
+newtype SygusError =
+  SygusError
+    { sygusErr :: String
+    }
+  deriving (Eq, Ord)
+
+-----------------------------------------------------------------------------
+
 instance Show Error where
   show = \case
     ErrParse x                       -> show x
@@ -186,6 +196,7 @@ instance Show Error where
     ErrGeneric GenericError {..}     -> "Error: " ++ errGen
     ErrMtParse TheoryParseError {..} -> "Modulo Theories Parse Error: " ++ mtRaw
     ErrSolver SolverError {..}       -> "Solver Error: " ++ solverErr
+    ErrSygus SygusError {..}         -> "Sygus Error: " ++ sygusErr
 
     where
       pr errname pos msgs =
@@ -546,5 +557,15 @@ errSolver
 
 errSolver =
   Left . ErrSolver . SolverError
+
+-----------------------------------------------------------------------------
+
+-- | SyGuS Error.
+
+errSygus
+  :: String -> Either Error a
+
+errSygus =
+  Left . ErrSygus . SygusError
 
 -----------------------------------------------------------------------------
