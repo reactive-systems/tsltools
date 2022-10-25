@@ -41,8 +41,6 @@ import TSL.Logic ( SignalTerm(..)
                  , PredicateTerm(..)
                  )
 
-import Debug.Trace (trace)
-
 -------------------------------------------------------------------------------
 
 -- | The Abstract Syntax Tree (AST) datatype.

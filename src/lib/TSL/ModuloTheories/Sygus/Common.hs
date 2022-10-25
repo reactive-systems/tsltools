@@ -43,8 +43,17 @@ data Dto = Dto
 
 data Expansion a = Expansion {nonterminal :: a, rule :: Term a} deriving (Show)
 
+instance Functor Expansion where
+  fmap f Expansion{..} = Expansion (f nonterminal) $ fmap f rule
+
 data Term a = 
       Value a
     | Expression (Expansion a)
     | Function a [Term a]
     deriving (Show)
+
+instance Functor Term where
+  fmap f = \case
+    Value v            -> Value $ f v 
+    Expression e       -> Expression (fmap f e)
+    Function func args -> Function (f func) $ map (fmap f) args
