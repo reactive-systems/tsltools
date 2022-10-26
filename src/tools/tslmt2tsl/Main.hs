@@ -21,8 +21,6 @@ module Main
 
 import Control.Monad.Trans.Except
 
-import Data.Maybe (isJust)
-
 import Control.Monad (liftM2)
 
 import System.Exit (die)
@@ -47,10 +45,9 @@ import TSL ( Error
            , consistencyChecking
            , consistencyDebug
            , solveSat
-           , buildDto
            , buildDtoList
-           , fixedSizeQuery
            , genericError
+           , sygusTslAssumption
            )
 
 import Debug.Trace (trace)
@@ -65,15 +62,6 @@ tabulate n = ((replicate n '\t') ++ )
 
 delWhiteLines :: String -> String
 delWhiteLines = unlines . filter (not . null) . lines
-
--- Using TSL.Specification occurs extra overhead,
--- so resorting to strings instead.
-tslmt2tsl :: String -> [String] -> String
-tslmt2tsl tslmtSpec assumptions = assumptions' ++ tslmtSpec
-    where header       = "assume {\n"
-          tailer       = "\n}\n"
-          tabulated    = map (tabulate 1) assumptions
-          assumptions' = header ++ unlines tabulated ++ tailer
 
 writeOutput :: (Show a) => Maybe FilePath -> Either a String -> IO ()
 writeOutput _ (Left errMsg)      = die $ show errMsg
@@ -104,32 +92,45 @@ consistency satSolver preds = do
     Left  errMsg   -> die $ show errMsg
     Right cResults -> mapM_ printTuple cResults
 
--- fixedSizeQuery :: Dto -> Cfg -> Maybe String
-sygusDebug :: [TheoryPredicate] -> Cfg -> String
-sygusDebug predicates cfg = unlines $ map getQuery dtos
-  where dtos    = buildDtoList predicates
-        getQuery dto = case fixedSizeQuery dto cfg of
-                         Nothing    -> ""
-                         Just query -> query
+bind2 :: (Monad m) => m a -> m b -> (a -> b -> m c) -> m c
+bind2 m1 m2 f = do
+  x1 <- m1
+  x2 <- m2
+  f x1 x2
+
+tslmt2tsl
+  :: FilePath
+  -> ExceptT Error IO Cfg
+  -> ExceptT Error IO [TheoryPredicate]
+  -> IO ()
+tslmt2tsl solverPath cfg preds = (=<<) showResult $ runExceptT $ bind2 cfg preds mkAssumptions
+  where 
+    mkAssumptions :: Cfg -> [TheoryPredicate] -> ExceptT Error IO [String]
+    mkAssumptions cfg = sequence . (map (sygusTslAssumption solverPath cfg)) . buildDtoList
+
+    showResult :: Either Error [String] -> IO ()
+    showResult = \case
+      Left  err -> cPutOutLn Vivid Red   $ "Error: "   ++ show err ++ "\n"
+      Right ass -> mapM_ printSuccess ass
+      where printSuccess msg = cPutOutLn Vivid Green $ "Success: " ++ show msg ++ "\n"
 
 main :: IO ()
 main = do
   initEncoding
   Configuration{input, output, flag, solverPath} <- parseArguments
+  (theory, spec) <- loadTSLMT input
+  let toOut     = writeOutput output
+      preds     = predsFromSpec theory spec
+      cfg       = cfgFromSpec theory spec
+      path      = case solverPath of
+                    Just solverPath' -> solverPath'
+                    Nothing          -> error "Please provide a solver path."
+      smtSolver = solveSat path
+      exceptTR  = ExceptT . return
 
   case flag of
-    Nothing            -> error "No flag option not yet supported; please provide a flag."
-    (Just flag')       -> do
-      (theory, spec) <- loadTSLMT input
-      let toOut              = writeOutput output
-      let preds              = predsFromSpec theory spec
-          smtSolver          = case solverPath of
-                                 Just path -> solveSat path
-                                 Nothing   -> error "Please provide a solver path."
-      case flag' of 
-        Predicates  -> toOut $ fmap (unlines . (map show)) preds
-        Grammar     -> toOut $ fmap show $ cfgFromSpec theory spec
-        Consistency -> consistency smtSolver preds
-        -- Sygus       -> toOut $ liftM2 sygusDebug preds $ cfgFromSpec theory spec
-        Sygus       -> toOut $ liftM2 sygusDebug preds $ cfgFromSpec theory spec
-        invalidFlag -> toOut $ genericError $ "Invalid Flag: " ++ show invalidFlag
+    Just Predicates  -> toOut $ fmap (unlines . (map show)) preds
+    Just Grammar     -> toOut $ fmap show cfg
+    Just Consistency -> consistency smtSolver preds
+    Just invalidFlag -> toOut $ genericError $ "Invalid Flag: " ++ show invalidFlag
+    Nothing          -> tslmt2tsl path (exceptTR cfg) (exceptTR preds)

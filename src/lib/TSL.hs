@@ -80,10 +80,8 @@ module TSL
   , readTheory
   , preprocess
   , Dto
-  , buildDto
   , buildDtoList
-  , fixedSizeQuery
-  , parseSolution
+  , sygusTslAssumption
   ) where
 
 -----------------------------------------------------------------------------
@@ -140,12 +138,9 @@ import TSL.ModuloTheories.Theories(Theory, readTheory)
 import TSL.ModuloTheories.Solver(solveSat)
 import TSL.ModuloTheories.Cfg(Cfg(..), cfgFromSpec)
 import TSL.ModuloTheories.Predicates(TheoryPredicate, predsFromSpec)
+import TSL.ModuloTheories.Sygus (sygusTslAssumption)
 import TSL.ModuloTheories.Sygus.Common (Dto)
-import TSL.ModuloTheories.Sygus.Query ( buildDto
-                                      , buildDtoList
-                                      , fixedSizeQuery
-                                      )
-import TSL.ModuloTheories.Sygus.Parser (parseSolution)
+import TSL.ModuloTheories.Sygus.Query (buildDtoList)
 
 import qualified TSL.Writer.CFM.Clash as Clash (implement)
 import qualified TSL.Writer.CFM.Applicative as Applicative (implement)

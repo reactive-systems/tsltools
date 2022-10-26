@@ -36,11 +36,12 @@ import TSL.ModuloTheories.Sygus.Assumption (sygus2TslAssumption)
 -- 2) Context-Free Grammar           (the "syntactic constraint")
 sygusTslAssumption
   :: FilePath
-  -> (Temporal, Dto)
   -> Cfg
+  -> Dto
   -> ExceptT Error IO String
-sygusTslAssumption solverPath problem cfg = queryResult >>= mkAssumption
-  where queryResult  = runQuery solverPath problem cfg
+sygusTslAssumption solverPath cfg dto = queryResult >>= mkAssumption
+  where problem      = (Next 1, dto)
+        queryResult  = fmap (head . lines) $ runQuery solverPath problem cfg
         mkAssumption = ExceptT . return . (flip result2TslAssumption problem)
 
 result2TslAssumption :: String -> (Temporal, Dto) -> Either Error String
