@@ -60,9 +60,9 @@ runQuery solverPath (temporal, dto) cfg =
     Nothing    -> except $ errSygus $ "No query for:\n" ++ show dto
     Just query -> ExceptT $ Right <$> (runSolver solverPath args query)
   where 
-    args       = ["-o", "sygus-sol-gterm"] ++ depthLimit
+    args       = ["-o", "sygus-sol-gterm", "--lang=sygus2"] ++ depthLimit
     depthLimit = case temporal of
-                   Next depth -> ["sygus-abort-size=" ++ show depth]
+                   Next depth -> ["--sygus-abort-size=" ++ show depth]
                    Eventually -> []
     sygusQuery = case temporal of
                    Next _     -> fixedSizeQuery dto cfg

@@ -50,6 +50,8 @@ import TSL.ModuloTheories.Theories( TheorySymbol
 
 import TSL.ModuloTheories.Sygus.Common( Dto(..) )
 
+import Debug.Trace (trace)
+
 -------------------------------------------------------------------------------
 
 
@@ -172,13 +174,7 @@ fixedSizeQuery :: Dto -> Cfg -> Maybe String
 fixedSizeQuery dto@(Dto theory _ post) cfg =
   if null sygusTargets
     then Nothing
-    else Just $ unlines 
-      [ declTheory
-      , sortDecl
-      , grammar
-      , constraint
-      , checkSynth
-      ]
+    else trace ("\nQUERY:\n" ++ query) (Just query)
   where
     sygusTargets = getSygusTargets post cfg
     synthTarget  = pickTarget sygusTargets
@@ -187,6 +183,12 @@ fixedSizeQuery dto@(Dto theory _ post) cfg =
     declTheory   = "(set-logic " ++ show theory ++ ")"
     checkSynth   = "(check-synth)"
     sortDecl     = smtSortDecl theory
+    query        = unlines [ declTheory
+                           , sortDecl
+                           , grammar
+                           , constraint
+                           , checkSynth
+                           ]
 
 recursiveQuery :: Dto -> Cfg -> String
 recursiveQuery = undefined
