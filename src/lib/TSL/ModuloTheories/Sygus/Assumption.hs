@@ -81,9 +81,9 @@ sygus2TslAssumption temporal (Dto _ pre post) term = unwords
   [ "G"
   , "(" -- GLOBALLY
   , "(" -- PRE + UPDATES
-  , "(" ++ pred2Tsl pre ++ ")"
+  , pred2Tsl pre
   , "&&"
-  , "(" ++ updateTerm ++ ")"
+  , updateTerm
   , ")" -- PRE + UPDATES
   , "->"
   , show temporal

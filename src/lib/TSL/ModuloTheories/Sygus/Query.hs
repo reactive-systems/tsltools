@@ -42,7 +42,6 @@ import TSL.ModuloTheories.Theories( TheorySymbol
                                   , TAst
                                   , tastSignals
                                   , tast2Smt
-                                  , symbol2Smt
                                   , symbolType
                                   , symbolTheory
                                   , smtSortDecl
@@ -50,8 +49,6 @@ import TSL.ModuloTheories.Theories( TheorySymbol
                                   )
 
 import TSL.ModuloTheories.Sygus.Common( Dto(..), Temporal(..) )
-
-import Debug.Trace (trace)
 
 -------------------------------------------------------------------------------
 

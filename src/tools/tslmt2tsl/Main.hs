@@ -58,12 +58,6 @@ import Debug.Trace (trace)
 
 -----------------------------------------------------------------------------
 
-bind2 :: (Monad m) => m a -> m b -> (a -> b -> m c) -> m c
-bind2 m1 m2 f = do
-  x1 <- m1
-  x2 <- m2
-  f x1 x2
-
 tabuateLn :: Int -> String -> String
 tabuateLn n = unlines . map (tabulate n) . lines
 

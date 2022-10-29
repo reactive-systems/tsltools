@@ -51,5 +51,4 @@ runSolver solverPath args problem = do
   (exitCode, stdout, stderr) <- readProcessWithExitCode solverPath args problem
   case exitCode of
     ExitSuccess      -> return stdout
-    ExitFailure code ->
-      die $ "Process Error " ++ show code ++ ":" ++ stderr ++ "\n" ++ stdout
+    ExitFailure code -> return $ "Process Error " ++ show code ++ ":" ++ stderr ++ "\n" ++ stdout
