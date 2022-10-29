@@ -9,8 +9,9 @@
 -- "Can Reactive Synthesis and Syntax-Guided Synthesis Be Friends?"
 --
 -----------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase     #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TupleSections  #-}
 -----------------------------------------------------------------------------
 
 module Main
@@ -20,6 +21,8 @@ module Main
 -----------------------------------------------------------------------------
 
 import Control.Monad.Trans.Except
+
+import Data.Either (isRight)
 
 import Control.Monad (liftM2)
 
@@ -47,12 +50,19 @@ import TSL ( Error
            , solveSat
            , buildDtoList
            , genericError
-           , sygusTslAssumption
+           , generateAssumptions
+           , generateQueryAssumptionPairs
            )
 
 import Debug.Trace (trace)
 
 -----------------------------------------------------------------------------
+
+bind2 :: (Monad m) => m a -> m b -> (a -> b -> m c) -> m c
+bind2 m1 m2 f = do
+  x1 <- m1
+  x2 <- m2
+  f x1 x2
 
 tabuateLn :: Int -> String -> String
 tabuateLn n = unlines . map (tabulate n) . lines
@@ -67,6 +77,11 @@ writeOutput :: (Show a) => Maybe FilePath -> Either a String -> IO ()
 writeOutput _ (Left errMsg)      = die $ show errMsg
 writeOutput path (Right content) = writeContent path $ removeDQuote content
   where removeDQuote = filter (/= '\"')
+
+unError :: (Show a) => Either a b -> b
+unError = \case
+  Left  err -> error $ show err
+  Right val -> val 
 
 consistency
   :: (String -> ExceptT Error IO Bool) 
@@ -92,27 +107,49 @@ consistency satSolver preds = do
     Left  errMsg   -> die $ show errMsg
     Right cResults -> mapM_ printTuple cResults
 
-bind2 :: (Monad m) => m a -> m b -> (a -> b -> m c) -> m c
-bind2 m1 m2 f = do
-  x1 <- m1
-  x2 <- m2
-  f x1 x2
+sygus
+  :: FilePath
+  -> Cfg
+  -> [TheoryPredicate]
+  -> IO ()
+sygus solverPath cfg preds = mapM_ showResult triples
+  where 
+    dtos    = buildDtoList preds
+    pairs   = generateQueryAssumptionPairs solverPath cfg dtos
+    triples = zipWith (\dto pair -> (\(a,b) -> (show dto, a, b)) <$> pair) dtos pairs
+
+    showResult :: ExceptT Error IO (String, String, String) -> IO ()
+    showResult result = do
+      value <- runExceptT result
+      case value of 
+        Left  err    -> cPutOutLn Vivid Red $ show err
+        Right triple -> printSuccess triple
+
+    printSuccess :: (String, String, String) -> IO ()
+    printSuccess (dto, query, assumption) = do
+      cPutOutLn Vivid Blue "Data Transformation Obligation:"
+      putStrLn $ tabuateLn 1 dto
+      cPutOutLn Vivid Green "SyGuS Query:"
+      putStrLn $ tabuateLn 1 $ delWhiteLines query
+      cPutOutLn Vivid Green "Assumption:"
+      putStrLn assumption
+      cPutOutLn Dull Cyan "\n\n----------------------------------------------------\n\n"
 
 tslmt2tsl
   :: FilePath
-  -> ExceptT Error IO Cfg
-  -> ExceptT Error IO [TheoryPredicate]
-  -> IO ()
-tslmt2tsl solverPath cfg preds = (=<<) showResult $ runExceptT $ bind2 cfg preds mkAssumptions
+  -> String
+  -> Either Error Cfg
+  -> Either Error [TheoryPredicate]
+  -> IO String
+tslmt2tsl solverPath tslSpec cfg preds = addAssumptions assumptions
   where 
-    mkAssumptions :: Cfg -> [TheoryPredicate] -> ExceptT Error IO [String]
-    mkAssumptions cfg = sequence . (map (sygusTslAssumption solverPath cfg)) . buildDtoList
+    assumptions :: Either Error (IO String)
+    assumptions = (generateAssumptions solverPath) <$> cfg <*> (buildDtoList <$> preds)
 
-    showResult :: Either Error [String] -> IO ()
-    showResult = \case
-      Left  err -> cPutOutLn Vivid Red   $ "Error: "   ++ show err ++ "\n"
-      Right ass -> mapM_ printSuccess ass
-      where printSuccess msg = cPutOutLn Vivid Green $ "Success: " ++ show msg ++ "\n"
+    addAssumptions :: Either Error (IO String) -> IO String
+    addAssumptions = \case
+      Left  err         -> die $ show err
+      Right assumptions -> (tslSpec ++) <$> assumptions
 
 main :: IO ()
 main = do
@@ -126,11 +163,11 @@ main = do
                     Just solverPath' -> solverPath'
                     Nothing          -> error "Please provide a solver path."
       smtSolver = solveSat path
-      exceptTR  = ExceptT . return
 
   case flag of
     Just Predicates  -> toOut $ fmap (unlines . (map show)) preds
     Just Grammar     -> toOut $ fmap show cfg
     Just Consistency -> consistency smtSolver preds
+    Just Sygus       -> sygus path (unError cfg) (unError preds)
     Just invalidFlag -> toOut $ genericError $ "Invalid Flag: " ++ show invalidFlag
-    Nothing          -> tslmt2tsl path (exceptTR cfg) (exceptTR preds)
+    Nothing          -> (tslmt2tsl path "" cfg preds) >>= putStrLn

@@ -10,9 +10,8 @@
 
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.Sygus.Query
-  ( buildDto
-  , buildDtoList
-  , fixedSizeQuery
+  ( buildDtoList
+  , generateQuery
   ) where
 
 -------------------------------------------------------------------------------
@@ -24,6 +23,8 @@ import Data.Set (Set)
 import qualified Data.Map as Map
 
 import Control.Exception(assert)
+
+import TSL.Error (Error, errSygus)
 
 import TSL.ModuloTheories.Cfg ( Cfg(..)
                               , outputSignals
@@ -48,7 +49,7 @@ import TSL.ModuloTheories.Theories( TheorySymbol
                                   , makeSignal
                                   )
 
-import TSL.ModuloTheories.Sygus.Common( Dto(..) )
+import TSL.ModuloTheories.Sygus.Common( Dto(..), Temporal(..) )
 
 import Debug.Trace (trace)
 
@@ -169,12 +170,11 @@ syntaxConstraint functionInput cfg = unlines
     funDeclComment = "\r\n;; Name and signature of the function to be synthesized"
     varDeclComment = "\r\n;; Declare the nonterminals used in the grammar"
 
-
-fixedSizeQuery :: Dto -> Cfg -> Maybe String
-fixedSizeQuery dto@(Dto theory _ post) cfg =
+fixedSizeQuery :: Cfg -> Dto -> Either Error String
+fixedSizeQuery cfg dto@(Dto theory _ post) =
   if null sygusTargets
-    then Nothing
-    else trace ("\nQUERY:\n" ++ query) (Just query)
+    then errSygus $ "Empty Query for " ++ show dto
+    else Right query
   where
     sygusTargets = getSygusTargets post cfg
     synthTarget  = pickTarget sygusTargets
@@ -190,9 +190,10 @@ fixedSizeQuery dto@(Dto theory _ post) cfg =
                            , checkSynth
                            ]
 
-recursiveQuery :: Dto -> Cfg -> String
+recursiveQuery :: Cfg -> Dto -> Either Error String
 recursiveQuery = undefined
 
-findRecursion :: [TAst] -> TAst
-findRecursion [] = error "Empty list for recursion!"
-findRecursion _  = undefined
+generateQuery :: Temporal -> Cfg -> Dto -> Either Error String
+generateQuery = \case
+  Eventually -> recursiveQuery
+  Next _     -> fixedSizeQuery

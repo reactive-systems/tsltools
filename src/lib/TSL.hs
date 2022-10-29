@@ -81,7 +81,8 @@ module TSL
   , preprocess
   , Dto
   , buildDtoList
-  , sygusTslAssumption
+  , generateAssumptions
+  , generateQueryAssumptionPairs
   ) where
 
 -----------------------------------------------------------------------------
@@ -138,7 +139,9 @@ import TSL.ModuloTheories.Theories(Theory, readTheory)
 import TSL.ModuloTheories.Solver(solveSat)
 import TSL.ModuloTheories.Cfg(Cfg(..), cfgFromSpec)
 import TSL.ModuloTheories.Predicates(TheoryPredicate, predsFromSpec)
-import TSL.ModuloTheories.Sygus (sygusTslAssumption)
+import TSL.ModuloTheories.Sygus ( generateAssumptions
+                                , generateQueryAssumptionPairs
+                                )
 import TSL.ModuloTheories.Sygus.Common (Dto)
 import TSL.ModuloTheories.Sygus.Query (buildDtoList)
 
