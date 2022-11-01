@@ -47,7 +47,7 @@ removePostfix = unpack . replace postfix "" . pack
 
 generateAssumptions :: FilePath -> Cfg -> [Dto] -> IO String
 generateAssumptions solverPath cfg dtos =
-  (mkAlwaysAssumeBlock . unlines) <$> assumptions
+  (mkAlwaysAssumeBlock . unlines . (filter (/=""))) <$> assumptions
   where
     problems    = (,) <$> temporalAtoms <*> dtos
     assumptions = traverse (extractAssumption . mkAssumption) problems
