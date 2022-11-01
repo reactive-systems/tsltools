@@ -52,9 +52,8 @@ import TSL ( Error
            , genericError
            , generateAssumptions
            , generateQueryAssumptionPairs
+           , unwrap
            )
-
-import Debug.Trace (trace)
 
 -----------------------------------------------------------------------------
 
@@ -101,6 +100,7 @@ consistency satSolver preds = do
     Left  errMsg   -> die $ show errMsg
     Right cResults -> mapM_ printTuple cResults
 
+-- Maybe I also want the result...
 sygus
   :: FilePath
   -> Cfg
@@ -116,7 +116,7 @@ sygus solverPath cfg preds = mapM_ showResult triples
     showResult result = do
       value <- runExceptT result
       case value of 
-        Left  err    -> cPutOutLn Vivid Red $ show err
+        Left  err    -> printFailure $ show err
         Right triple -> printSuccess triple
 
     printSuccess :: (String, String, String) -> IO ()
@@ -127,7 +127,16 @@ sygus solverPath cfg preds = mapM_ showResult triples
       putStrLn $ tabuateLn 1 $ delWhiteLines query
       cPutOutLn Vivid Green "Assumption:"
       putStrLn assumption
-      cPutOutLn Dull Cyan "\n\n----------------------------------------------------\n\n"
+      printEnd
+
+    printFailure :: String -> IO ()
+    printFailure errMsg = do
+      cPutOutLn Vivid Red errMsg
+      printEnd
+
+    printEnd :: IO ()
+    printEnd = cPutOutLn Dull Cyan literal
+      where literal = "\n\n----------------------------------------------------\n\n"
 
 tslmt2tsl
   :: FilePath
@@ -143,13 +152,13 @@ tslmt2tsl solverPath tslSpec cfg preds = addAssumptions assumptions
     addAssumptions :: Either Error (IO String) -> IO String
     addAssumptions = \case
       Left  err         -> die $ show err
-      Right assumptions -> (tslSpec ++) <$> assumptions
+      Right assumptions -> (++ tslSpec) <$> assumptions
 
 main :: IO ()
 main = do
   initEncoding
   Configuration{input, output, flag, solverPath} <- parseArguments
-  (theory, spec) <- loadTSLMT input
+  (theory, spec, specStr) <- loadTSLMT input
   let toOut     = writeOutput output
       preds     = predsFromSpec theory spec
       cfg       = cfgFromSpec theory spec
@@ -159,9 +168,9 @@ main = do
       smtSolver = solveSat path
 
   case flag of
+    Nothing          -> (tslmt2tsl path specStr cfg preds) >>= putStrLn
     Just Predicates  -> toOut $ fmap (unlines . (map show)) preds
     Just Grammar     -> toOut $ fmap show cfg
     Just Consistency -> consistency smtSolver preds
     Just Sygus       -> sygus path (unError cfg) (unError preds)
     Just invalidFlag -> toOut $ genericError $ "Invalid Flag: " ++ show invalidFlag
-    Nothing          -> (tslmt2tsl path "" cfg preds) >>= putStrLn

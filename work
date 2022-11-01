@@ -1,0 +1,28 @@
+data Update a = Update {sink :: a, source :: DataSource a} deriving (Show)
+
+data DataSource a =
+      TslValue a
+    | TslFunction a [DataSource a]
+
+[Update {sink = "y", source = TslValue "y_target"}]
+
+( (y Int (y_target (+ y 1))))
+
+(sygus-sol-gterm
+ (function
+  (!
+   y_target
+  :gterm y)
+ )
+)
+
+[Update {sink = "y", source = TslFunction "+" [TslValue "y",TslValue "1"]}]
+[Update {sink = "y", source = TslValue "y_target"}]
+                                                           
+(sygus-sol-gterm
+ (function
+  (!
+   (+ (! y_target :gterm y) 1)
+  :gterm y)
+ )
+)

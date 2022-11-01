@@ -46,11 +46,11 @@ generateAssumptions solverPath cfg dtos =
     assumptions = traverse (extractAssumption . mkAssumption) problems
 
     mkAssumption (temporal, dto) = sygusTslAssumption solverPath cfg temporal dto
-    mkAlwaysAssumeBlock str      = "always assume{\n" ++ str ++ "\n}\n"
+    mkAlwaysAssumeBlock str      = "always assume {\n" ++ str ++ "\n}\n"
     extractAssumption            = (fmap either2Assumption) . runExceptT
     either2Assumption            = \case
-      Left  err                   -> "// " ++ show err
-      Right assumption            -> assumption
+      Left  _                     -> []
+      Right assumption            -> '\t':assumption
 
 -- | A SyGuS Query is based off of:
 -- 1) Data Transformation Obligation (the "semantic  constraint") and

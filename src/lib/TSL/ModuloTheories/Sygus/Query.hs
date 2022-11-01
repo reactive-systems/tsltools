@@ -48,7 +48,7 @@ import TSL.ModuloTheories.Theories( TheorySymbol
                                   , makeSignal
                                   )
 
-import TSL.ModuloTheories.Sygus.Common( Dto(..), Temporal(..) )
+import TSL.ModuloTheories.Sygus.Common( Dto(..), Temporal(..), targetPostfix)
 
 -------------------------------------------------------------------------------
 
@@ -160,7 +160,7 @@ syntaxConstraint functionInput cfg = unlines
     nonterminals = Set.toList $ nonterminalsUsed functionInput cfg
     varDecls     = parenthize 1 $ unwords $ map declareVar nonterminals
     varType      = symbolType functionInput
-    inputName    = "input"
+    inputName    = show functionInput ++ targetPostfix
     inputTast    = makeSignal (symbolTheory functionInput) inputName
     cfg'         = extendCfg (functionInput, inputTast) cfg
 

@@ -14,6 +14,7 @@ module TSL.ModuloTheories.Sygus.Common
   , Dto (..)
   , Expansion (..)
   , Term (..)
+  , targetPostfix
   ) where
 
 -------------------------------------------------------------------------------
@@ -23,6 +24,9 @@ import TSL.ModuloTheories.Theories( Theory )
 import TSL.ModuloTheories.Predicates( TheoryPredicate )
 
 -------------------------------------------------------------------------------
+
+targetPostfix :: String
+targetPostfix = "_target"
 
 data Temporal =
       Next Int

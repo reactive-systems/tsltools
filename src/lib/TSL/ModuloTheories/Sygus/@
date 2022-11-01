@@ -38,12 +38,18 @@ import Debug.Trace (trace)
 
 -------------------------------------------------------------------------------
 
-unquoteShow :: String -> String
-unquoteShow = filter (/= '\"')
+data Update a = Update {sink :: a, source :: DataSource a}
 
-removePostfix :: String -> String
-removePostfix = unpack . replace postfix "" . pack
-  where postfix = pack targetPostfix
+data DataSource a =
+      TslValue a
+    | TslFunction a [DataSource a]
+
+
+processAndShow :: (Show a) => a -> String
+processAndShow = removePostfix . unquoteShow . show
+  where unquoteShow   = filter (/= '\"')
+        postfix       = pack targetPostfix
+        removePostfix = unpack. replace postfix "" . pack
 
 binOp2Tsl :: String -> String
 binOp2Tsl "="   = "eq"
@@ -67,28 +73,20 @@ numeric2Tsl value =
         []          -> value
         _           -> error $ "Unexpected value! >> " ++ value
 
-data Update a = Update {sink :: a, source :: DataSource a} deriving (Show)
-
-data DataSource a =
-      TslValue a
-    | TslFunction a [DataSource a]
-    -- deriving (Show)
-
 instance (Show a) => Show (DataSource a) where
   show = \case
-    TslValue literal   -> numeric2Tsl $ postprocess $ show literal
-    TslFunction f args -> unwords [ binOp2Tsl $ postprocess $ show f
-                                  , unwords $ map (postprocess . show) args
+    TslValue literal   -> numeric2Tsl $ processAndShow literal
+    TslFunction f args -> unwords [ binOp2Tsl $ processAndShow f
+                                  , unwords $ map processAndShow args
                                   ]
-    where postprocess = removePostfix . unquoteShow
 
 update2Tsl :: (Show a) => Update a -> String
 update2Tsl update =
-  unquoteShow $ "[" ++ show (sink update)  ++ " <- " ++ show (source update) ++ "]"
+  "[" ++ show (sink update)  ++ " <- " ++ show (source update) ++ "]"
 
+-- G ( ( (eq y 0) && ([y <- y]) && X([y <- + y int1()]) ) -> X ((eq y 1)) ) ;
 updates2Tsl :: (Show a) => [[Update a]] -> String
 updates2Tsl updates =
-  -- trace ("SHOWING UPDATES> " ++ show updates ++ " <END") $
   unwords $ intersperse tslAnd $ zipWith depth2Assumption [0..] $ reverse updates
   where
     tslAnd = "&&"

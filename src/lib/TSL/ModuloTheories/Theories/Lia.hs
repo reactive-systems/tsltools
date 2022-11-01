@@ -60,7 +60,7 @@ instance TheorySymbol LiaSymbol where
     Lte     -> "<="
 
   toTsl = \case
-    (Int i) -> show i
+    (Int i) -> "int" ++ show i ++ "()"
     (Var v) -> v
     Add     -> "add"
     Sub     -> "sub"

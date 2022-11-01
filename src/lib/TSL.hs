@@ -68,6 +68,7 @@ module TSL
     -- * Error Handling
   , Error
   , genericError
+  , unwrap
     -- * Modulo Theories
   , Cfg(..)
   , predsFromSpec
@@ -106,7 +107,7 @@ import TSL.Logic
   , updates
   )
 
-import TSL.Error (Error, genericError)
+import TSL.Error (Error, genericError, unwrap)
 
 import TSL.SymbolTable (Kind(..), SymbolTable(..), toCSV)
 

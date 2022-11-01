@@ -39,6 +39,7 @@ module TSL.Error
   , errMtParse
   , errSolver
   , errSygus
+  , unwrap
   ) where
 
 -----------------------------------------------------------------------------
@@ -49,7 +50,7 @@ import TSL.Expression (ExprPos(..), SrcPos(..))
 
 import Text.Parsec.Error (ParseError)
 
-import System.Exit (exitFailure)
+import System.Exit (exitFailure, die)
 
 import System.IO (hPrint, stderr)
 
@@ -201,6 +202,12 @@ instance Show Error where
     where
       pr errname pos msgs =
         "\"" ++ errname ++ "\" (" ++ prErrPos pos ++ "):\n" ++ concat msgs
+-----------------------------------------------------------------------------
+
+unwrap :: Either Error a -> IO a
+unwrap = \case
+  Left  err -> die $ show err
+  Right val -> return val
 
 -----------------------------------------------------------------------------
 

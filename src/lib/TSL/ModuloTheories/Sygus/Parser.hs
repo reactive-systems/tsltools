@@ -65,4 +65,5 @@ solutionParser = parens $ (header >> Parsec.space >> termParser)
 parseSolution :: String -> Either Parsec.ParseError (Term String)
 parseSolution input =
   Parsec.parse (solutionParser <* Parsec.eof) errMsg input
-  where errMsg = "Parser Failed!:\n>>>>>\n" ++ input ++ "\n<<<<<\n"
+  where
+    errMsg = "Parser Failed!:\n>>>>>\nInput was: \"" ++ input ++ "\"\n<<<<<\n"
