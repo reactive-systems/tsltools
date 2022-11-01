@@ -134,7 +134,7 @@ calculateUpdateChain (Expansion dst term) =
 sygus2TslAssumption :: Temporal -> Dto -> Term String -> String
 sygus2TslAssumption temporal (Dto _ pre post) term = 
   if null updateChain
-     then "// [x <- x] type assumptions not yet supported."
+     then "// ((p x) & [x <- x]) -> X (p x) type assumptions not yet supported."
      else unwords [ "G"
                   , "(" -- GLOBALLY
                   , "(" -- PRE + UPDATES
