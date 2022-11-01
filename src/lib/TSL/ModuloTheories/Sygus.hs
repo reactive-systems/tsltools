@@ -5,8 +5,9 @@
 -- Maintainer  :  Wonhyuk Choi
 
 -------------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.Sygus ( generateAssumptions
@@ -19,13 +20,15 @@ import Control.Monad.Trans.Except
 
 import Control.Monad (liftM2)
 
+import Data.Text(pack, unpack, replace)
+
 import TSL.Error (Error, errSygus, parseError)
 
 import TSL.ModuloTheories.Cfg (Cfg)
 
 import TSL.ModuloTheories.Solver (runSolver)
 
-import TSL.ModuloTheories.Sygus.Common (Temporal(..), Dto)
+import TSL.ModuloTheories.Sygus.Common (Temporal(..), Dto, targetPostfix)
 
 import TSL.ModuloTheories.Sygus.Query (generateQuery)
 
@@ -37,6 +40,10 @@ import TSL.ModuloTheories.Sygus.Assumption (sygus2TslAssumption)
 
 temporalAtoms :: [Temporal]
 temporalAtoms = [Next 1]
+
+removePostfix :: String -> String
+removePostfix = unpack . replace postfix "" . pack
+  where postfix = pack targetPostfix
 
 generateAssumptions :: FilePath -> Cfg -> [Dto] -> IO String
 generateAssumptions solverPath cfg dtos =
@@ -75,7 +82,7 @@ result2TslAssumption temporal dto result =
 runQuery :: FilePath -> Temporal -> String -> IO String
 runQuery solverPath temporal = (fmap getGterm) . (runSolver solverPath args)
   where 
-    getGterm   = head . lines
+    getGterm   = removePostfix . head . lines
     args       = ["-o", "sygus-sol-gterm", "--lang=sygus2"] ++ depthLimit
     depthLimit = case temporal of
                    Next depth -> ["--sygus-abort-size=" ++ show depth]

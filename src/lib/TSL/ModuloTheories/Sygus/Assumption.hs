@@ -8,7 +8,6 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE QuasiQuotes       #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.Sygus.Assumption
@@ -17,9 +16,9 @@ module TSL.ModuloTheories.Sygus.Assumption
 
 -------------------------------------------------------------------------------
 
-import Data.List (intersperse, transpose)
+import Data.Maybe (catMaybes)
 
-import Data.Text(pack, unpack, replace)
+import Data.List (intersperse, transpose)
 
 import Text.Regex.PCRE.Heavy (scan, re)
 
@@ -27,23 +26,16 @@ import TSL.ModuloTheories.Sygus.Common (Dto(..)
                                        , Temporal (..)
                                        , Expansion (..)
                                        , Term (..)
-                                       , targetPostfix
                                        )
 
 import TSL.ModuloTheories.Theories (TheorySymbol, symbol2Tsl)
 
 import TSL.ModuloTheories.Predicates (pred2Tsl)
 
-import Debug.Trace (trace)
-
 -------------------------------------------------------------------------------
 
 unquoteShow :: String -> String
 unquoteShow = filter (/= '\"')
-
-removePostfix :: String -> String
-removePostfix = unpack . replace postfix "" . pack
-  where postfix = pack targetPostfix
 
 binOp2Tsl :: String -> String
 binOp2Tsl "="   = "eq"
@@ -55,7 +47,7 @@ binOp2Tsl "+"   = "add"
 binOp2Tsl "-"   = "sub"
 binOp2Tsl "*"   = "mult"
 binOp2Tsl "/"   = "div"
-binOp2Tsl other = trace ("Got irreducible binop>" ++ other ++ "<")other
+binOp2Tsl other = other
 
 numeric2Tsl :: String -> String
 numeric2Tsl value =
@@ -67,36 +59,52 @@ numeric2Tsl value =
         []          -> value
         _           -> error $ "Unexpected value! >> " ++ value
 
-data Update a = Update {sink :: a, source :: DataSource a} deriving (Show)
-
 data DataSource a =
       TslValue a
     | TslFunction a [DataSource a]
-    -- deriving (Show)
+
+data Update a = Update {sink :: a, source :: DataSource a}
 
 instance (Show a) => Show (DataSource a) where
   show = \case
-    TslValue literal   -> numeric2Tsl $ postprocess $ show literal
-    TslFunction f args -> unwords [ binOp2Tsl $ postprocess $ show f
-                                  , unwords $ map (postprocess . show) args
+    TslValue literal   -> numeric2Tsl $ unquoteShow $ show literal
+    TslFunction f args -> unwords [ binOp2Tsl $ unquoteShow $ show f
+                                  , unwords $ map (unquoteShow . show) args
                                   ]
-    where postprocess = removePostfix . unquoteShow
 
-update2Tsl :: (Show a) => Update a -> String
-update2Tsl update =
-  unquoteShow $ "[" ++ show (sink update)  ++ " <- " ++ show (source update) ++ "]"
+instance (Show a) => Show (Update a) where
+  show update = bracket $ unwords [ unquoteShow $ show $ sink update
+                                  , updateSymbol
+                                  , show $ source update
+                                  ]
+    where bracket str  = "[" ++ str ++ "]"
+          updateSymbol = "<-"
 
-updates2Tsl :: (Show a) => [[Update a]] -> String
-updates2Tsl updates =
-  -- trace ("SHOWING UPDATES> " ++ show updates ++ " <END") $
-  unwords $ intersperse tslAnd $ zipWith depth2Assumption [0..] $ reverse updates
+removeSelfUpdate :: (Eq a) => Update a -> Maybe (Update a)
+removeSelfUpdate update = case (source update) of
+    TslFunction _ _   -> Just $ update
+    TslValue sinkTerm -> if (sink update) == sinkTerm
+                            then Nothing
+                            else Just $ update
+
+updates2Tsl :: (Eq a, Show a) => [[Update a]] -> String
+updates2Tsl updates = unwords $ intersperse tslAnd depthAssumptions
   where
-    tslAnd = "&&"
+    tslAnd           = "&&"
+    tslNext          = 'X'
+    trueUpdates      = getTrueUpdates $ reverse updates
+    depthAssumptions = zipWith depth2Assumption [0..] trueUpdates
+
+    getTrueUpdates :: (Eq a) => [[Update a]] -> [[Update a]]
+    getTrueUpdates = catMaybes . (map removeSelves)
+      where removeSelves xs = case catMaybes ((map removeSelfUpdate) xs) of
+                             [] -> Nothing 
+                             ys -> Just ys
 
     depth2Assumption :: (Show a) => Int -> [Update a] -> String
     depth2Assumption depth depthUpdates = nexts ++ "(" ++ anded ++ ")"
-      where nexts = replicate depth 'X'
-            anded = unwords $ intersperse tslAnd $ map update2Tsl depthUpdates
+      where nexts = replicate depth tslNext
+            anded = unwords $ intersperse tslAnd $ map show depthUpdates
 
 term2DataSource :: Term a -> DataSource a
 term2DataSource = \case
@@ -124,22 +132,26 @@ calculateUpdateChain (Expansion dst term) =
               update  = Update dst $ term2DataSource function
 
 sygus2TslAssumption :: Temporal -> Dto -> Term String -> String
-sygus2TslAssumption temporal (Dto _ pre post) term = unwords
-  [ "G"
-  , "(" -- GLOBALLY
-  , "(" -- PRE + UPDATES
-  , pred2Tsl pre
-  , "&&"
-  , updateTerm
-  , ")" -- PRE + UPDATES
-  , "->"
-  , show temporal
-  , "(" ++ pred2Tsl post ++ ")"
-  , ")" -- GLOBALLY
-  , ";"
-  ]
+sygus2TslAssumption temporal (Dto _ pre post) term = 
+  if null updateChain
+     then "// [x <- x] type assumptions not yet supported."
+     else unwords [ "G"
+                  , "(" -- GLOBALLY
+                  , "(" -- PRE + UPDATES
+                  , pred2Tsl pre
+                  , updateTerm
+                  , ")" -- PRE + UPDATES
+                  , "->"
+                  , show temporal
+                  , "(" ++ pred2Tsl post ++ ")"
+                  , ")" -- GLOBALLY
+                  , ";"
+                  ]
   where
+    tslAnd      = "&&"
+    weakUntil   = " W "
     updateChain = updates2Tsl $ term2Updates term
-    updateTerm  = if (temporal == Eventually)
-                     then updateChain ++ " W " ++ pred2Tsl post
-                     else updateChain
+    updateTerm  = let condition = if temporal == Eventually
+                                     then weakUntil ++ pred2Tsl post
+                                     else ""
+                   in tslAnd ++ updateChain ++ condition
