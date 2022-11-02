@@ -50,6 +50,8 @@ import TSL.ModuloTheories.Theories( TheorySymbol
 
 import TSL.ModuloTheories.Sygus.Common( Dto(..), Temporal(..), targetPostfix)
 
+import TSL.ModuloTheories.Sygus.Recursion (recursiveQuery)
+
 -------------------------------------------------------------------------------
 
 
@@ -187,9 +189,7 @@ fixedSizeQuery cfg dto@(Dto theory _ post) =
                            , checkSynth
                            ]
 
-recursiveQuery :: Cfg -> Dto -> Either Error String
-recursiveQuery = undefined
-
+-- FIXME: recusiveQuery will need to be of monad IO.
 generateQuery :: Temporal -> Cfg -> Dto -> Either Error String
 generateQuery = \case
   Eventually -> recursiveQuery

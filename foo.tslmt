@@ -1,7 +1,0 @@
-#LIA
-always guarantee {
-    [x <- x] || [x <- add x int1() ];
-    [y <- y] || [y <- add y int1() ];
-    lt x y -> F (lt y x) ;
-    lt y x -> F (lt x y) ;
-}
