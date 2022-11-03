@@ -58,8 +58,8 @@ updates2Tsl updates = unwords $ intersperse tslAnd depthAssumptions
       where nexts = replicate depth tslNext
             anded = unwords $ intersperse tslAnd $ map show depthUpdates
 
-makeAssumption :: Temporal -> Dto -> [[Update String]] -> Either Error String
-makeAssumption temporal (Dto _ pre post) updates = 
+makeAssumption :: Dto -> Temporal -> [[Update String]] -> Either Error String
+makeAssumption (Dto _ pre post) temporal updates = 
   if null updateChain
      then errSygus errMsg
      else Right $ unwords [ "G"
