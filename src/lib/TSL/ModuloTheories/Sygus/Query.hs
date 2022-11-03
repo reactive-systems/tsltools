@@ -9,10 +9,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.Sygus.Query
-  ( buildDtoList
-  , generateQuery
-  ) where
+module TSL.ModuloTheories.Sygus.Query (generateSygusQuery) where
 
 -------------------------------------------------------------------------------
 
@@ -21,8 +18,6 @@ import qualified Data.Set as Set
 import Data.Set (Set)
 
 import qualified Data.Map as Map
-
-import Control.Exception(assert)
 
 import TSL.Error (Error, errSygus)
 
@@ -48,32 +43,20 @@ import TSL.ModuloTheories.Theories( TheorySymbol
                                   , makeSignal
                                   )
 
-import TSL.ModuloTheories.Sygus.Common( Dto(..), Temporal(..), targetPostfix)
-
-import TSL.ModuloTheories.Sygus.Recursion (recursiveQuery)
+import TSL.ModuloTheories.Sygus.Common( Dto(..)
+                                      , Temporal(..)
+                                      , targetPostfix
+                                      , parenthize
+                                      )
 
 -------------------------------------------------------------------------------
 
-
-buildDto :: TheoryPredicate -> TheoryPredicate -> Dto
-buildDto pre post = Dto theory pre post
-  where theory   = assert theoryEq $ predTheory pre
-        theoryEq = (predTheory pre) == (predTheory post)
-
-buildDtoList :: [TheoryPredicate] -> [Dto]
-buildDtoList preds = concat $ map buildWith preds
-  where buildWith pred = map (buildDto pred) preds
 
 minitab :: Int -> String -> String
 minitab n = (++) (replicate (2 * n) ' ')
 
 functionName :: String
 functionName = "function"
-
-parenthize :: Int -> String -> String
-parenthize repeats str = lpars ++ str ++ rpars
-  where lpars = replicate repeats '(' 
-        rpars = replicate repeats ')'
 
 declareVar :: TheorySymbol -> String
 declareVar symbol = parenthize 1 $ unwords [show symbol, symbolType symbol]
@@ -169,8 +152,8 @@ syntaxConstraint functionInput cfg = unlines
     funDeclComment = "\r\n;; Name and signature of the function to be synthesized"
     varDeclComment = "\r\n;; Declare the nonterminals used in the grammar"
 
-fixedSizeQuery :: Cfg -> Dto -> Either Error String
-fixedSizeQuery cfg dto@(Dto theory _ post) =
+generateSygusQuery :: Cfg -> Dto -> Either Error String
+generateSygusQuery cfg dto@(Dto theory _ post) =
   if null sygusTargets
     then errSygus $ "Empty Query for " ++ show dto
     else Right query
@@ -188,9 +171,3 @@ fixedSizeQuery cfg dto@(Dto theory _ post) =
                            , constraint
                            , checkSynth
                            ]
-
--- FIXME: recusiveQuery will need to be of monad IO.
-generateQuery :: Temporal -> Cfg -> Dto -> Either Error String
-generateQuery = \case
-  Eventually -> recursiveQuery
-  Next _     -> fixedSizeQuery

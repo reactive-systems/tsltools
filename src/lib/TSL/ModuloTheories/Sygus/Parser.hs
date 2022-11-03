@@ -10,12 +10,13 @@
 
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.Sygus.Parser
-  ( parseSolution
+  ( parseSygusResult
+  , parseModels
   ) where
 
 -------------------------------------------------------------------------------
 
-import TSL.ModuloTheories.Sygus.Common (Expansion (..) , Term (..))
+import TSL.ModuloTheories.Sygus.Common (Expansion (..) , Term (..), Model(..))
 
 -------------------------------------------------------------------------------
 
@@ -58,12 +59,15 @@ funcParser = parens fxn
 termParser :: Parser (Term String)
 termParser = Parsec.choice [Parsec.try exprParser, Parsec.try funcParser, valueParser]
 
-solutionParser :: Parser (Term String)
-solutionParser = parens $ (header >> Parsec.space >> termParser)
+sygusParser :: Parser (Term String)
+sygusParser = parens $ (header >> Parsec.space >> termParser)
     where header = Parsec.string "sygus-sol-gterm"
 
-parseSolution :: String -> Either Parsec.ParseError (Term String)
-parseSolution input =
-  Parsec.parse (solutionParser <* Parsec.eof) errMsg input
+parseSygusResult :: String -> Either Parsec.ParseError (Term String)
+parseSygusResult input =
+  Parsec.parse (sygusParser <* Parsec.eof) errMsg input
   where
     errMsg = "Parser Failed!:\n>>>>>\nInput was: \"" ++ input ++ "\"\n<<<<<\n"
+
+parseModels :: String -> Either Parsec.ParseError (Model String)
+parseModels = undefined

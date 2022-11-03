@@ -41,18 +41,13 @@ import PrintUtils ( Color(..)
 
 import TSL ( Error
            , TheoryPredicate
-           , Dto
            , Cfg
            , cfgFromSpec
            , predsFromSpec
            , consistencyChecking
            , consistencyDebug
            , solveSat
-           , buildDtoList
            , genericError
-           , generateAssumptions
-           , generateQueryAssumptionPairs
-           , unwrap
            )
 
 -----------------------------------------------------------------------------
@@ -100,59 +95,59 @@ consistency satSolver preds = do
     Left  errMsg   -> die $ show errMsg
     Right cResults -> mapM_ printTuple cResults
 
--- Maybe I also want the result...
-sygus
-  :: FilePath
-  -> Cfg
-  -> [TheoryPredicate]
-  -> IO ()
-sygus solverPath cfg preds = mapM_ showResult triples
-  where 
-    dtos    = buildDtoList preds
-    pairs   = generateQueryAssumptionPairs solverPath cfg dtos
-    triples = zipWith (\dto pair -> (\(a,b) -> (show dto, a, b)) <$> pair) dtos pairs
+-- -- Maybe I also want the result...
+-- sygus
+--   :: FilePath
+--   -> Cfg
+--   -> [TheoryPredicate]
+--   -> IO ()
+-- sygus solverPath cfg preds = mapM_ showResult triples
+--   where 
+--     dtos    = buildDtoList preds
+--     pairs   = generateQueryAssumptionPairs solverPath cfg dtos
+--     triples = zipWith (\dto pair -> (\(a,b) -> (show dto, a, b)) <$> pair) dtos pairs
 
-    showResult :: ExceptT Error IO (String, String, String) -> IO ()
-    showResult result = do
-      value <- runExceptT result
-      case value of 
-        Left  err    -> printFailure $ show err
-        Right triple -> printSuccess triple
+--     showResult :: ExceptT Error IO (String, String, String) -> IO ()
+--     showResult result = do
+--       value <- runExceptT result
+--       case value of 
+--         Left  err    -> printFailure $ show err
+--         Right triple -> printSuccess triple
 
-    printSuccess :: (String, String, String) -> IO ()
-    printSuccess (dto, query, assumption) = do
-      cPutOutLn Vivid Blue "Data Transformation Obligation:"
-      putStrLn $ tabuateLn 1 dto
-      cPutOutLn Vivid Green "SyGuS Query:"
-      putStrLn $ tabuateLn 1 $ delWhiteLines query
-      cPutOutLn Vivid Green "Assumption:"
-      putStrLn assumption
-      printEnd
+--     printSuccess :: (String, String, String) -> IO ()
+--     printSuccess (dto, query, assumption) = do
+--       cPutOutLn Vivid Blue "Data Transformation Obligation:"
+--       putStrLn $ tabuateLn 1 dto
+--       cPutOutLn Vivid Green "SyGuS Query:"
+--       putStrLn $ tabuateLn 1 $ delWhiteLines query
+--       cPutOutLn Vivid Green "Assumption:"
+--       putStrLn assumption
+--       printEnd
 
-    printFailure :: String -> IO ()
-    printFailure errMsg = do
-      cPutOutLn Vivid Red errMsg
-      printEnd
+--     printFailure :: String -> IO ()
+--     printFailure errMsg = do
+--       cPutOutLn Vivid Red errMsg
+--       printEnd
 
-    printEnd :: IO ()
-    printEnd = cPutOutLn Dull Cyan literal
-      where literal = "\n\n----------------------------------------------------\n\n"
+--     printEnd :: IO ()
+--     printEnd = cPutOutLn Dull Cyan literal
+--       where literal = "\n\n----------------------------------------------------\n\n"
 
-tslmt2tsl
-  :: FilePath
-  -> String
-  -> Either Error Cfg
-  -> Either Error [TheoryPredicate]
-  -> IO String
-tslmt2tsl solverPath tslSpec cfg preds = addAssumptions assumptions
-  where 
-    assumptions :: Either Error (IO String)
-    assumptions = (generateAssumptions solverPath) <$> cfg <*> (buildDtoList <$> preds)
+-- tslmt2tsl
+--   :: FilePath
+--   -> String
+--   -> Either Error Cfg
+--   -> Either Error [TheoryPredicate]
+--   -> IO String
+-- tslmt2tsl solverPath tslSpec cfg preds = addAssumptions assumptions
+--   where 
+--     assumptions :: Either Error (IO String)
+--     assumptions = (generateAssumptions solverPath) <$> cfg <*> (buildDtoList <$> preds)
 
-    addAssumptions :: Either Error (IO String) -> IO String
-    addAssumptions = \case
-      Left  err         -> die $ show err
-      Right assumptions -> (++ tslSpec) <$> assumptions
+--     addAssumptions :: Either Error (IO String) -> IO String
+--     addAssumptions = \case
+--       Left  err         -> die $ show err
+--       Right assumptions -> (++ tslSpec) <$> assumptions
 
 main :: IO ()
 main = do
@@ -168,9 +163,9 @@ main = do
       smtSolver = solveSat path
 
   case flag of
-    Nothing          -> (tslmt2tsl path specStr cfg preds) >>= putStrLn
     Just Predicates  -> toOut $ fmap (unlines . (map show)) preds
     Just Grammar     -> toOut $ fmap show cfg
     Just Consistency -> consistency smtSolver preds
-    Just Sygus       -> sygus path (unError cfg) (unError preds)
+    Just Sygus       -> undefined -- sygus path (unError cfg) (unError preds)
+    Nothing          -> undefined -- (tslmt2tsl path specStr cfg preds) >>= putStrLn
     Just invalidFlag -> toOut $ genericError $ "Invalid Flag: " ++ show invalidFlag

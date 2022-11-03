@@ -14,14 +14,17 @@ module TSL.ModuloTheories.Sygus.Common
   , Dto (..)
   , Expansion (..)
   , Term (..)
+  , Model (..)
+  , IntermediateResults (..)
   , targetPostfix
+  , parenthize
   ) where
 
 -------------------------------------------------------------------------------
 
-import TSL.ModuloTheories.Theories( Theory )
+import TSL.ModuloTheories.Theories (Theory)
 
-import TSL.ModuloTheories.Predicates( TheoryPredicate )
+import TSL.ModuloTheories.Predicates (TheoryPredicate)
 
 -------------------------------------------------------------------------------
 
@@ -68,3 +71,17 @@ instance Functor Term where
     Value v            -> Value $ f v 
     Expression e       -> Expression (fmap f e)
     Function func args -> Function (f func) $ map (fmap f) args
+
+data IntermediateResults = IntermediateResults
+  {  input  :: String
+  ,  query  :: String
+  ,  result :: String
+  }
+  deriving (Show)
+
+newtype Model a = Model (a,a) deriving (Show)
+
+parenthize :: Int -> String -> String
+parenthize repeats str = lpars ++ str ++ rpars
+  where lpars = replicate repeats '(' 
+        rpars = replicate repeats ')'

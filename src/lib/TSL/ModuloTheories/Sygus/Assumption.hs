@@ -11,74 +11,26 @@
 
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.Sygus.Assumption
-  ( sygus2TslAssumption
+  ( makeAssumption
   ) where
 
 -------------------------------------------------------------------------------
 
 import Data.Maybe (catMaybes)
 
-import Data.List (intersperse, transpose)
+import Data.List (intersperse)
 
-import Text.Regex.PCRE.Heavy (scan, re)
-
-import TSL.ModuloTheories.Sygus.Common (Dto(..)
-                                       , Temporal (..)
-                                       , Expansion (..)
-                                       , Term (..)
-                                       )
+import TSL.Error (Error, errSygus)
 
 import TSL.ModuloTheories.Theories (TheorySymbol, symbol2Tsl)
 
 import TSL.ModuloTheories.Predicates (pred2Tsl)
 
+import TSL.ModuloTheories.Sygus.Common (Dto(..) , Temporal (..), Term)
+
+import TSL.ModuloTheories.Sygus.Update (Update (..), DataSource(..), term2Updates)
+
 -------------------------------------------------------------------------------
-
-unquoteShow :: String -> String
-unquoteShow = filter (/= '\"')
-
-binOp2Tsl :: String -> String
-binOp2Tsl "="   = "eq"
-binOp2Tsl "<"   = "lt"
-binOp2Tsl ">"   = "gt"
-binOp2Tsl "<="  = "lte"
-binOp2Tsl ">="  = "gte"
-binOp2Tsl "+"   = "add"
-binOp2Tsl "-"   = "sub"
-binOp2Tsl "*"   = "mult"
-binOp2Tsl "/"   = "div"
-binOp2Tsl other = other
-
-numeric2Tsl :: String -> String
-numeric2Tsl value =
-  case scan [re|(([+-]?[0-9]*\.[0-9]+))|] value of
-    [(_,[real])] -> "real" ++ real ++ "()"
-    _            ->
-      case scan [re|([0-9]+)|] value of
-        [(_,[int])] -> "int" ++ int ++ "()"
-        []          -> value
-        _           -> error $ "Unexpected value! >> " ++ value
-
-data DataSource a =
-      TslValue a
-    | TslFunction a [DataSource a]
-
-data Update a = Update {sink :: a, source :: DataSource a}
-
-instance (Show a) => Show (DataSource a) where
-  show = \case
-    TslValue literal   -> numeric2Tsl $ unquoteShow $ show literal
-    TslFunction f args -> unwords [ binOp2Tsl $ unquoteShow $ show f
-                                  , unwords $ map (unquoteShow . show) args
-                                  ]
-
-instance (Show a) => Show (Update a) where
-  show update = bracket $ unwords [ unquoteShow $ show $ sink update
-                                  , updateSymbol
-                                  , show $ source update
-                                  ]
-    where bracket str  = "[" ++ str ++ "]"
-          updateSymbol = "<-"
 
 removeSelfUpdate :: (Eq a) => Update a -> Maybe (Update a)
 removeSelfUpdate update = case (source update) of
@@ -106,52 +58,29 @@ updates2Tsl updates = unwords $ intersperse tslAnd depthAssumptions
       where nexts = replicate depth tslNext
             anded = unwords $ intersperse tslAnd $ map show depthUpdates
 
-term2DataSource :: Term a -> DataSource a
-term2DataSource = \case
-  Value value          -> TslValue value
-  Expression expansion -> TslValue $ nonterminal expansion
-  Function f args      -> TslFunction f $ map term2DataSource args
-
-term2Updates :: Term a -> [[Update a]]
-term2Updates = \case
-  Value _              -> []
-  Expression expansion -> calculateUpdateChain expansion
-  Function _ args      -> map concat $ transpose $ map term2Updates args
-
-calculateUpdateChain :: Expansion a -> [[Update a]]
-calculateUpdateChain (Expansion dst term) =
-  case term of 
-    Value      value        -> [[Update dst (TslValue value)]]
-
-    Expression expansion    -> [update]:updates
-        where updates = calculateUpdateChain expansion
-              update  = Update dst $ TslValue $ nonterminal expansion
-
-    function@(Function _ _) -> [update]:updates
-        where updates = term2Updates function
-              update  = Update dst $ term2DataSource function
-
-sygus2TslAssumption :: Temporal -> Dto -> Term String -> String
-sygus2TslAssumption temporal (Dto _ pre post) term = 
+makeAssumption :: Temporal -> Dto -> [[Update String]] -> Either Error String
+makeAssumption temporal (Dto _ pre post) updates = 
   if null updateChain
-     then "// ((p x) & [x <- x]) -> X (p x) type assumptions not yet supported."
-     else unwords [ "G"
-                  , "(" -- GLOBALLY
-                  , "(" -- PRE + UPDATES
-                  , pred2Tsl pre
-                  , updateTerm
-                  , ")" -- PRE + UPDATES
-                  , "->"
-                  , show temporal
-                  , "(" ++ pred2Tsl post ++ ")"
-                  , ")" -- GLOBALLY
-                  , ";"
-                  ]
+     then errSygus errMsg
+     else Right $ unwords [ "G"
+                          , "(" -- GLOBALLY
+                          , "(" -- PRE + UPDATES
+                          , pred2Tsl pre
+                          , updateTerm
+                          , ")" -- PRE + UPDATES
+                          , "->"
+                          , show temporal
+                          , "(" ++ pred2Tsl post ++ ")"
+                          , ")" -- GLOBALLY
+                          , ";"
+                          ]
   where
     tslAnd      = "&&"
     weakUntil   = " W "
-    updateChain = updates2Tsl $ term2Updates term
+    updateChain = updates2Tsl updates
     updateTerm  = let condition = if temporal == Eventually
                                      then weakUntil ++ pred2Tsl post
                                      else ""
                    in tslAnd ++ updateChain ++ condition
+    errMsg      =
+      "((p x) & [x <- x]) -> X (p x) type assumptions not yet supported."

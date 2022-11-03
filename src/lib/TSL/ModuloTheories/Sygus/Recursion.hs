@@ -10,20 +10,16 @@
 
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.Sygus.Recursion
-  ( recursiveQuery
+  ( generatePbeDtos
+  , findRecursion
+  , config_SUBQUERY_AST_MAX_SIZE
   ) where
 
 -------------------------------------------------------------------------------
 
-import qualified Data.Set as Set
+import Control.Monad.Trans.Except
 
-import Data.Set (Set)
-
-import qualified Data.Map as Map
-
-import Control.Exception(assert)
-
-import TSL.Error (Error, errSygus)
+import TSL.Error (Error, errSygus, parseError)
 
 import TSL.ModuloTheories.Cfg ( Cfg(..)
                               , outputSignals
@@ -39,6 +35,7 @@ import TSL.ModuloTheories.Predicates( TheoryPredicate
 
 import TSL.ModuloTheories.Theories( TheorySymbol
                                   , TAst
+                                  , Theory
                                   , tastSignals
                                   , tast2Smt
                                   , symbolType
@@ -47,9 +44,75 @@ import TSL.ModuloTheories.Theories( TheorySymbol
                                   , makeSignal
                                   )
 
-import TSL.ModuloTheories.Sygus.Common( Dto(..), Temporal(..), targetPostfix)
+import TSL.ModuloTheories.Solver (runSolver)
+
+import TSL.ModuloTheories.Sygus.Common( Dto (..)
+                                      , Temporal (..)
+                                      , Model (..)
+                                      , targetPostfix
+                                      , parenthize
+                                      )
+
+import TSL.ModuloTheories.Sygus.Update (Update (..), DataSource (..))
+
+import TSL.ModuloTheories.Sygus.Parser (parseModels)
 
 -------------------------------------------------------------------------------
+-- (set-logic LIA)
+-- (set-option :produce-models true)
+-- (declare-const vruntime2 Int)
+-- (declare-const vruntime1 Int)
+-- 
+-- (assert (not (= vruntime1 1)))
+-- (assert (not (> vruntime1 vruntime2)))
+-- (check-sat)
+-- (get-model)
+--
+-- 1. Produce model queries
+-- 2. Run queries
+-- 3. Get results
+-- 4. Use these to create SyGuS queries
+-- 5. Find recursion inside of them
 
-recursiveQuery :: Cfg -> Dto -> Either Error String
-recursiveQuery = undefined
+config_NUM_RECURSIVE_SUBQUERIES :: Int
+config_NUM_RECURSIVE_SUBQUERIES = 3
+
+config_SUBQUERY_AST_MAX_SIZE :: Int
+config_SUBQUERY_AST_MAX_SIZE = 3
+
+model2SmtPred :: (Show a) => Model a -> String
+model2SmtPred (Model (symbol, model)) =
+  parenthize 1 $ unwords [ "="
+                         , show symbol
+                         , show model
+                         ]
+
+produceModelsQuery :: (Show a) => [Model a] -> Theory -> TheoryPredicate -> String
+produceModelsQuery models theory pred = unlines [ header
+                                                , setOption
+                                                , declareConstList
+                                                , notTheseModels
+                                                , assertion $ pred2Smt pred
+                                                , footer
+                                                ]
+  where paren1           = parenthize 1
+        header           = paren1 $ unwords ["set-logic", show theory]
+        setOption        = "(set-option :produce-models true)"
+        footer           = "(check-sat)\n(get-model)"
+        declareConst var = paren1 $ unwords ["declare-const ", show var, symbolType var]
+        declareConstList = unlines $ map declareConst $ predSignals pred
+        assertion stmt   = paren1 $ unwords ["assert", stmt]
+        notTheseModels   = unlines $ map (assertion . model2SmtPred) models
+
+runGetModel :: FilePath -> String -> IO String
+runGetModel solverPath = runSolver solverPath args
+  where args = ["--lang=smt2"]
+
+modifyPredicate :: [Model String] -> TheoryPredicate -> TheoryPredicate
+modifyPredicate = undefined
+
+generatePbeDtos :: FilePath -> Dto -> ExceptT Error IO [Dto]
+generatePbeDtos = undefined
+
+findRecursion :: [[[Update a]]] -> Either Error [[Update a]]
+findRecursion = undefined 

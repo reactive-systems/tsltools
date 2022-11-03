@@ -80,10 +80,9 @@ module TSL
   , solveSat
   , readTheory
   , preprocess
-  , Dto
-  , buildDtoList
-  , generateAssumptions
-  , generateQueryAssumptionPairs
+  , generateAssumption
+  , SygusDebugInfo (..)
+  , IntermediateResults (..)
   ) where
 
 -----------------------------------------------------------------------------
@@ -140,11 +139,10 @@ import TSL.ModuloTheories.Theories(Theory, readTheory)
 import TSL.ModuloTheories.Solver(solveSat)
 import TSL.ModuloTheories.Cfg(Cfg(..), cfgFromSpec)
 import TSL.ModuloTheories.Predicates(TheoryPredicate, predsFromSpec)
-import TSL.ModuloTheories.Sygus ( generateAssumptions
-                                , generateQueryAssumptionPairs
+import TSL.ModuloTheories.Sygus ( generateAssumption
+                                , SygusDebugInfo (..)
                                 )
-import TSL.ModuloTheories.Sygus.Common (Dto)
-import TSL.ModuloTheories.Sygus.Query (buildDtoList)
+import TSL.ModuloTheories.Sygus.Common (IntermediateResults (..))
 
 import qualified TSL.Writer.CFM.Clash as Clash (implement)
 import qualified TSL.Writer.CFM.Applicative as Applicative (implement)

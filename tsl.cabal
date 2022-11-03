@@ -119,6 +119,8 @@ library
     TSL.ModuloTheories.Sygus.Assumption
     TSL.ModuloTheories.Sygus.Common
     TSL.ModuloTheories.Sygus.Parser
+    TSL.ModuloTheories.Sygus.Recursion
+    TSL.ModuloTheories.Sygus.Update
 
   hs-source-dirs:
     src/lib

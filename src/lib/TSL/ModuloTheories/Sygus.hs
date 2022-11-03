@@ -10,8 +10,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.Sygus ( generateAssumptions
-                                , generateQueryAssumptionPairs
+module TSL.ModuloTheories.Sygus ( generateAssumption
+                                , SygusDebugInfo (..)
                                 ) where
 
 -------------------------------------------------------------------------------
@@ -22,21 +22,44 @@ import Control.Monad (liftM2)
 
 import Data.Text(pack, unpack, replace)
 
+import Data.List (isInfixOf)
+
+import Control.Exception(assert)
+
 import TSL.Error (Error, errSygus, parseError)
 
 import TSL.ModuloTheories.Cfg (Cfg)
 
+import TSL.ModuloTheories.Predicates (predTheory, TheoryPredicate)
+
 import TSL.ModuloTheories.Solver (runSolver)
 
-import TSL.ModuloTheories.Sygus.Common (Temporal(..), Dto, targetPostfix)
+import TSL.ModuloTheories.Sygus.Common ( Temporal(..)
+                                       , Term
+                                       , Dto (..)
+                                       , IntermediateResults
+                                       , targetPostfix
+                                       )
 
-import TSL.ModuloTheories.Sygus.Query (generateQuery)
+import TSL.ModuloTheories.Sygus.Query (generateSygusQuery)
 
-import TSL.ModuloTheories.Sygus.Parser (parseSolution)
+import TSL.ModuloTheories.Sygus.Parser (parseSygusResult)
 
-import TSL.ModuloTheories.Sygus.Assumption (sygus2TslAssumption)
+import TSL.ModuloTheories.Sygus.Assumption (makeAssumption)
+
+import TSL.ModuloTheories.Sygus.Update (Update, term2Updates)
+
+import TSL.ModuloTheories.Sygus.Recursion ( generatePbeDtos
+                                          , findRecursion
+                                          , config_SUBQUERY_AST_MAX_SIZE
+                                          )
 
 -------------------------------------------------------------------------------
+
+data SygusDebugInfo =
+    NextDebug IntermediateResults
+  | EventuallyDebug [(IntermediateResults, IntermediateResults)]
+  deriving (Show)
 
 temporalAtoms :: [Temporal]
 temporalAtoms = [Next 1]
@@ -45,57 +68,54 @@ removePostfix :: String -> String
 removePostfix = unpack . replace postfix "" . pack
   where postfix = pack targetPostfix
 
-generateAssumptions :: FilePath -> Cfg -> [Dto] -> IO String
-generateAssumptions solverPath cfg dtos =
-  (mkAlwaysAssumeBlock . unlines . (filter (/=""))) <$> assumptions
-  where
-    problems    = (,) <$> temporalAtoms <*> dtos
-    assumptions = traverse (extractAssumption . mkAssumption) problems
+buildDto :: TheoryPredicate -> TheoryPredicate -> Dto
+buildDto pre post = Dto theory pre post
+  where theory   = assert theoryEq $ predTheory pre
+        theoryEq = (predTheory pre) == (predTheory post)
 
-    mkAssumption (temporal, dto) = sygusTslAssumption solverPath cfg temporal dto
-    mkAlwaysAssumeBlock str      = "always assume {\n" ++ str ++ "\n}\n"
-    extractAssumption            = (fmap either2Assumption) . runExceptT
-    either2Assumption            = \case
-      Left  _                     -> []
-      Right assumption            -> '\t':assumption
+buildDtoList :: [TheoryPredicate] -> [Dto]
+buildDtoList preds = concat $ map buildWith preds
+  where buildWith pred = map (buildDto pred) preds
 
--- | A SyGuS Query is based off of:
--- 1) Data Transformation Obligation (the "semantic  constraint") and
--- 2) Context-Free Grammar           (the "syntactic constraint")
-sygusTslAssumption
+generateUpdates
   :: FilePath
   -> Cfg
-  -> Temporal
+  -> Int
   -> Dto
-  -> ExceptT Error IO String
-sygusTslAssumption solverPath cfg temporal dto = queryResult >>= mkAssumption
-  where query        = generateQuery temporal cfg dto
-        queryResult  = except query >>= (ExceptT . (fmap Right) . (runQuery solverPath temporal))
-        mkAssumption = except . (result2TslAssumption temporal dto)
-
-result2TslAssumption :: Temporal -> Dto -> String -> Either Error String
-result2TslAssumption temporal dto result = 
-  case parseSolution result of
-    Left  err  -> parseError err
-    Right term -> Right $ sygus2TslAssumption temporal dto term
-
-runQuery :: FilePath -> Temporal -> String -> IO String
-runQuery solverPath temporal = (fmap getGterm) . (runSolver solverPath args)
-  where 
-    getGterm   = removePostfix . head . lines
-    args       = ["-o", "sygus-sol-gterm", "--lang=sygus2"] ++ depthLimit
-    depthLimit = case temporal of
-                   Next depth -> ["--sygus-abort-size=" ++ show depth]
-                   Eventually -> []
-
-generateQueryAssumptionPairs :: FilePath -> Cfg -> [Dto] -> [ExceptT Error IO (String, String)]
-generateQueryAssumptionPairs solverPath cfg dtos = zipWith mkPair queries assumptions
+  -> ExceptT Error IO [[Update String]]
+generateUpdates solverPath cfg depth dto = term2Updates <$> term
   where
-    problems    = (,) <$> temporalAtoms <*> dtos
-    queries     = map (\(temporal, dto) -> generateQuery temporal cfg dto) problems
-    results     = map mkResult $ zip queries $ map fst problems
-    assumptions = map mkAssumption $ zipWith (\(a,b) c -> (a,b,c)) problems results
+    query :: Either Error String
+    query = generateSygusQuery cfg dto
 
-    mkResult (q,t) = (except q) >>= (ExceptT . (fmap Right) . (runQuery solverPath t))
-    mkAssumption (t, dto, result) = result >>= (except . result2TslAssumption t dto)
-    mkPair query assumption       = liftM2 (,) (except query) assumption
+    result :: ExceptT Error IO String
+    result = except query >>= (runSygusQuery solverPath depth)
+
+    term :: ExceptT Error IO (Term String)
+    term = do
+        value <- result
+        return value
+        case parseSygusResult value of
+          Left err   -> except $ parseError err
+          Right term -> return term
+
+-- makeAssumption :: Temporal -> Dto -> [[Update String]] -> Either Error String
+
+generateAssumption :: FilePath -> Cfg -> Dto -> Temporal -> ExceptT Error IO String
+generateAssumption solverPath cfg dto = \case
+  next@(Next numNext) -> except . makeAssumption next dto =<< genUpdates numNext dto
+  Eventually          -> except . (makeAssumption Eventually dto) =<< eventuallyUpdates
+  where
+    genUpdates        = generateUpdates solverPath cfg
+    pbeDtos           = generatePbeDtos solverPath dto
+    pbeUpdates        = pbeDtos >>= (traverse (genUpdates config_SUBQUERY_AST_MAX_SIZE))
+    eventuallyUpdates = pbeUpdates >>= (except . findRecursion)
+
+runSygusQuery :: FilePath -> Int -> String -> ExceptT Error IO String
+runSygusQuery solverPath depth = ExceptT . (fmap getResult) . (runSolver solverPath args)
+  where 
+    args             = depthLimit:["-o", "sygus-sol-gterm", "--lang=sygus2"]
+    depthLimit       = "--sygus-abort-size=" ++ show depth
+    getResult result = if isInfixOf "error" result
+                          then errSygus result
+                          else Right result
