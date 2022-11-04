@@ -50,13 +50,12 @@ import TSL ( Error
 
 import FileUtils (writeContent, loadTSLMT, tryReadContent)
 
-
 -----------------------------------------------------------------------------
 
-convert2Cabal :: String -> H.Test -> Test
+convert2Cabal :: String -> IO H.Test -> Test
 convert2Cabal name = Test . testInstance name
 
-testInstance :: String -> H.Test -> TestInstance
+testInstance :: String -> IO H.Test -> TestInstance
 testInstance name test = TestInstance
     { run       = runTest test
     , name      = name
@@ -65,11 +64,9 @@ testInstance name test = TestInstance
     , setOption = \_ _ -> Right $ testInstance name test
     }
 
-runTest :: H.Test -> IO Progress
-runTest = fmap snd . H.performTest onStart onError onFailure (Finished Pass)
-
+runTest :: IO H.Test -> IO Progress
+runTest = (fmap snd . H.performTest onStart onError onFailure us =<<)
   where
-
    onStart :: H.State -> Progress -> IO Progress
    onStart _ = return
 
@@ -79,8 +76,30 @@ runTest = fmap snd . H.performTest onStart onError onFailure (Finished Pass)
    onFailure :: a -> String -> H.State -> Progress -> IO Progress
    onFailure _ msg _ _ = return $ Finished (Fail $ concat $ map (++ " ") (lines msg))
 
-sanityTest :: H.Test
-sanityTest = H.TestCase $ 47 @=? 0x2f
+   us :: Progress
+   us = Finished Pass
+
+sanityTests :: [Test]
+sanityTests = [convert2Cabal "Sanity Test" $ return $ H.TestCase $ 47 @=? 0x2f]
+
+-- 
+predicatesTests :: [Test]
+predicatesTests = [convert2Cabal "Predicates Test" predicateHUnit]
+  where
+    path = "src/test/regression/ModuloTheories/functions_and_preds.tslmt"
+    expectedNumPreds = 2
+
+    predicateHUnit = do
+      (theory, spec, _)  <- loadTSLMT $ Just path
+      return $ H.TestCase $ case predsFromSpec theory spec of
+        Right preds -> expectedNumPreds @=? length preds
+        Left errMsg -> H.assertFailure $ show errMsg
+
+cfgTests :: [Test]
+cfgTests = undefined
+
+-- w :
+--         (h x y (f a b) z (g a b))
 
 tests :: [Test]
-tests = [convert2Cabal "Sanity Test" sanityTest]
+tests = concat [sanityTests, predicatesTests, cfgTests]
