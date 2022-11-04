@@ -11,16 +11,25 @@
 -- Module      :  TSL.ModuloTheories.Preprocessor
 -- Description :
 -- Maintainer  :  Wonhyuk Choi
-module TSL.Preprocessor (preprocess) where
+module TSL.Preprocessor
+  ( preprocess
+  ) where
 
 -------------------------------------------------------------------------------
 
-import Control.Applicative ((<|>))
-import TSL.Error (Error, parseError)
-import Text.Parsec (ParseError, endBy, eof, sepBy, try)
-import qualified Text.Parsec as Parsec
-import Text.Parsec.Combinator (chainl1)
-import Text.Parsec.String (Parser)
+import           Control.Applicative            ( (<|>) )
+import           TSL.Error                      ( Error
+                                                , parseError
+                                                )
+import           Text.Parsec                    ( ParseError
+                                                , endBy
+                                                , eof
+                                                , sepBy
+                                                , try
+                                                )
+import qualified Text.Parsec                   as Parsec
+import           Text.Parsec.Combinator         ( chainl1 )
+import           Text.Parsec.String             ( Parser )
 
 -------------------------------------------------------------------------------
 
@@ -37,15 +46,15 @@ data Op
 
 instance Show Op where
   show = \case
-    Eq -> "eq"
-    Lt -> "lt"
-    Gt -> "gt"
-    Lte -> "lte"
-    Gte -> "gte"
-    Add -> "add"
-    Sub -> "sub"
+    Eq   -> "eq"
+    Lt   -> "lt"
+    Gt   -> "gt"
+    Lte  -> "lte"
+    Gte  -> "gte"
+    Add  -> "add"
+    Sub  -> "sub"
     Mult -> "mult"
-    Div -> "div"
+    Div  -> "div"
 
 ltOp :: Parser Op
 ltOp = do
@@ -93,7 +102,7 @@ multOp = do
 divOp :: Parser Op
 divOp = do
   _ <- Parsec.string "/"
-  return Mult
+  return Div
 
 comparator :: Parser Op
 comparator = ltOp <|> gtOp <|> lteOp <|> gteOp <|> eqOp
@@ -107,8 +116,8 @@ binOp = comparator <|> arithmetic
 -------------------------------------------------------------------------------
 
 data Value
-  = TSLInt Int
-  | TSLReal Float
+  = TSLInt String
+  | TSLReal String
   | Symbol String
   | SymbolList [Value]
   | BinOp Op Value Value
@@ -116,39 +125,39 @@ data Value
 
 instance Show Value where
   show = \case
-    TSLInt i -> "int" ++ show i ++ "()"
-    TSLReal r -> "real" ++ show r ++ "()"
-    Symbol s -> s
+    TSLInt     s     -> "int" ++ s ++ "()"
+    TSLReal    s     -> "real" ++ s ++ "()"
+    Symbol     s     -> s
     SymbolList slist -> unwords $ map show slist
-    BinOp op lhs rhs -> unwords $ [show op, show lhs, show rhs]
-    Paren v -> "(" ++ show v ++ ")"
+    BinOp op lhs rhs -> unwords [show op, show lhs, show rhs]
+    Paren v          -> "(" ++ show v ++ ")"
 
 int :: Parser Value
 int = do
-  int <- Parsec.many1 Parsec.digit
-  return $ TSLInt $ read int
+  s <- Parsec.many1 Parsec.digit
+  return $ TSLInt s
 
 real :: Parser Value
 real = do
   beforePoint <- Parsec.many1 Parsec.digit
-  _ <- Parsec.char '.'
-  afterPoint <- Parsec.many1 Parsec.digit
-  return $ TSLReal $ read $ beforePoint ++ ('.' : afterPoint)
+  _           <- Parsec.char '.'
+  afterPoint  <- Parsec.many1 Parsec.digit
+  return $ TSLReal $ beforePoint ++ ('.' : afterPoint)
 
 binOpTerm :: Parser (Value -> Value -> Value)
 binOpTerm = do
-  _ <- maybeSpaces
+  _  <- maybeSpaces
   op <- binOp
-  _ <- maybeSpaces
+  _  <- maybeSpaces
   return $ BinOp op
 
 parens :: Parser Value
 parens = do
-  _ <- Parsec.string "("
-  _ <- maybeSpaces
+  _   <- Parsec.string "("
+  _   <- maybeSpaces
   val <- tslSequence
-  _ <- maybeSpaces
-  _ <- Parsec.string ")"
+  _   <- maybeSpaces
+  _   <- Parsec.string ")"
   return $ Paren val
 
 symbol :: Parser Value
@@ -170,14 +179,14 @@ tslValue = chainl1 (factor <* maybeSpaces) (try binOpTerm)
 
 tslSequence :: Parser Value
 tslSequence = SymbolList <$> (tslValue >>= recursion)
-  where
-    recursion this =
-      do
-        _ <- maybeSpaces
-        next <- tslValue
-        rest <- recursion next
-        return $ this : rest
-        <|> return [this]
+ where
+  recursion this =
+    do
+      _    <- maybeSpaces
+      next <- tslValue
+      rest <- recursion next
+      return $ this : rest
+    <|> return [this]
 
 lineParser :: Parser [Value]
 lineParser = maybeSpaces *> sepBy tslSequence maybeSpaces
@@ -187,10 +196,9 @@ fileParser = endBy lineParser Parsec.endOfLine
 
 parse :: String -> Either ParseError [[Value]]
 parse input = Parsec.parse (fileParser <* eof) err input
-  where
-    err = "Parser Failed!:\n>>>>>\n" ++ input ++ "\n<<<<<\n"
+  where err = "Parser Failed!:\n>>>>>\n" ++ input ++ "\n<<<<<\n"
 
 preprocess :: String -> Either Error String
 preprocess s = case parse s of
   Right values -> return $ unlines $ map (unwords . map show) values
-  Left err -> parseError err
+  Left  err    -> parseError err
