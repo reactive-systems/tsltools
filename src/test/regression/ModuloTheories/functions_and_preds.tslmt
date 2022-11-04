@@ -1,0 +1,6 @@
+#UF
+always guarantee {
+    p z;
+    q (f a b);
+    [w <- h x y (f a b) z (g a b)];
+}

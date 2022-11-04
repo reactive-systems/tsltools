@@ -1,0 +1,5 @@
+#LIA
+always guarantee {
+    [x <- add x int1()];
+    eq x int0() -> X (eq x int1());
+}

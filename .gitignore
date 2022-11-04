@@ -2,8 +2,8 @@ deps
 specs
 local-dev
 *.tsl
-*.tslmt
 *.sl
+foo*
 TODO
 .DS_Store
 tags
