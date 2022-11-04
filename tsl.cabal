@@ -793,6 +793,7 @@ test-suite default
     SplitTests
     DependencyTests
     JSWriterTests
+    ModuloTheoriesTests
     FileUtils
     PrintUtils
 
@@ -813,6 +814,7 @@ test-suite default
     , process
     , hanoi
     , process
+    , HUnit 
 
   default-language:
     Haskell2010

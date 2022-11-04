@@ -40,6 +40,8 @@ import qualified DependencyTests (tests)
 
 import qualified JSWriterTests (tests)
 
+import qualified ModuloTheoriesTests (tests)
+
 import Test.QuickCheck
   ( Arbitrary
   , Result(..)
@@ -116,6 +118,7 @@ tests = do
     , test "QuickCheck: Read Output" qc02
     ]
     ++ SplitTests.tests
+    ++ ModuloTheoriesTests.tests
 --    ++ DependencyTests.tests
     ++ jsTests
 
