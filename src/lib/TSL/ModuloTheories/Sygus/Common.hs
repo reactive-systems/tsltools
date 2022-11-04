@@ -73,9 +73,9 @@ instance Functor Term where
     Function func args -> Function (f func) $ map (fmap f) args
 
 data IntermediateResults = IntermediateResults
-  {  input  :: String
-  ,  query  :: String
-  ,  result :: String
+  {  problem :: String
+  ,  query   :: String
+  ,  result  :: String
   }
   deriving (Show)
 

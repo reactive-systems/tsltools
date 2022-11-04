@@ -22,7 +22,7 @@ module Main
 
 import Control.Monad.Trans.Except
 
-import Data.Either (isRight)
+import Data.Maybe (catMaybes)
 
 import Control.Monad (liftM2)
 
@@ -48,6 +48,10 @@ import TSL ( Error
            , consistencyDebug
            , solveSat
            , genericError
+           , IntermediateResults (..)
+           , SygusDebugInfo (..)
+           , generateAssumptions
+           , buildDtoList
            )
 
 -----------------------------------------------------------------------------
@@ -71,6 +75,10 @@ unError = \case
   Left  err -> error $ show err
   Right val -> val 
 
+printEnd :: IO ()
+printEnd = cPutOutLn Dull Cyan literal
+  where literal = "\n\n----------------------------------------------------\n\n"
+
 consistency
   :: (String -> ExceptT Error IO Bool) 
   -> Either Error [TheoryPredicate]
@@ -89,65 +97,80 @@ consistency satSolver preds = do
         putStrLn $ tabuateLn 1 $ delWhiteLines query
         cPutOutLn Vivid Green "Assumption:"
         printConsistencyResult result
-        cPutOutLn Dull Cyan "\n\n----------------------------------------------------\n\n"
+        printEnd
 
   case result of 
     Left  errMsg   -> die $ show errMsg
     Right cResults -> mapM_ printTuple cResults
 
--- -- Maybe I also want the result...
--- sygus
---   :: FilePath
---   -> Cfg
---   -> [TheoryPredicate]
---   -> IO ()
--- sygus solverPath cfg preds = mapM_ showResult triples
---   where 
---     dtos    = buildDtoList preds
---     pairs   = generateQueryAssumptionPairs solverPath cfg dtos
---     triples = zipWith (\dto pair -> (\(a,b) -> (show dto, a, b)) <$> pair) dtos pairs
+printIntermediateResults :: Int -> IntermediateResults -> IO ()
+printIntermediateResults numTabs intermediateResults = do
+  cPutOutLn Vivid Blue $ tab "Input:"
+  putStrLn $ tabMore $ problem intermediateResults
+  cPutOutLn Vivid Green $ tab "Query:"
+  putStrLn $ tabMore $ query intermediateResults
+  cPutOutLn Vivid Green "Result:"
+  putStrLn $ tabMore $ result intermediateResults
+      where tab     = tabulate numTabs
+            tabMore = tabulate (numTabs + 1)
 
---     showResult :: ExceptT Error IO (String, String, String) -> IO ()
---     showResult result = do
---       value <- runExceptT result
---       case value of 
---         Left  err    -> printFailure $ show err
---         Right triple -> printSuccess triple
+printSygusDebugInfo :: SygusDebugInfo -> IO ()
+printSygusDebugInfo = \case
+  NextDebug info        -> printIntermediateResults 0 info >> printEnd
+  EventuallyDebug infos -> do
+    cPutOutLn Vivid Magenta "Recursive Synthesis:"
+    mapM_ printPair infos
+    printEnd
+    where printPair (modelInfo, subqueryInfo) = do
+            cPutOutLn Vivid Magenta $ tabulate 1 "Produce Models:"
+            printIntermediateResults 2 modelInfo
+            cPutOutLn Vivid Magenta $ tabulate 1 "PBE Subquery:"
+            printIntermediateResults 2 subqueryInfo
 
---     printSuccess :: (String, String, String) -> IO ()
---     printSuccess (dto, query, assumption) = do
---       cPutOutLn Vivid Blue "Data Transformation Obligation:"
---       putStrLn $ tabuateLn 1 dto
---       cPutOutLn Vivid Green "SyGuS Query:"
---       putStrLn $ tabuateLn 1 $ delWhiteLines query
---       cPutOutLn Vivid Green "Assumption:"
---       putStrLn assumption
---       printEnd
+printEither :: (a -> IO ()) -> Either Error a -> IO ()
+printEither printer = \case
+  Left err  -> cPutOutLn Vivid Red $ show err
+  Right val -> printer val
 
---     printFailure :: String -> IO ()
---     printFailure errMsg = do
---       cPutOutLn Vivid Red errMsg
---       printEnd
+sygus
+  :: FilePath
+  -> Cfg
+  -> [TheoryPredicate]
+  -> IO ()
+sygus solverPath cfg preds = do
+  let debugResults = generateAssumptions solverPath cfg (buildDtoList preds) True
+  mapM_ (fmap (printEither printPair) . runExceptT) debugResults
 
---     printEnd :: IO ()
---     printEnd = cPutOutLn Dull Cyan literal
---       where literal = "\n\n----------------------------------------------------\n\n"
+  where printPair (assumption, debugInfo) = do
+          case debugInfo of
+            Nothing   -> error "Expected DebugInfo, but got NOTHING!!"
+            Just info -> printSygusDebugInfo info
+          cPutOutLn Vivid Magenta "Assumption: "
+          putStrLn assumption
 
--- tslmt2tsl
---   :: FilePath
---   -> String
---   -> Either Error Cfg
---   -> Either Error [TheoryPredicate]
---   -> IO String
--- tslmt2tsl solverPath tslSpec cfg preds = addAssumptions assumptions
---   where 
---     assumptions :: Either Error (IO String)
---     assumptions = (generateAssumptions solverPath) <$> cfg <*> (buildDtoList <$> preds)
+tslmt2tsl
+  :: FilePath
+  -> String
+  -> Cfg
+  -> [TheoryPredicate]
+  -> IO String
+tslmt2tsl solverPath tslSpec cfg preds = (mkAlwaysAssume . (++ tslSpec)) <$> assumptions
+  where 
+    mkAlwaysAssume assumptions = unlines ["always assume {"
+                                         , assumptions
+                                         , "}"
+                                         ]
 
---     addAssumptions :: Either Error (IO String) -> IO String
---     addAssumptions = \case
---       Left  err         -> die $ show err
---       Right assumptions -> (++ tslSpec) <$> assumptions
+    extractAssumption input = do
+        either <- runExceptT (fmap fst input)
+        return $ case either of 
+                   Left  _          -> Nothing
+                   Right assumption -> Just assumption
+
+    extractAssumptions = (fmap catMaybes) . sequence . (map extractAssumption)
+
+    resultsList = generateAssumptions solverPath cfg (buildDtoList preds) False
+    assumptions = unlines <$> extractAssumptions resultsList
 
 main :: IO ()
 main = do
@@ -166,6 +189,6 @@ main = do
     Just Predicates  -> toOut $ fmap (unlines . (map show)) preds
     Just Grammar     -> toOut $ fmap show cfg
     Just Consistency -> consistency smtSolver preds
-    Just Sygus       -> undefined -- sygus path (unError cfg) (unError preds)
-    Nothing          -> undefined -- (tslmt2tsl path specStr cfg preds) >>= putStrLn
+    Just Sygus       -> sygus path (unError cfg) (unError preds)
+    Nothing          -> tslmt2tsl path specStr (unError cfg) (unError preds) >> return ()
     Just invalidFlag -> toOut $ genericError $ "Invalid Flag: " ++ show invalidFlag

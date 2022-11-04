@@ -49,6 +49,7 @@ import TSL.ModuloTheories.Solver (runSolver)
 import TSL.ModuloTheories.Sygus.Common( Dto (..)
                                       , Temporal (..)
                                       , Model (..)
+                                      , IntermediateResults
                                       , targetPostfix
                                       , parenthize
                                       )
@@ -111,7 +112,7 @@ runGetModel solverPath = runSolver solverPath args
 modifyPredicate :: [Model String] -> TheoryPredicate -> TheoryPredicate
 modifyPredicate = undefined
 
-generatePbeDtos :: FilePath -> Dto -> ExceptT Error IO [Dto]
+generatePbeDtos :: FilePath -> Dto -> Bool -> ExceptT Error IO [(Dto, Maybe IntermediateResults)]
 generatePbeDtos = undefined
 
 findRecursion :: [[[Update a]]] -> Either Error [[Update a]]

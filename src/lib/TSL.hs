@@ -80,9 +80,10 @@ module TSL
   , solveSat
   , readTheory
   , preprocess
-  , generateAssumption
+  , generateAssumptions
   , SygusDebugInfo (..)
   , IntermediateResults (..)
+  , buildDtoList
   ) where
 
 -----------------------------------------------------------------------------
@@ -139,8 +140,9 @@ import TSL.ModuloTheories.Theories(Theory, readTheory)
 import TSL.ModuloTheories.Solver(solveSat)
 import TSL.ModuloTheories.Cfg(Cfg(..), cfgFromSpec)
 import TSL.ModuloTheories.Predicates(TheoryPredicate, predsFromSpec)
-import TSL.ModuloTheories.Sygus ( generateAssumption
+import TSL.ModuloTheories.Sygus ( generateAssumptions
                                 , SygusDebugInfo (..)
+                                , buildDtoList
                                 )
 import TSL.ModuloTheories.Sygus.Common (IntermediateResults (..))
 
