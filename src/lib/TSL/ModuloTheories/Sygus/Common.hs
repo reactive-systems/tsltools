@@ -15,7 +15,6 @@ module TSL.ModuloTheories.Sygus.Common
   , Expansion (..)
   , Term (..)
   , Model (..)
-  , IntermediateResults (..)
   , targetPostfix
   , parenthize
   ) where
@@ -71,13 +70,6 @@ instance Functor Term where
     Value v            -> Value $ f v 
     Expression e       -> Expression (fmap f e)
     Function func args -> Function (f func) $ map (fmap f) args
-
-data IntermediateResults = IntermediateResults
-  {  problem :: String
-  ,  query   :: String
-  ,  result  :: String
-  }
-  deriving (Show)
 
 newtype Model a = Model (a,a) deriving (Show)
 

@@ -44,13 +44,10 @@ import TSL ( Error
            , Cfg
            , cfgFromSpec
            , predsFromSpec
-           , consistencyChecking
-           , consistencyDebug
-           , solveSat
-           , genericError
+           , generateConsistencyAssumptions
+           , generateSygusAssumptions
            , IntermediateResults (..)
            , SygusDebugInfo (..)
-           , generateAssumptions
            , buildDtoList
            )
 
@@ -65,11 +62,6 @@ tabulate n = ((replicate n '\t') ++ )
 delWhiteLines :: String -> String
 delWhiteLines = unlines . filter (not . null) . lines
 
-writeOutput :: (Show a) => Maybe FilePath -> Either a String -> IO ()
-writeOutput _ (Left errMsg)      = die $ show errMsg
-writeOutput path (Right content) = writeContent path $ removeDQuote content
-  where removeDQuote = filter (/= '\"')
-
 unError :: (Show a) => Either a b -> b
 unError = \case
   Left  err -> error $ show err
@@ -78,30 +70,6 @@ unError = \case
 printEnd :: IO ()
 printEnd = cPutOutLn Dull Cyan literal
   where literal = "\n\n----------------------------------------------------\n\n"
-
-consistency
-  :: (String -> ExceptT Error IO Bool) 
-  -> Either Error [TheoryPredicate]
-  -> IO ()
-consistency satSolver preds = do
-  result <- runExceptT $ (except preds >>= consistencyDebug satSolver)
-
-  let printTabRed = cPutOutLn Vivid Red . tabuateLn 1
-      printConsistencyResult = \case
-        Nothing  -> printTabRed "None; predicate is satisfiable."
-        Just ass -> printTabRed ass
-      printTuple (pred, query, result) = do
-        cPutOutLn Vivid Blue "Predicate:"
-        putStrLn $ tabuateLn 1 pred
-        cPutOutLn Vivid Green "SMT Query:"
-        putStrLn $ tabuateLn 1 $ delWhiteLines query
-        cPutOutLn Vivid Green "Assumption:"
-        printConsistencyResult result
-        printEnd
-
-  case result of 
-    Left  errMsg   -> die $ show errMsg
-    Right cResults -> mapM_ printTuple cResults
 
 printIntermediateResults :: Int -> IntermediateResults -> IO ()
 printIntermediateResults numTabs intermediateResults = do
@@ -132,21 +100,25 @@ printEither printer = \case
   Left err  -> cPutOutLn Vivid Red $ show err
   Right val -> printer val
 
-sygus
-  :: FilePath
-  -> Cfg
-  -> [TheoryPredicate]
-  -> IO ()
-sygus solverPath cfg preds = do
-  let debugResults = generateAssumptions solverPath cfg (buildDtoList preds) True
-  mapM_ (fmap (printEither printPair) . runExceptT) debugResults
+printAssumption :: (a -> IO ()) -> (String, Maybe a) -> IO ()
+printAssumption printer (assumption, debugInfo) = do
+  case debugInfo of
+    Nothing   -> die "Expected DebugInfo, but got NOTHING!!"
+    Just info -> printer info
+  cPutOutLn Vivid Magenta "Assumption: "
+  putStrLn assumption
 
-  where printPair (assumption, debugInfo) = do
-          case debugInfo of
-            Nothing   -> error "Expected DebugInfo, but got NOTHING!!"
-            Just info -> printSygusDebugInfo info
-          cPutOutLn Vivid Magenta "Assumption: "
-          putStrLn assumption
+printDebug :: (a -> IO ()) -> [ExceptT Error IO (String, Maybe a)] -> IO()
+printDebug printer = 
+  mapM_ (fmap (printEither (printAssumption printer)) . runExceptT)
+
+consistency :: FilePath -> [TheoryPredicate] -> IO ()
+consistency solverPath preds = printDebug (printIntermediateResults 1) results
+  where results = generateConsistencyAssumptions solverPath preds True 
+
+sygus :: FilePath -> Cfg -> [TheoryPredicate] -> IO ()
+sygus solverPath cfg preds = printDebug printSygusDebugInfo results
+  where results = generateSygusAssumptions solverPath cfg (buildDtoList preds) True
 
 tslmt2tsl
   :: FilePath
@@ -154,7 +126,7 @@ tslmt2tsl
   -> Cfg
   -> [TheoryPredicate]
   -> IO String
-tslmt2tsl solverPath tslSpec cfg preds = (mkAlwaysAssume . (++ tslSpec)) <$> assumptions
+tslmt2tsl solverPath tslSpec cfg preds = (++ tslSpec) <$> assumptionsBlock
   where 
     mkAlwaysAssume assumptions = unlines ["always assume {"
                                          , assumptions
@@ -167,28 +139,34 @@ tslmt2tsl solverPath tslSpec cfg preds = (mkAlwaysAssume . (++ tslSpec)) <$> ass
                    Left  _          -> Nothing
                    Right assumption -> Just assumption
 
-    extractAssumptions = (fmap catMaybes) . sequence . (map extractAssumption)
+    extractAssumptions = (fmap (unlines. catMaybes)) . sequence . (map extractAssumption)
 
-    resultsList = generateAssumptions solverPath cfg (buildDtoList preds) False
-    assumptions = unlines <$> extractAssumptions resultsList
+    consistencyAssumptions = 
+      extractAssumptions $ generateConsistencyAssumptions solverPath preds False
+    sygusAssumptions =
+      extractAssumptions $ generateSygusAssumptions solverPath cfg (buildDtoList preds) False
+
+    assumptionsBlock =
+      mkAlwaysAssume <$> ((++) <$> consistencyAssumptions <*> sygusAssumptions)
 
 main :: IO ()
 main = do
   initEncoding
   Configuration{input, output, flag, solverPath} <- parseArguments
+
   (theory, spec, specStr) <- loadTSLMT input
-  let toOut     = writeOutput output
-      preds     = predsFromSpec theory spec
-      cfg       = cfgFromSpec theory spec
+
+  let writeOut  = writeContent output . (filter (/= '\"'))
+      preds     = unError $ predsFromSpec theory spec
+      cfg       = unError $ cfgFromSpec theory spec
       path      = case solverPath of
                     Just solverPath' -> solverPath'
                     Nothing          -> error "Please provide a solver path."
-      smtSolver = solveSat path
 
   case flag of
-    Just Predicates  -> toOut $ fmap (unlines . (map show)) preds
-    Just Grammar     -> toOut $ fmap show cfg
-    Just Consistency -> consistency smtSolver preds
-    Just Sygus       -> sygus path (unError cfg) (unError preds)
-    Nothing          -> tslmt2tsl path specStr (unError cfg) (unError preds) >> return ()
-    Just invalidFlag -> toOut $ genericError $ "Invalid Flag: " ++ show invalidFlag
+    Just Predicates  -> writeOut $ unlines $ map show $ preds
+    Just Grammar     -> writeOut $ show cfg
+    Just Consistency -> undefined
+    Just Sygus       -> sygus path cfg preds
+    Nothing          -> writeOut =<< tslmt2tsl path specStr cfg preds
+    Just invalidFlag -> die $ "Invalid Flag: " ++ show invalidFlag

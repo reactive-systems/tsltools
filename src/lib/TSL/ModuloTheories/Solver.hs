@@ -13,21 +13,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.Solver (solveSat, runSolver) where
+module TSL.ModuloTheories.Solver (solveSat, runGetModel, runSygusQuery) where
 
 -------------------------------------------------------------------------------
 
-import qualified Data.Text as Text
-
 import Control.Monad.Trans.Except
 
-import Control.Monad(liftM)
+import qualified Data.Text as Text
+
+import Data.List (isInfixOf)
 
 import System.Process(readProcessWithExitCode)
 
-import System.Exit(ExitCode(..), die)
+import System.Exit(ExitCode(..))
 
-import TSL.Error(Error, errSolver)
+import TSL.Error(Error, errSolver, errSygus)
 
 -------------------------------------------------------------------------------
 
@@ -39,16 +39,29 @@ isSat "sat"   = Right True
 isSat "unsat" = Right False
 isSat err     = errSolver err
 
-solveSat :: FilePath -> String -> ExceptT Error IO Bool
-solveSat solverPath problem = ExceptT satResult
-  where
-    smt2         = ["--lang=smt2"]
-    solverResult = runSolver solverPath smt2 problem
-    satResult    = liftM (isSat . strip) solverResult
+runSolver :: FilePath -> [String] -> String -> ExceptT Error IO String
+runSolver solverPath args query =
+  parseResult =<< (ExceptT $ fmap Right $ readProcessWithExitCode solverPath args query)
+  where parseResult :: (ExitCode, String, String) -> ExceptT Error IO String
+        parseResult (exitCode, stdout, stderr) = case exitCode of
+          ExitSuccess      -> return stdout
+          ExitFailure code -> except $ errSolver errMsg
+            where errMsg = show code ++ " >> " ++ stderr ++ "\n" ++ stdout
 
-runSolver :: FilePath -> [String] -> String -> IO String
-runSolver solverPath args problem = do
-  (exitCode, stdout, stderr) <- readProcessWithExitCode solverPath args problem
-  case exitCode of
-    ExitSuccess      -> return stdout
-    ExitFailure code -> return $ "Process Error " ++ show code ++ ":" ++ stderr ++ "\n" ++ stdout
+solveSat :: FilePath -> String -> ExceptT Error IO Bool
+solveSat solverPath  = ((=<<) toBoolean) . (runSolver solverPath smt2)
+  where smt2         = ["--lang=smt2"]
+        toBoolean    = except . isSat . strip
+
+runGetModel :: FilePath -> String -> ExceptT Error IO String
+runGetModel solverPath = runSolver solverPath args
+  where args = ["--lang=smt2"]
+
+runSygusQuery :: FilePath -> Int -> String -> ExceptT Error IO String
+runSygusQuery solverPath depth = ((=<<) getResult) . (runSolver solverPath args)
+  where 
+    args             = depthLimit:["-o", "sygus-sol-gterm", "--lang=sygus2"]
+    depthLimit       = "--sygus-abort-size=" ++ show depth
+    getResult result = except $ if isInfixOf "error" result
+                          then errSygus result
+                          else Right result

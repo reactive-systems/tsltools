@@ -55,6 +55,25 @@ library
     TSLCoreGenerator
 
   other-modules:
+    TSL.Ast
+    TSL.Preprocessor
+    TSL.ModuloTheories.Cfg
+    TSL.ModuloTheories.Predicates
+    TSL.ModuloTheories.ConsistencyChecking
+    TSL.ModuloTheories.Theories
+    TSL.ModuloTheories.Theories.Base
+    TSL.ModuloTheories.Theories.Uf
+    TSL.ModuloTheories.Theories.EUf
+    TSL.ModuloTheories.Theories.Lia
+    TSL.ModuloTheories.Solver
+    TSL.ModuloTheories.Debug
+    TSL.ModuloTheories.Sygus
+    TSL.ModuloTheories.Sygus.Query
+    TSL.ModuloTheories.Sygus.Assumption
+    TSL.ModuloTheories.Sygus.Common
+    TSL.ModuloTheories.Sygus.Parser
+    TSL.ModuloTheories.Sygus.Recursion
+    TSL.ModuloTheories.Sygus.Update
     TSL.Binding
     TSL.Dependency
     TSL.Error
@@ -103,24 +122,6 @@ library
     CoreGeneration.UnrealizabilityCores
     CoreGeneration.MinimalAssumptionCores
     CoreGeneration.FindFirstConcurrent
-    TSL.Ast
-    TSL.Preprocessor
-    TSL.ModuloTheories.Cfg
-    TSL.ModuloTheories.Predicates
-    TSL.ModuloTheories.ConsistencyChecking
-    TSL.ModuloTheories.Theories
-    TSL.ModuloTheories.Theories.Base
-    TSL.ModuloTheories.Theories.Uf
-    TSL.ModuloTheories.Theories.EUf
-    TSL.ModuloTheories.Theories.Lia
-    TSL.ModuloTheories.Solver
-    TSL.ModuloTheories.Sygus
-    TSL.ModuloTheories.Sygus.Query
-    TSL.ModuloTheories.Sygus.Assumption
-    TSL.ModuloTheories.Sygus.Common
-    TSL.ModuloTheories.Sygus.Parser
-    TSL.ModuloTheories.Sygus.Recursion
-    TSL.ModuloTheories.Sygus.Update
 
   hs-source-dirs:
     src/lib

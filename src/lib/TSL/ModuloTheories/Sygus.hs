@@ -10,7 +10,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.Sygus ( generateAssumptions
+module TSL.ModuloTheories.Sygus ( generateSygusAssumptions
                                 , SygusDebugInfo (..)
                                 , buildDtoList
                                 ) where
@@ -33,12 +33,13 @@ import TSL.ModuloTheories.Cfg (Cfg)
 
 import TSL.ModuloTheories.Predicates (predTheory, TheoryPredicate)
 
-import TSL.ModuloTheories.Solver (runSolver)
+import TSL.ModuloTheories.Solver (runSygusQuery)
+
+import TSL.ModuloTheories.Debug (IntermediateResults(..))
 
 import TSL.ModuloTheories.Sygus.Common ( Temporal(..)
                                        , Term
                                        , Dto (..)
-                                       , IntermediateResults(..)
                                        , targetPostfix
                                        )
 
@@ -77,15 +78,6 @@ buildDto pre post = Dto theory pre post
 buildDtoList :: [TheoryPredicate] -> [Dto]
 buildDtoList preds = concat $ map buildWith preds
   where buildWith pred = map (buildDto pred) preds
-
-runSygusQuery :: FilePath -> Int -> String -> ExceptT Error IO String
-runSygusQuery solverPath depth = ExceptT . (fmap getResult) . (runSolver solverPath args)
-  where 
-    args             = depthLimit:["-o", "sygus-sol-gterm", "--lang=sygus2"]
-    depthLimit       = "--sygus-abort-size=" ++ show depth
-    getResult result = if isInfixOf "error" result
-                          then errSygus result
-                          else Right result
 
 generateUpdates
   :: FilePath
@@ -159,11 +151,11 @@ generateAssumption solverPath cfg dto temporal debug = case temporal of
 
     unwraps a b = (unwrapIntermediateResult a, unwrapIntermediateResult b)
 
-generateAssumptions
+generateSygusAssumptions
   :: FilePath
   -> Cfg
   -> [Dto]
   -> Bool
   -> [ExceptT Error IO (String, Maybe SygusDebugInfo)]
-generateAssumptions solverPath cfg dtos debug = genAssumption <$> dtos <*> temporalAtoms
+generateSygusAssumptions solverPath cfg dtos debug = genAssumption <$> dtos <*> temporalAtoms
   where genAssumption dto temporal = generateAssumption solverPath cfg dto temporal debug

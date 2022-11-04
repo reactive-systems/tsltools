@@ -44,12 +44,13 @@ import TSL.ModuloTheories.Theories( TheorySymbol
                                   , makeSignal
                                   )
 
-import TSL.ModuloTheories.Solver (runSolver)
+import TSL.ModuloTheories.Solver (runGetModel)
+
+import TSL.ModuloTheories.Debug (IntermediateResults(..))
 
 import TSL.ModuloTheories.Sygus.Common( Dto (..)
                                       , Temporal (..)
                                       , Model (..)
-                                      , IntermediateResults
                                       , targetPostfix
                                       , parenthize
                                       )
@@ -104,10 +105,6 @@ produceModelsQuery models theory pred = unlines [ header
         declareConstList = unlines $ map declareConst $ predSignals pred
         assertion stmt   = paren1 $ unwords ["assert", stmt]
         notTheseModels   = unlines $ map (assertion . model2SmtPred) models
-
-runGetModel :: FilePath -> String -> IO String
-runGetModel solverPath = runSolver solverPath args
-  where args = ["--lang=smt2"]
 
 modifyPredicate :: [Model String] -> TheoryPredicate -> TheoryPredicate
 modifyPredicate = undefined
