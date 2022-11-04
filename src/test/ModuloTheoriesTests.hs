@@ -25,6 +25,8 @@ module ModuloTheoriesTests
 
 -----------------------------------------------------------------------------
 
+import qualified Data.Map as Map
+
 import qualified Test.HUnit as H
 
 import Control.Monad.Trans.Except
@@ -40,7 +42,7 @@ import Test.HUnit ((@=?))
 
 import TSL ( Error
            , TheoryPredicate
-           , Cfg
+           , Cfg (..)
            , cfgFromSpec
            , predsFromSpec
            , generateConsistencyAssumptions
@@ -79,12 +81,11 @@ runTest = (fmap snd . H.performTest onStart onError onFailure us =<<)
    us :: Progress
    us = Finished Pass
 
-sanityTests :: [Test]
-sanityTests = [convert2Cabal "Sanity Test" $ return $ H.TestCase $ 47 @=? 0x2f]
+makeTestName :: String -> String
+makeTestName = ("Modulo Theories >> " ++ )
 
--- 
 predicatesTests :: [Test]
-predicatesTests = [convert2Cabal "Predicates Test" predicateHUnit]
+predicatesTests = [convert2Cabal (makeTestName "Predicates") predicateHUnit]
   where
     path = "src/test/regression/ModuloTheories/functions_and_preds.tslmt"
     expectedNumPreds = 2
@@ -96,10 +97,25 @@ predicatesTests = [convert2Cabal "Predicates Test" predicateHUnit]
         Left errMsg -> H.assertFailure $ show errMsg
 
 cfgTests :: [Test]
-cfgTests = undefined
+cfgTests = [convert2Cabal (makeTestName "CFG") cfgHUnit]
+  where
+    path = "src/test/regression/ModuloTheories/functions_and_preds.tslmt"
+    expectedCfgSize = 1
+    expectedProductionRuleSize = 1
+
+    cfgHUnit = do
+      (theory, spec, _)  <- loadTSLMT $ Just path
+      return $ case cfgFromSpec theory spec of
+        Right cfg   ->
+          let assocs     = Map.assocs $ grammar cfg
+              (_, rules) = head assocs 
+          in H.TestList [ H.TestCase $ expectedCfgSize @=? length assocs
+                        , H.TestCase $ expectedProductionRuleSize @=? length rules
+                        ]
+        Left errMsg -> H.TestCase $ H.assertFailure $ show errMsg
 
 -- w :
 --         (h x y (f a b) z (g a b))
 
 tests :: [Test]
-tests = concat [sanityTests, predicatesTests, cfgTests]
+tests = concat [predicatesTests, cfgTests]
