@@ -1,7 +1,10 @@
-always assume {
-    !(!(eq a x) && (eq x a));
-    !(!(eq x a) && (eq a x));
-}
+#EUF
+
+/* EXPECTED: */
+/* always assume { */
+/*     !(!(eq a x) && (eq x a)); */
+/*     !(!(eq x a) && (eq a x)); */
+/* } */
 
 always guarantee {
     eq x a <-> [x <- y];

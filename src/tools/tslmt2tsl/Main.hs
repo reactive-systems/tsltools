@@ -179,7 +179,7 @@ main = do
   case flag of
     Just Predicates  -> writeOut $ unlines $ map show $ preds
     Just Grammar     -> writeOut $ show cfg
-    Just Consistency -> undefined
+    Just Consistency -> consistency path preds
     Just Sygus       -> sygus path cfg preds
     Nothing          -> writeOut =<< tslmt2tsl path specStr cfg preds
     Just invalidFlag -> die $ "Invalid Flag: " ++ show invalidFlag
