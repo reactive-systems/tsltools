@@ -11,8 +11,9 @@ module TSL.ModuloTheories.Debug (IntermediateResults (..)) where
 -------------------------------------------------------------------------------
 
 data IntermediateResults = IntermediateResults
-  {  problem :: String
-  ,  query   :: String
-  ,  result  :: String
+  {  problem    :: String
+  ,  query      :: String
+  ,  result     :: String
+  ,  assumption :: String
   }
   deriving (Show)

@@ -109,7 +109,7 @@ produceModelsQuery models theory pred = unlines [ header
 modifyPredicate :: [Model String] -> TheoryPredicate -> TheoryPredicate
 modifyPredicate = undefined
 
-generatePbeDtos :: FilePath -> Dto -> Bool -> ExceptT Error IO [(Dto, Maybe IntermediateResults)]
+generatePbeDtos :: FilePath -> Dto -> ExceptT Error IO [(Dto, IntermediateResults)]
 generatePbeDtos = undefined
 
 findRecursion :: [[[Update a]]] -> Either Error [[Update a]]

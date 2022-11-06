@@ -13,7 +13,6 @@ always guarantee {
 }
 ```
 
-For backwards compatibility, all TSL specifications without an explicit First-Order Theory will be synthesized without theory support.
 However, as classic TSL is just TSL-MT with the Theory of Uninterpreted Functions, a `#UF` annotation is recommended when writing a TSL specification.
 This allows TSL specifications (equivalently, TSL Modulo the Theory of Uninterpreted Functions) to _not underapproximate_ to Linear Temporal Logic (LTL) during synthesis as the TSL-MT synthesis procedure will capture the semantics of the update operator.
 More explanation is given in Example 4.3 of the [TSL-MT synthesis paper](https://www.marksantolucito.com/papers/pldi2022.pdf).

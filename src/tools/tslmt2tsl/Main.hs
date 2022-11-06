@@ -45,7 +45,9 @@ import TSL ( Error
            , cfgFromSpec
            , predsFromSpec
            , generateConsistencyAssumptions
+           , consistencyDebug
            , generateSygusAssumptions
+           , sygusDebug
            , IntermediateResults (..)
            , SygusDebugInfo (..)
            , buildDtoList
@@ -79,6 +81,8 @@ printIntermediateResults numTabs intermediateResults = do
   putStrLn $ tabMore $ query intermediateResults
   cPutOutLn Vivid Green "Result:"
   putStrLn $ tabMore $ result intermediateResults
+  cPutOutLn Vivid Magenta "Assumption: "
+  putStrLn $ tabMore $ assumption intermediateResults
       where tab     = tabulate numTabs
             tabMore = tabulate (numTabs + 1)
 
@@ -95,30 +99,22 @@ printSygusDebugInfo = \case
             cPutOutLn Vivid Magenta $ tabulate 1 "PBE Subquery:"
             printIntermediateResults 2 subqueryInfo
 
-printEither :: (a -> IO ()) -> Either Error a -> IO ()
+printEither :: (Show e) => (a -> IO ()) -> Either e a -> IO ()
 printEither printer = \case
   Left err  -> cPutOutLn Vivid Red $ show err
   Right val -> printer val
 
-printAssumption :: (a -> IO ()) -> (String, Maybe a) -> IO ()
-printAssumption printer (assumption, debugInfo) = do
-  case debugInfo of
-    Nothing   -> die "Expected DebugInfo, but got NOTHING!!"
-    Just info -> printer info
-  cPutOutLn Vivid Magenta "Assumption: "
-  putStrLn assumption
-
-printDebug :: (a -> IO ()) -> [ExceptT Error IO (String, Maybe a)] -> IO()
+printDebug :: (Show e) => (a -> IO ()) -> [ExceptT e IO a] -> IO ()
 printDebug printer = 
-  mapM_ (fmap (printEither (printAssumption printer)) . runExceptT)
+  mapM_ (fmap (printEither printer) . runExceptT)
 
 consistency :: FilePath -> [TheoryPredicate] -> IO ()
-consistency solverPath preds = printDebug (printIntermediateResults 1) results
-  where results = generateConsistencyAssumptions solverPath preds True 
+consistency = (printResult .) . consistencyDebug
+  where printResult = printDebug (printIntermediateResults 1)
 
 sygus :: FilePath -> Cfg -> [TheoryPredicate] -> IO ()
 sygus solverPath cfg preds = printDebug printSygusDebugInfo results
-  where results = generateSygusAssumptions solverPath cfg (buildDtoList preds) True
+  where results = sygusDebug solverPath cfg (buildDtoList preds)
 
 tslmt2tsl
   :: FilePath
@@ -128,26 +124,43 @@ tslmt2tsl
   -> IO String
 tslmt2tsl solverPath tslSpec cfg preds = (++ tslSpec) <$> assumptionsBlock
   where 
+    mkAlwaysAssume :: String -> String
     mkAlwaysAssume assumptions = unlines ["always assume {"
                                          , assumptions
                                          , "}"
                                          ]
+    
+    extractAssumption :: (Monad m) => ExceptT e m a -> m (Maybe a)
+    extractAssumption result = do
+      either <- runExceptT result
+      return $ case either of
+                 Left  _          -> Nothing
+                 Right assumption -> Just assumption
 
-    extractAssumption input = do
-        either <- runExceptT (fmap fst input)
-        return $ case either of 
-                   Left  _          -> Nothing
-                   Right assumption -> Just assumption
+    extractAssumptions :: (Monad m) => [ExceptT e m String] -> m String
+    extractAssumptions = (fmap (unlines. catMaybes))
+                           . sequence
+                           . (map extractAssumption)
 
-    extractAssumptions = (fmap (unlines. catMaybes)) . sequence . (map extractAssumption)
+    consistencyAssumptions :: IO String
+    consistencyAssumptions = extractAssumptions $
+                               generateConsistencyAssumptions
+                               solverPath
+                               preds
 
-    consistencyAssumptions = 
-      extractAssumptions $ generateConsistencyAssumptions solverPath preds False
-    sygusAssumptions =
-      extractAssumptions $ generateSygusAssumptions solverPath cfg (buildDtoList preds) False
+    sygusAssumptions :: IO String
+    sygusAssumptions = extractAssumptions $
+                         generateSygusAssumptions
+                         solverPath
+                         cfg
+                         (buildDtoList preds)
 
-    assumptionsBlock =
-      mkAlwaysAssume <$> ((++) <$> consistencyAssumptions <*> sygusAssumptions)
+    assumptionsBlock :: IO String
+    assumptionsBlock = mkAlwaysAssume <$>
+                         ( (++) <$>
+                           consistencyAssumptions <*>
+                           sygusAssumptions
+                         )
 
 main :: IO ()
 main = do

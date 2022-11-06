@@ -74,10 +74,12 @@ module TSL
   , cfgFromSpec
   , Theory
   , TheoryPredicate
-  , generateConsistencyAssumptions
   , readTheory
   , preprocess
+  , generateConsistencyAssumptions
+  , consistencyDebug
   , generateSygusAssumptions
+  , sygusDebug
   , SygusDebugInfo (..)
   , IntermediateResults (..)
   , buildDtoList
@@ -132,7 +134,9 @@ import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
 
 import TSL.Preprocessor(preprocess)
 
-import TSL.ModuloTheories.ConsistencyChecking(generateConsistencyAssumptions)
+import TSL.ModuloTheories.ConsistencyChecking( generateConsistencyAssumptions
+                                             , consistencyDebug
+                                             )
 import TSL.ModuloTheories.Theories(Theory, readTheory)
 import TSL.ModuloTheories.Cfg(Cfg(..), cfgFromSpec)
 import TSL.ModuloTheories.Predicates(TheoryPredicate, predsFromSpec)
@@ -140,6 +144,7 @@ import TSL.ModuloTheories.Debug (IntermediateResults (..))
 import TSL.ModuloTheories.Sygus ( generateSygusAssumptions
                                 , SygusDebugInfo (..)
                                 , buildDtoList
+                                , sygusDebug
                                 )
 
 import qualified TSL.Writer.CFM.Clash as Clash (implement)

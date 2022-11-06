@@ -11,13 +11,15 @@
 {-# LANGUAGE TupleSections   #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.ConsistencyChecking(generateConsistencyAssumptions) where
+module TSL.ModuloTheories.ConsistencyChecking( generateConsistencyAssumptions
+                                             , consistencyDebug
+                                             ) where
 
 -------------------------------------------------------------------------------
 
 import Control.Monad.Trans.Except
 
-import TSL.Error(Error)
+import TSL.Error(Error, errConsistency)
 
 import TSL.Ast( AstInfo(..)
               , SymbolInfo(..)
@@ -52,42 +54,30 @@ pred2Assumption p = "G " ++ pred2Tsl (NotPLit p) ++ ";"
 generateConsistencyAssumptions
   :: FilePath
   -> [TheoryPredicate]
-  -> Bool
-  -> [ExceptT Error IO (String, Maybe IntermediateResults)]
-generateConsistencyAssumptions solverPath preds debug = 
-  map (flip (consistencyChecking solverPath) debug) preds
+  -> [ExceptT Error IO String]
+generateConsistencyAssumptions path =
+  map ((fmap fst) . (consistencyChecking path))
+
+consistencyDebug
+  :: FilePath
+  -> [TheoryPredicate]
+  -> [ExceptT Error IO IntermediateResults]
+consistencyDebug path = map ((fmap snd) . (consistencyChecking path))
 
 consistencyChecking
   :: FilePath
   -> TheoryPredicate
-  -> Bool
-  -> ExceptT Error IO (String, Maybe IntermediateResults)
-consistencyChecking = undefined
-
---       Nothing  -> printTabRed "None; predicate is satisfiable."
-
--- consistencyDebug
---   :: (String -> ExceptT Error IO Bool)
---   -> [TheoryPredicate]
---   -> ExceptT Error IO [(String, String, Maybe String)]
--- consistencyDebug satSolver preds = (map assumeOnlyUnsat) <$> zippedResults
---   where
---     preds'                       = enumeratePreds preds
---     queries                      = map pred2SmtQuery preds'
---     zippedResults                = fmap (zip3 preds' queries) $ traverse satSolver queries
---     assumeOnlyUnsat (p, q, res)  =
---       if res then (show p, q, Nothing) else (show p, q, Just (pred2Assumption p))
-
--- consistencyCheckingOld
---   :: (String -> ExceptT Error IO Bool)
---   -> [TheoryPredicate]
---   -> ExceptT Error IO [String]
--- consistencyCheckingOld satSolver preds = (map pred2Assumption) <$> onlyUnsat
---   where
---     checkSat          = satSolver . pred2SmtQuery
---     preds'            = enumeratePreds preds
---     unsatZipFilter    = (map fst . filter (not . snd)) . (zip preds')
---     onlyUnsat         = unsatZipFilter <$> (traverse checkSat preds')
+  -> ExceptT Error IO (String, IntermediateResults)
+consistencyChecking solverPath pred = do
+  isSat <- solveSat solverPath query
+  if isSat
+    then except $ errConsistency $ "Predicate " ++ show pred ++ " is satisfiable."
+    else 
+      let assumption = pred2Assumption pred
+          debugInfo  = IntermediateResults (show pred) query (show isSat) assumption
+      in return (assumption, debugInfo)
+  where
+    query  = pred2SmtQuery pred
 
 pred2SmtQuery :: TheoryPredicate -> String
 pred2SmtQuery p = unlines [smtDeclarations, assertion, checkSat]

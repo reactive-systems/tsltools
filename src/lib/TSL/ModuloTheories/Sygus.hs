@@ -8,11 +8,13 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
 
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.Sygus ( generateSygusAssumptions
                                 , SygusDebugInfo (..)
                                 , buildDtoList
+                                , sygusDebug
                                 ) where
 
 -------------------------------------------------------------------------------
@@ -23,7 +25,7 @@ import Data.Text(pack, unpack, replace)
 
 import Data.List (isInfixOf)
 
-import Control.Monad (liftM2)
+import Control.Monad (liftM, liftM2)
 
 import Control.Exception(assert)
 
@@ -55,7 +57,6 @@ import TSL.ModuloTheories.Sygus.Recursion ( generatePbeDtos
                                           , findRecursion
                                           , config_SUBQUERY_AST_MAX_SIZE
                                           )
-
 -------------------------------------------------------------------------------
 
 data SygusDebugInfo =
@@ -84,9 +85,8 @@ generateUpdates
   -> Cfg
   -> Int
   -> Dto
-  -> Bool
-  -> ExceptT Error IO ([[Update String]], Maybe IntermediateResults)
-generateUpdates solverPath cfg depth dto debug =
+  -> ExceptT Error IO ([[Update String]], IntermediateResults)
+generateUpdates solverPath cfg depth dto =
   liftM2 (,) updates debugInfo
   where
     query :: Either Error String
@@ -105,57 +105,59 @@ generateUpdates solverPath cfg depth dto debug =
     updates :: ExceptT Error IO [[Update String]]
     updates = term2Updates <$> term
 
-    debugInfo :: ExceptT Error IO (Maybe IntermediateResults)
-    debugInfo =
-      if debug
-        then Just <$> (IntermediateResults (show dto) <$> except query <*> result)
-        else return Nothing
+    debugInfo :: ExceptT Error IO IntermediateResults
+    debugInfo = IntermediateResults (show dto) <$>
+                  except query <*>
+                  result <*>
+                  (return "No assumption during Update Generation stage.")
 
 generateAssumption
   :: FilePath
   -> Cfg
   -> Dto
   -> Temporal
-  -> Bool
-  -> ExceptT Error IO (String, Maybe SygusDebugInfo)
-generateAssumption solverPath cfg dto temporal debug = case temporal of
-  Next maxAstSize -> do
+  -> ExceptT Error IO (String, SygusDebugInfo)
+generateAssumption solverPath cfg dto = \case
+  next@(Next maxAstSize) -> do
     (updates, debugInfo) <- genUpdates maxAstSize dto
-    let assumption = makeAssumption' updates
-        debugInfo' = return $ if debug
-                        then Just $ NextDebug $ unwrapIntermediateResult debugInfo
-                        else Nothing
-    liftM2 (,) assumption debugInfo'
+    let assumption = makeAssumption' next updates
+        debugInfo' = NextDebug debugInfo
+    liftM (,debugInfo') assumption
 
   Eventually -> do
-    pbeResults <- generatePbeDtos solverPath dto debug
+    pbeResults <- generatePbeDtos solverPath dto
     let (pbeDtos, pbeInfos) = unzip pbeResults
 
     subqueryResults <- mapM (genUpdates config_SUBQUERY_AST_MAX_SIZE) pbeDtos
     let (subqueryUpdates, subqueryInfos) = unzip subqueryResults
 
     updates    <- except $ findRecursion subqueryUpdates
-    assumption <- makeAssumption' updates
-    let debugInfo = if debug
-                       then Nothing
-                       else Just $ EventuallyDebug $ zipWith unwraps pbeInfos subqueryInfos
+    assumption <- makeAssumption' Eventually updates
+    let debugInfo = EventuallyDebug $ zip pbeInfos subqueryInfos
     return (assumption, debugInfo)
 
   where
-    genUpdates depth dto'   = generateUpdates solverPath cfg depth dto' debug 
-    makeAssumption' updates = except $ makeAssumption dto temporal updates
-
-    unwrapIntermediateResult = \case
-      Nothing -> error "Unwrap called for Nothing!"
-      Just intermediateResult -> intermediateResult
-
-    unwraps a b = (unwrapIntermediateResult a, unwrapIntermediateResult b)
+    genUpdates depth dto'   = generateUpdates solverPath cfg depth dto'
+    makeAssumption' temporal updates = except $ makeAssumption dto temporal updates
 
 generateSygusAssumptions
   :: FilePath
   -> Cfg
   -> [Dto]
-  -> Bool
-  -> [ExceptT Error IO (String, Maybe SygusDebugInfo)]
-generateSygusAssumptions solverPath cfg dtos debug = genAssumption <$> dtos <*> temporalAtoms
-  where genAssumption dto temporal = generateAssumption solverPath cfg dto temporal debug
+  -> [ExceptT Error IO String]
+generateSygusAssumptions solverPath cfg dtos =
+    map (fmap fst) $
+      (generateAssumption solverPath cfg) <$>
+      dtos <*>
+      temporalAtoms
+
+sygusDebug
+  :: FilePath
+  -> Cfg
+  -> [Dto]
+  -> [ExceptT Error IO SygusDebugInfo]
+sygusDebug solverPath cfg dtos =
+    map (fmap snd) $
+      (generateAssumption solverPath cfg) <$>
+      dtos <*>
+      temporalAtoms
