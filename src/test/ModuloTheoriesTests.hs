@@ -31,6 +31,8 @@ import qualified Test.HUnit as H
 
 import Control.Monad.Trans.Except
 
+import Data.Either (isRight)
+
 import Distribution.TestSuite
   ( Progress(..)
   , Test(..)
@@ -45,7 +47,7 @@ import TSL ( Error
            , Cfg (..)
            , cfgFromSpec
            , predsFromSpec
-           , generateConsistencyAssumptions
+           , consistencyDebug
            , generateSygusAssumptions
            , buildDtoList
            )
@@ -84,26 +86,29 @@ runTest = (fmap snd . H.performTest onStart onError onFailure us =<<)
 makeTestName :: String -> String
 makeTestName = ("Modulo Theories >> " ++ )
 
+cvc5Path :: FilePath
+cvc5Path = "deps/cvc5"
+
 predicatesTests :: [Test]
-predicatesTests = [convert2Cabal (makeTestName "Predicates") predicateHUnit]
+predicatesTests = [convert2Cabal (makeTestName "Predicates") hUnitTest]
   where
     path = "src/test/regression/ModuloTheories/functions_and_preds.tslmt"
     expectedNumPreds = 2
 
-    predicateHUnit = do
+    hUnitTest = do
       (theory, spec, _)  <- loadTSLMT $ Just path
       return $ H.TestCase $ case predsFromSpec theory spec of
         Right preds -> expectedNumPreds @=? length preds
         Left errMsg -> H.assertFailure $ show errMsg
 
 cfgTests :: [Test]
-cfgTests = [convert2Cabal (makeTestName "CFG") cfgHUnit]
+cfgTests = [convert2Cabal (makeTestName "CFG") hUnitTest]
   where
     path = "src/test/regression/ModuloTheories/functions_and_preds.tslmt"
     expectedCfgSize = 1
     expectedProductionRuleSize = 1
 
-    cfgHUnit = do
+    hUnitTest = do
       (theory, spec, _)  <- loadTSLMT $ Just path
       return $ case cfgFromSpec theory spec of
         Right cfg   ->
@@ -114,8 +119,32 @@ cfgTests = [convert2Cabal (makeTestName "CFG") cfgHUnit]
                         ]
         Left errMsg -> H.TestCase $ H.assertFailure $ show errMsg
 
--- w :
---         (h x y (f a b) z (g a b))
+isSuccess :: (Monad m) => ExceptT e m a -> m Bool
+isSuccess = (fmap isRight) . runExceptT
+
+countSuccess :: (Monad m) => [ExceptT e m a] -> m Int
+countSuccess = fmap (length . filter id) . sequence . (map isSuccess)
+
+consistencyTests :: [Test]
+consistencyTests = [convert2Cabal (makeTestName "Consistency") hUnitTest]
+  where
+    path = "src/test/regression/ModuloTheories/euf.tslmt"
+    expectedNumAssumptions = 9
+    expectedNumQueries = 15
+
+    hUnitTest = do
+      (theory, spec, _)  <- loadTSLMT $ Just path
+      let preds   = case predsFromSpec theory spec of
+                      Left err -> error $ show err
+                      Right ps -> ps
+          results = consistencyDebug cvc5Path preds
+
+      actualNumAssumptions <- countSuccess results
+
+      return $ H.TestList $ map H.TestCase
+        [ expectedNumQueries @=? length results
+        , expectedNumAssumptions @=? actualNumAssumptions
+        ]
 
 tests :: [Test]
-tests = concat [predicatesTests, cfgTests]
+tests = concat [predicatesTests, cfgTests, consistencyTests]

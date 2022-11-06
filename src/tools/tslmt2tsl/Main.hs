@@ -78,21 +78,20 @@ printIntermediateResults numTabs intermediateResults = do
   cPutOutLn Vivid Blue $ tab "Input:"
   putStrLn $ tabMore $ problem intermediateResults
   cPutOutLn Vivid Green $ tab "Query:"
-  putStrLn $ tabMore $ query intermediateResults
-  cPutOutLn Vivid Green "Result:"
+  putStrLn $ unlines $ map tabMore $ lines $ query intermediateResults
+  cPutOutLn Vivid Green $ tab "Result:"
   putStrLn $ tabMore $ result intermediateResults
-  cPutOutLn Vivid Magenta "Assumption: "
+  cPutOutLn Vivid Magenta $ tab "Assumption: "
   putStrLn $ tabMore $ assumption intermediateResults
       where tab     = tabulate numTabs
             tabMore = tabulate (numTabs + 1)
 
 printSygusDebugInfo :: SygusDebugInfo -> IO ()
 printSygusDebugInfo = \case
-  NextDebug info        -> printIntermediateResults 0 info >> printEnd
+  NextDebug info        -> printIntermediateResults 0 info
   EventuallyDebug infos -> do
     cPutOutLn Vivid Magenta "Recursive Synthesis:"
     mapM_ printPair infos
-    printEnd
     where printPair (modelInfo, subqueryInfo) = do
             cPutOutLn Vivid Magenta $ tabulate 1 "Produce Models:"
             printIntermediateResults 2 modelInfo
@@ -101,16 +100,16 @@ printSygusDebugInfo = \case
 
 printEither :: (Show e) => (a -> IO ()) -> Either e a -> IO ()
 printEither printer = \case
-  Left err  -> cPutOutLn Vivid Red $ show err
-  Right val -> printer val
+  Left err  -> cPutOutLn Vivid Red (show err) >> printEnd 
+  Right val -> printer val >> printEnd
 
 printDebug :: (a -> IO ()) -> [ExceptT Error IO a] -> IO ()
 printDebug printer = 
   mapM_ ((=<<) (printEither printer) . runExceptT)
 
 consistency :: FilePath -> [TheoryPredicate] -> IO ()
-consistency = (printResult .) . consistencyDebug
-  where printResult = printDebug (printIntermediateResults 1)
+consistency = (printResults .) . consistencyDebug
+  where printResults = printDebug (printIntermediateResults 0)
 
 sygus :: FilePath -> Cfg -> [TheoryPredicate] -> IO ()
 sygus solverPath cfg preds = printDebug printSygusDebugInfo results
