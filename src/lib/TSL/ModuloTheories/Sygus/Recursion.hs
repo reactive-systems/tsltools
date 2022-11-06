@@ -59,6 +59,8 @@ import TSL.ModuloTheories.Sygus.Update (Update (..), DataSource (..))
 
 import TSL.ModuloTheories.Sygus.Parser (parseModels)
 
+import Debug.Trace (trace)
+
 -------------------------------------------------------------------------------
 -- (set-logic LIA)
 -- (set-option :produce-models true)
@@ -109,8 +111,16 @@ produceModelsQuery models theory pred = unlines [ header
 modifyPredicate :: [Model String] -> TheoryPredicate -> TheoryPredicate
 modifyPredicate = undefined
 
+-- parseModels :: String -> Either Parsec.ParseError (Model String)
+-- runGetModel :: FilePath -> String -> ExceptT Error IO String
+-- runGetModel solverPath = runSolver solverPath args
+--   where args = ["--lang=smt2"]
+
 generatePbeDtos :: FilePath -> Dto -> ExceptT Error IO [(Dto, IntermediateResults)]
-generatePbeDtos = undefined
+generatePbeDtos solverPath (Dto theory pre post) = undefined
+  where
+    initQuery = produceModelsQuery [] theory pre
+    result    = 
 
 findRecursion :: [[[Update a]]] -> Either Error [[Update a]]
 findRecursion = undefined 

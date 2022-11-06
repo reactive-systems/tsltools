@@ -49,6 +49,8 @@ import TSL.ModuloTheories.Sygus.Common( Dto(..)
                                       , parenthize
                                       )
 
+import Debug.Trace (trace)
+
 -------------------------------------------------------------------------------
 
 
@@ -156,17 +158,24 @@ generateSygusQuery :: Cfg -> Dto -> Either Error String
 generateSygusQuery cfg dto@(Dto theory _ post) =
   if null sygusTargets
     then errSygus $ "Empty Query for " ++ show dto
+    -- else trace ("TRACE:>> " ++ query ++ " <<")$ Right query
     else Right query
   where
-    sygusTargets = getSygusTargets post cfg
-    synthTarget  = pickTarget sygusTargets
-    grammar      = syntaxConstraint synthTarget cfg
-    constraint   = dto2Sygus synthTarget dto
-    declTheory   = "(set-logic " ++ show theory ++ ")"
-    checkSynth   = "(check-synth)"
-    sortDecl     = smtSortDecl theory
-    query        = unlines [ declTheory
+    sygusTargets  = getSygusTargets post cfg
+    synthTarget   = pickTarget sygusTargets
+    grammar       = syntaxConstraint synthTarget cfg
+    constraint    = dto2Sygus synthTarget dto
+    declTheory    = "(set-logic " ++ show theory ++ ")"
+    checkSynth    = "(check-synth)"
+    sortDecl      = smtSortDecl theory
+    declareVar' v = (parenthize 1) $ unwords [ "declare-var"
+                                             , show v
+                                             , symbolType v
+                                             ]
+    varDecls      = unlines $ map declareVar' $ predSignals post
+    query         = unlines [ declTheory
                            , sortDecl
+                           , varDecls
                            , grammar
                            , constraint
                            , checkSynth

@@ -73,30 +73,43 @@ printEnd :: IO ()
 printEnd = cPutOutLn Dull Cyan literal
   where literal = "\n\n----------------------------------------------------\n\n"
 
+printAssumption :: Int -> String -> IO ()
+printAssumption numTabs assumption = do
+  cPutOutLn Vivid Magenta $ (tabulate numTabs) "Assumption: "
+  putStrLn $ (tabulate (numTabs + 1)) assumption
+
 printIntermediateResults :: Int -> IntermediateResults -> IO ()
 printIntermediateResults numTabs intermediateResults = do
   cPutOutLn Vivid Blue $ tab "Input:"
   putStrLn $ tabMore $ problem intermediateResults
   cPutOutLn Vivid Green $ tab "Query:"
-  putStrLn $ unlines $ map tabMore $ lines $ query intermediateResults
+  putStrLn $ tabAll $ query intermediateResults
   cPutOutLn Vivid Green $ tab "Result:"
-  putStrLn $ tabMore $ result intermediateResults
-  cPutOutLn Vivid Magenta $ tab "Assumption: "
-  putStrLn $ tabMore $ assumption intermediateResults
-      where tab     = tabulate numTabs
-            tabMore = tabulate (numTabs + 1)
+  putStrLn $ tabAll $ result intermediateResults
+  printAssumption numTabs $ assumption intermediateResults
+    where tab     = tabulate numTabs
+          tabMore = tabulate (numTabs + 1)
+          tabAll  = unlines . (map tabMore) . lines
 
 printSygusDebugInfo :: SygusDebugInfo -> IO ()
 printSygusDebugInfo = \case
-  NextDebug info        -> printIntermediateResults 0 info
-  EventuallyDebug infos -> do
-    cPutOutLn Vivid Magenta "Recursive Synthesis:"
+  NextDebug info assumption -> do
+    cPutOutLn Vivid Magenta "Sequential Program Synthesis: "
+    printIntermediateResults 0 info
+    printAssumption 0 assumption
+
+  EventuallyDebug infos assumption -> do
+    cPutOutLn Vivid Magenta "Recursive Program Synthesis:"
     mapM_ printPair infos
-    where printPair (modelInfo, subqueryInfo) = do
-            cPutOutLn Vivid Magenta $ tabulate 1 "Produce Models:"
-            printIntermediateResults 2 modelInfo
-            cPutOutLn Vivid Magenta $ tabulate 1 "PBE Subquery:"
-            printIntermediateResults 2 subqueryInfo
+    printAssumption 0 assumption
+
+    where
+      printPair (modelInfo, subqueryInfo) = do
+        cPutOutLn Vivid Magenta $ tabulate 1 "Produce Models:"
+        printIntermediateResults 2 modelInfo
+        cPutOutLn Vivid Magenta $ tabulate 1 "PBE Subquery:"
+        printIntermediateResults 2 subqueryInfo
+
 
 printEither :: (Show e) => (a -> IO ()) -> Either e a -> IO ()
 printEither printer = \case

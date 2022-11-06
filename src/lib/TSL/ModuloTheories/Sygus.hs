@@ -60,8 +60,8 @@ import TSL.ModuloTheories.Sygus.Recursion ( generatePbeDtos
 -------------------------------------------------------------------------------
 
 data SygusDebugInfo =
-    NextDebug IntermediateResults
-  | EventuallyDebug [(IntermediateResults, IntermediateResults)]
+    NextDebug IntermediateResults String
+  | EventuallyDebug [(IntermediateResults, IntermediateResults)] String
   deriving (Show)
 
 temporalAtoms :: [Temporal]
@@ -98,7 +98,7 @@ generateUpdates solverPath cfg depth dto =
     term :: ExceptT Error IO (Term String)
     term = do
         value <- result
-        case parseSygusResult value of
+        case parseSygusResult (head (lines value)) of
           Left err   -> except $ parseError err
           Right term -> return term
 
@@ -121,8 +121,8 @@ generateAssumption solverPath cfg dto = \case
   next@(Next maxAstSize) -> do
     (updates, debugInfo) <- genUpdates maxAstSize dto
     let assumption = makeAssumption' next updates
-        debugInfo' = NextDebug debugInfo
-    liftM (,debugInfo') assumption
+        debugInfo' = NextDebug debugInfo <$> assumption
+    liftM2 (,) assumption debugInfo'
 
   Eventually -> do
     pbeResults <- generatePbeDtos solverPath dto
@@ -133,12 +133,13 @@ generateAssumption solverPath cfg dto = \case
 
     updates    <- except $ findRecursion subqueryUpdates
     assumption <- makeAssumption' Eventually updates
-    let debugInfo = EventuallyDebug $ zip pbeInfos subqueryInfos
+    let debugInfo = EventuallyDebug (zip pbeInfos subqueryInfos) assumption
     return (assumption, debugInfo)
 
   where
     genUpdates depth dto'   = generateUpdates solverPath cfg depth dto'
-    makeAssumption' temporal updates = except $ makeAssumption dto temporal updates
+    makeAssumption' temporal updates =
+      except $ makeAssumption dto temporal updates
 
 generateSygusAssumptions
   :: FilePath

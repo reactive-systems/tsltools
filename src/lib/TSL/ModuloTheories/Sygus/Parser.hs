@@ -64,8 +64,7 @@ sygusParser = parens $ (header >> Parsec.space >> termParser)
     where header = Parsec.string "sygus-sol-gterm"
 
 parseSygusResult :: String -> Either Parsec.ParseError (Term String)
-parseSygusResult input =
-  Parsec.parse (sygusParser <* Parsec.eof) errMsg input
+parseSygusResult input = Parsec.parse (sygusParser <* Parsec.eof) errMsg input
   where
     errMsg = "Parser Failed!:\n>>>>>\nInput was: \"" ++ input ++ "\"\n<<<<<\n"
 
