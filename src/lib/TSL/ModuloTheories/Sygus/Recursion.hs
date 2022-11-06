@@ -131,7 +131,7 @@ generatePbeModel solverPath theory pred prevModels = liftM2 (,) model debugInfo
     model = do
       string <- result
       case parseModels string of
-        Left err    -> except $ parseError err
+        Left err    -> except $ Left err
         Right model -> return $ model
 
     debugInfo :: ExceptT Error IO IntermediateResults

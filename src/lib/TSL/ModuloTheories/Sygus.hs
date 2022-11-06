@@ -29,7 +29,7 @@ import Control.Monad (liftM, liftM2)
 
 import Control.Exception(assert)
 
-import TSL.Error (Error, errSygus, parseError)
+import TSL.Error (Error, errSygus)
 
 import TSL.ModuloTheories.Cfg (Cfg)
 
@@ -99,7 +99,7 @@ generateUpdates solverPath cfg depth dto =
     term = do
         value <- result
         case parseSygusResult (head (lines value)) of
-          Left err   -> except $ parseError err
+          Left err   -> except $ Left err
           Right term -> return term
 
     updates :: ExceptT Error IO [[Update String]]

@@ -39,6 +39,7 @@ module TSL.Error
   , errMtParse
   , errSolver
   , errConsistency
+  , errModel
   , errSygus
   , unwrap
   ) where
@@ -79,6 +80,7 @@ data Error
   | ErrMtParse TheoryParseError
   | ErrSolver SolverError
   | ErrConsistency ConsistencyError
+  | ErrModel ModelError
   | ErrSygus SygusError
 
 -----------------------------------------------------------------------------
@@ -183,6 +185,14 @@ newtype ConsistencyError =
 
 -----------------------------------------------------------------------------
 
+newtype ModelError =
+  ModelError
+    { modelErr :: String
+    }
+  deriving (Eq, Ord)
+
+-----------------------------------------------------------------------------
+
 newtype SygusError =
   SygusError
     { sygusErr :: String
@@ -209,6 +219,8 @@ instance Show Error where
     ErrSolver SolverError {..}           -> "Solver Error: " ++ solverErr
     ErrConsistency ConsistencyError {..} -> 
       "SMT Consistency Error: " ++ consistencyErr
+    ErrModel ModelError {..} -> 
+      "Model Error: " ++ modelErr
     ErrSygus SygusError {..}             -> "Sygus Error: " ++ sygusErr
 
     where
@@ -586,6 +598,16 @@ errConsistency
 
 errConsistency =
   Left . ErrConsistency . ConsistencyError
+
+-----------------------------------------------------------------------------
+
+-- | Model Error.
+
+errModel
+  :: String -> Either Error a
+
+errModel = 
+  Left . ErrModel . ModelError
 
 -----------------------------------------------------------------------------
 

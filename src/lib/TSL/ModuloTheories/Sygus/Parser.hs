@@ -16,6 +16,10 @@ module TSL.ModuloTheories.Sygus.Parser
 
 -------------------------------------------------------------------------------
 
+import Data.List (intersperse)
+
+import TSL.Error (Error, parseError, errModel)
+
 import TSL.ModuloTheories.Sygus.Common (Expansion (..) , Term (..), Model(..))
 
 -------------------------------------------------------------------------------
@@ -63,10 +67,52 @@ sygusParser :: Parser (Term String)
 sygusParser = parens $ (header >> Parsec.space >> termParser)
     where header = Parsec.string "sygus-sol-gterm"
 
-parseSygusResult :: String -> Either Parsec.ParseError (Term String)
-parseSygusResult input = Parsec.parse (sygusParser <* Parsec.eof) errMsg input
-  where
-    errMsg = "Parser Failed!:\n>>>>>\nInput was: \"" ++ input ++ "\"\n<<<<<\n"
+makeErrMsg :: String -> String
+makeErrMsg input = header ++ input ++ footer
+  where header = "Parser Failed!:\n>>>>>\nInput was: \""
+        footer = "\"\n<<<<<\n"
 
-parseModels :: String -> Either Parsec.ParseError (Model String)
-parseModels = undefined
+parseSygusResult :: String -> Either Error (Term String)
+parseSygusResult input =
+  case Parsec.parse (sygusParser <* Parsec.eof) (makeErrMsg input) input of
+    Left err   -> parseError err
+    Right term -> return term
+
+nullary :: Parser ()
+nullary = Parsec.string "()" >> return ()
+
+symbolType :: Parser ()
+symbolType = Parsec.many1 nonReserved >> return ()
+
+symbolParser :: Parser String
+symbolParser = Parsec.many1 nonReserved
+
+modelValueParser :: Parser String
+modelValueParser = symbolParser
+
+modelParser :: Parser (Model String)
+modelParser = parens modelParserInner
+  where modelParserInner = do
+          _      <- Parsec.string "define-fun"
+          symbol <- Parsec.space >> symbolParser
+          _      <- Parsec.space >> nullary
+          _      <- Parsec.space >> symbolType
+          value  <- Parsec.space >> modelValueParser
+          return $ Model (symbol, value)
+
+allModelsParser :: Parser [Model String]
+allModelsParser =
+  parens $ Parsec.space >> modelParser `Parsec.endBy1` Parsec.space
+
+parseModels :: String -> Either Error (Model String)
+parseModels input = case head (lines input) of
+  "unsat"   -> errModel $ "Got UNSAT when trying to parse model."
+  "sat"     ->
+      let modelResult = concat $ intersperse " " $ tail $ lines input
+          errMsg      = makeErrMsg modelResult
+    in case Parsec.parse (allModelsParser <* Parsec.eof) errMsg modelResult of
+         Left err     -> parseError err
+         Right models -> if length models == 1
+                            then return $ head models
+                            else errModel $ "Got unexpected number of models: " ++ show models
+  otherwise -> errModel $ "Unexpected model result: " ++ otherwise

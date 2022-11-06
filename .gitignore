@@ -4,6 +4,7 @@ local-dev
 *.tsl
 *.sl
 foo*
+bar*
 TODO
 .DS_Store
 tags
