@@ -80,8 +80,8 @@ import Debug.Trace (trace)
 -- 4. Use these to create SyGuS queries
 -- 5. Find recursion inside of them
 
-config_NUM_RECURSIVE_SUBQUERIES :: Int
-config_NUM_RECURSIVE_SUBQUERIES = 3
+config_NUM_SUBQUERIES :: Int
+config_NUM_SUBQUERIES = 3
 
 config_SUBQUERY_AST_MAX_SIZE :: Int
 config_SUBQUERY_AST_MAX_SIZE = 3
@@ -113,15 +113,11 @@ produceModelsQuery models theory pred = unlines [ header
 modifyPredicate :: [Model String] -> TheoryPredicate -> TheoryPredicate
 modifyPredicate = undefined
 
--- parseModels :: String -> Either Parsec.ParseError (Model String)
--- runGetModel :: FilePath -> String -> ExceptT Error IO String
-
 generatePbeModel
-    :: (Show a)
-    => FilePath
+    :: FilePath
     -> Theory
     -> TheoryPredicate
-    -> [Model a]
+    -> [Model String]
     -> ExceptT Error IO (Model String, IntermediateResults)
 generatePbeModel solverPath theory pred prevModels = liftM2 (,) model debugInfo
   where 
@@ -144,14 +140,34 @@ generatePbeModel solverPath theory pred prevModels = liftM2 (,) model debugInfo
       parsedModel <- model
       return $ IntermediateResults query runResult (show parsedModel)
 
-generatePbeDtos :: FilePath -> Dto -> ExceptT Error IO [(Dto, IntermediateResults)]
-generatePbeDtos solverPath (Dto theory pre post) = undefined
-  -- where
-  --   newDto :: ExceptT Error IO Dto
-  --   newDto = do
-  --     model <- parsed
-  --     let newPreCondition = modifyPredicate [model] pre
-  --     return $ Dto theory newPreCondition post
+generatePbeDtos
+  :: FilePath
+  -> Dto
+  -> ExceptT Error IO [(Dto, IntermediateResults)]
+generatePbeDtos solverPath (Dto theory pre post) = do
+  (_, dtos, debugInfos) <- looper config_NUM_SUBQUERIES (return nullInit)
+  return $ zip dtos debugInfos
+
+  where
+    nullInit :: ([Model String], [Dto], [IntermediateResults])
+    nullInit = ([], [], [])
+
+    genNewDto :: [Model String] -> Dto
+    genNewDto models = Dto theory newPreCondition post
+      where newPreCondition = modifyPredicate models pre
+    
+    looper
+      :: Int
+      -> ExceptT Error IO ([Model String], [Dto], [IntermediateResults])
+      -> ExceptT Error IO ([Model String], [Dto], [IntermediateResults])
+    looper 0        prev = prev
+    looper numIters prev = do
+      (models, dtos, debugInfos) <- prev
+      (newModel, newInfo) <- generatePbeModel solverPath theory pre models
+      let updatedModels = newModel:models
+          updatedDto    = (genNewDto updatedModels):dtos
+          updatedInfos  = newInfo:debugInfos
+      looper (numIters - 1) $ return (updatedModels, updatedDto, updatedInfos)
 
 findRecursion :: [[[Update a]]] -> Either Error [[Update a]]
 findRecursion = undefined 
