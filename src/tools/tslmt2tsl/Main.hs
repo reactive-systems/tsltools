@@ -104,9 +104,9 @@ printEither printer = \case
   Left err  -> cPutOutLn Vivid Red $ show err
   Right val -> printer val
 
-printDebug :: (Show e) => (a -> IO ()) -> [ExceptT e IO a] -> IO ()
+printDebug :: (a -> IO ()) -> [ExceptT Error IO a] -> IO ()
 printDebug printer = 
-  mapM_ (fmap (printEither printer) . runExceptT)
+  mapM_ ((=<<) (printEither printer) . runExceptT)
 
 consistency :: FilePath -> [TheoryPredicate] -> IO ()
 consistency = (printResult .) . consistencyDebug
