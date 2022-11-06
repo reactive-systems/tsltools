@@ -13,6 +13,7 @@
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.ConsistencyChecking( generateConsistencyAssumptions
                                              , consistencyDebug
+                                             , ConsistencyDebugInfo (..)
                                              ) where
 
 -------------------------------------------------------------------------------
@@ -51,6 +52,9 @@ import TSL.ModuloTheories.Predicates( TheoryPredicate(..)
 pred2Assumption :: TheoryPredicate -> String
 pred2Assumption p = "G " ++ pred2Tsl (NotPLit p) ++ ";"
 
+data ConsistencyDebugInfo = ConsistencyDebugInfo IntermediateResults String
+  deriving (Show)
+
 generateConsistencyAssumptions
   :: FilePath
   -> [TheoryPredicate]
@@ -61,21 +65,24 @@ generateConsistencyAssumptions path preds =
 consistencyDebug
   :: FilePath
   -> [TheoryPredicate]
-  -> [ExceptT Error IO IntermediateResults]
+  -> [ExceptT Error IO ConsistencyDebugInfo]
 consistencyDebug path preds =
   map ((fmap snd) . (consistencyChecking path)) (enumeratePreds preds)
 
 consistencyChecking
   :: FilePath
   -> TheoryPredicate
-  -> ExceptT Error IO (String, IntermediateResults)
+  -> ExceptT Error IO (String, ConsistencyDebugInfo)
 consistencyChecking solverPath pred = do
   isSat <- solveSat solverPath query
   if isSat
     then except $ errConsistency $ "Predicate " ++ show pred ++ " is satisfiable."
     else 
-      let assumption = pred2Assumption pred
-          debugInfo  = IntermediateResults (show pred) query (show isSat) assumption
+      let assumption          = pred2Assumption pred
+          intermediateResults =
+            IntermediateResults (show pred) query (show isSat)
+          debugInfo           =
+            ConsistencyDebugInfo intermediateResults assumption
       in return (assumption, debugInfo)
   where
     query  = pred2SmtQuery pred

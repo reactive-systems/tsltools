@@ -78,6 +78,7 @@ module TSL
   , preprocess
   , generateConsistencyAssumptions
   , consistencyDebug
+  , ConsistencyDebugInfo (..)
   , generateSygusAssumptions
   , sygusDebug
   , SygusDebugInfo (..)
@@ -136,6 +137,7 @@ import TSL.Preprocessor(preprocess)
 
 import TSL.ModuloTheories.ConsistencyChecking( generateConsistencyAssumptions
                                              , consistencyDebug
+                                             , ConsistencyDebugInfo (..)
                                              )
 import TSL.ModuloTheories.Theories(Theory, readTheory)
 import TSL.ModuloTheories.Cfg(Cfg(..), cfgFromSpec)

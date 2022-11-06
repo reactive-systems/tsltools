@@ -106,10 +106,7 @@ generateUpdates solverPath cfg depth dto =
     updates = term2Updates <$> term
 
     debugInfo :: ExceptT Error IO IntermediateResults
-    debugInfo = IntermediateResults (show dto) <$>
-                  except query <*>
-                  result <*>
-                  (return "No assumption during Update Generation stage.")
+    debugInfo = IntermediateResults (show dto) <$> except query <*> result
 
 generateAssumption
   :: FilePath

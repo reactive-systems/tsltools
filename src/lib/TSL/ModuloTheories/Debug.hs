@@ -14,6 +14,5 @@ data IntermediateResults = IntermediateResults
   {  problem    :: String
   ,  query      :: String
   ,  result     :: String
-  ,  assumption :: String
   }
   deriving (Show)

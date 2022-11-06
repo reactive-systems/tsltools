@@ -19,6 +19,8 @@ module TSL.ModuloTheories.Sygus.Recursion
 
 import Control.Monad.Trans.Except
 
+import Control.Monad (liftM2)
+
 import TSL.Error (Error, errSygus, parseError)
 
 import TSL.ModuloTheories.Cfg ( Cfg(..)
@@ -113,14 +115,43 @@ modifyPredicate = undefined
 
 -- parseModels :: String -> Either Parsec.ParseError (Model String)
 -- runGetModel :: FilePath -> String -> ExceptT Error IO String
--- runGetModel solverPath = runSolver solverPath args
---   where args = ["--lang=smt2"]
+
+generatePbeModel
+    :: (Show a)
+    => FilePath
+    -> Theory
+    -> TheoryPredicate
+    -> [Model a]
+    -> ExceptT Error IO (Model String, IntermediateResults)
+generatePbeModel solverPath theory pred prevModels = liftM2 (,) model debugInfo
+  where 
+    query :: String
+    query = produceModelsQuery prevModels theory pred
+
+    result :: ExceptT Error IO String
+    result = runGetModel solverPath query
+
+    model :: ExceptT Error IO (Model String)
+    model = do
+      string <- result
+      case parseModels string of
+        Left err    -> except $ parseError err
+        Right model -> return $ model
+
+    debugInfo :: ExceptT Error IO IntermediateResults
+    debugInfo = do
+      runResult   <- result
+      parsedModel <- model
+      return $ IntermediateResults query runResult (show parsedModel)
 
 generatePbeDtos :: FilePath -> Dto -> ExceptT Error IO [(Dto, IntermediateResults)]
 generatePbeDtos solverPath (Dto theory pre post) = undefined
-  where
-    initQuery = produceModelsQuery [] theory pre
-    result    = 
+  -- where
+  --   newDto :: ExceptT Error IO Dto
+  --   newDto = do
+  --     model <- parsed
+  --     let newPreCondition = modifyPredicate [model] pre
+  --     return $ Dto theory newPreCondition post
 
 findRecursion :: [[[Update a]]] -> Either Error [[Update a]]
 findRecursion = undefined 

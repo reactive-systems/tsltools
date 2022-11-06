@@ -50,6 +50,7 @@ import TSL ( Error
            , sygusDebug
            , IntermediateResults (..)
            , SygusDebugInfo (..)
+           , ConsistencyDebugInfo (..)
            , buildDtoList
            )
 
@@ -86,15 +87,21 @@ printIntermediateResults numTabs intermediateResults = do
   putStrLn $ tabAll $ query intermediateResults
   cPutOutLn Vivid Green $ tab "Result:"
   putStrLn $ tabAll $ result intermediateResults
-  printAssumption numTabs $ assumption intermediateResults
     where tab     = tabulate numTabs
-          tabMore = tabulate (numTabs + 1)
+          tabMore = tabulate $ numTabs + 1
           tabAll  = unlines . (map tabMore) . lines
+
+printConsistencyDebugInfo :: ConsistencyDebugInfo -> IO ()
+printConsistencyDebugInfo = \case
+  ConsistencyDebugInfo intermediateResults assumption -> do
+    cPutOutLn Vivid Magenta "Consistency Checking:"
+    printIntermediateResults 0 intermediateResults
+    printAssumption 0 assumption
 
 printSygusDebugInfo :: SygusDebugInfo -> IO ()
 printSygusDebugInfo = \case
   NextDebug info assumption -> do
-    cPutOutLn Vivid Magenta "Sequential Program Synthesis: "
+    cPutOutLn Vivid Magenta "Sequential Program Synthesis:"
     printIntermediateResults 0 info
     printAssumption 0 assumption
 
@@ -122,7 +129,7 @@ printDebug printer =
 
 consistency :: FilePath -> [TheoryPredicate] -> IO ()
 consistency = (printResults .) . consistencyDebug
-  where printResults = printDebug (printIntermediateResults 0)
+  where printResults = printDebug printConsistencyDebugInfo
 
 sygus :: FilePath -> Cfg -> [TheoryPredicate] -> IO ()
 sygus solverPath cfg preds = printDebug printSygusDebugInfo results
