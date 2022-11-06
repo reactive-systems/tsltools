@@ -78,7 +78,7 @@ readTheory other  = errMtParse other
 smtSortDecl :: Theory -> String
 smtSortDecl = \case
   Uf  -> "(declare-sort UF 0)"
-  EUf -> "(declare-sort UF 0)"
+  EUf -> "(declare-sort EUF 0)"
   Lia -> ""
 
 data TAst =
