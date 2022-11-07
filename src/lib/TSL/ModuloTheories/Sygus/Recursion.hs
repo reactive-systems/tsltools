@@ -5,8 +5,9 @@
 -- Maintainer  :  Wonhyuk Choi
 
 -------------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.Sygus.Recursion
@@ -21,7 +22,7 @@ import Control.Monad.Trans.Except
 
 import Control.Monad (liftM2)
 
-import TSL.Error (Error, errSygus, parseError)
+import TSL.Error (Error, errSygus)
 
 import TSL.ModuloTheories.Cfg ( Cfg(..)
                               , outputSignals
@@ -192,5 +193,27 @@ generatePbeDtos solverPath (Dto theory pre post) = do
           updatedInfos  = newInfo:debugInfos
       looper (numIters - 1) $ return (updatedModels, updatedDto, updatedInfos)
 
-findRecursion :: [[[Update a]]] -> Either Error [[Update a]]
-findRecursion = undefined 
+findRecursion :: (Eq a, Show a) => [[[Update a]]] -> Either Error [[Update a]]
+findRecursion subqueryUpdates = do
+  flattened <- mapM flattenUpdates subqueryUpdates
+  extracted <- mapM extractRecursion flattened
+  return [extracted]
+  where
+    debugUpdates :: String
+    debugUpdates = show subqueryUpdates
+
+    extractRecursion :: (Eq a) => [Update a] -> Either Error (Update a)
+    extractRecursion []     = errSygus $
+                                "Empty updates found for " ++ debugUpdates
+    extractRecursion (x:xs) = if all (==x) xs
+                                 then return x
+                                 else errSygus $ 
+                                        "Updates not recursive: " ++
+                                        debugUpdates
+
+    flattenUpdates :: [[a]] -> Either Error [a]
+    flattenUpdates []     = Right []
+    flattenUpdates (x:xs) = case x of
+      []  -> errSygus $ "Empty updates found for " ++ debugUpdates
+      [y] -> fmap (y:) (flattenUpdates xs)
+      _   -> errSygus $ "Too many updates in one time: " ++ debugUpdates

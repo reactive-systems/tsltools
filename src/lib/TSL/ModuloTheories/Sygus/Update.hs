@@ -54,8 +54,10 @@ numeric2Tsl value =
 data DataSource a =
       TslValue a
     | TslFunction a [DataSource a]
+  deriving (Eq)
 
 data Update a = Update {sink :: a, source :: DataSource a}
+  deriving (Eq)
 
 instance (Show a) => Show (DataSource a) where
   show = \case
