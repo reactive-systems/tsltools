@@ -73,6 +73,9 @@ instance Functor Term where
 
 newtype Model a = Model (a,a) deriving (Show)
 
+instance Functor Model where
+  fmap f (Model (x, y)) = Model (f x, f y)
+
 parenthize :: Int -> String -> String
 parenthize repeats str = lpars ++ str ++ rpars
   where lpars = replicate repeats '(' 

@@ -33,6 +33,7 @@ import TSL.ModuloTheories.Predicates( TheoryPredicate
                                     , predTheory
                                     , predSignals
                                     , predReplacedSmt
+                                    , replacePredicate
                                     )
 
 import TSL.ModuloTheories.Theories( TheorySymbol
@@ -44,6 +45,7 @@ import TSL.ModuloTheories.Theories( TheorySymbol
                                   , symbolTheory
                                   , smtSortDecl
                                   , makeSignal
+                                  , read2Symbol
                                   )
 
 import TSL.ModuloTheories.Solver (runGetModel)
@@ -93,16 +95,16 @@ model2SmtPred (Model (symbol, model)) =
                          , show model
                          ]
 
-produceModelsQuery :: (Show a) => [Model a] -> Theory -> TheoryPredicate -> String
-produceModelsQuery models theory pred = unlines [ header
-                                                , setOption
-                                                , declareConstList
-                                                , notTheseModels
-                                                , assertion $ pred2Smt pred
-                                                , footer
-                                                ]
+produceModelsQuery :: (Show a) => [Model a] -> TheoryPredicate -> String
+produceModelsQuery models pred = unlines [ header
+                                         , setOption
+                                         , declareConstList
+                                         , notTheseModels
+                                         , assertion $ pred2Smt pred
+                                         , footer
+                                         ]
   where paren1           = parenthize 1
-        header           = paren1 $ unwords ["set-logic", show theory]
+        header           = paren1 $ unwords ["set-logic", show (predTheory pred)]
         setOption        = "(set-option :produce-models true)"
         footer           = "(check-sat)\n(get-model)"
         declareConst var = paren1 $ unwords ["declare-const ", show var, symbolType var]
@@ -110,19 +112,38 @@ produceModelsQuery models theory pred = unlines [ header
         assertion stmt   = paren1 $ unwords ["assert", stmt]
         notTheseModels   = unlines $ map (assertion . model2SmtPred) models
 
-modifyPredicate :: [Model String] -> TheoryPredicate -> TheoryPredicate
-modifyPredicate = undefined
+modifyPredicate
+  :: [Model String]
+  -> TheoryPredicate
+  -> Either Error TheoryPredicate
+modifyPredicate models pred = theoryModels >>= (return . foldr modify pred)
+  where
+    sequence' :: [Model (Either e a)] -> Either e [Model a]
+    sequence' = \case
+      []                 -> Right []
+      ((Model (k,v)):xs) -> case k of 
+                      Left err -> Left err
+                      Right k' -> case v of
+                                    Left err -> Left err
+                                    Right v' ->
+                                      fmap ((Model (k', v')):) $ sequence' xs
+
+    theoryModels :: Either Error [Model TheorySymbol]
+    theoryModels =
+        sequence' $ map (fmap (read2Symbol (predTheory pred))) models
+
+    modify :: Model TheorySymbol -> TheoryPredicate -> TheoryPredicate
+    modify (Model replacer) = replacePredicate replacer
 
 generatePbeModel
     :: FilePath
-    -> Theory
     -> TheoryPredicate
     -> [Model String]
     -> ExceptT Error IO (Model String, IntermediateResults)
-generatePbeModel solverPath theory pred prevModels = liftM2 (,) model debugInfo
+generatePbeModel solverPath pred prevModels = liftM2 (,) model debugInfo
   where 
     query :: String
-    query = produceModelsQuery prevModels theory pred
+    query = produceModelsQuery prevModels pred
 
     result :: ExceptT Error IO String
     result = runGetModel solverPath query
@@ -152,9 +173,10 @@ generatePbeDtos solverPath (Dto theory pre post) = do
     nullInit :: ([Model String], [Dto], [IntermediateResults])
     nullInit = ([], [], [])
 
-    genNewDto :: [Model String] -> Dto
-    genNewDto models = Dto theory newPreCondition post
-      where newPreCondition = modifyPredicate models pre
+    genNewDto :: [Model String] -> Either Error Dto
+    genNewDto models = do
+      newPreCondition <- modifyPredicate models pre
+      return $ Dto theory newPreCondition post
     
     looper
       :: Int
@@ -163,9 +185,10 @@ generatePbeDtos solverPath (Dto theory pre post) = do
     looper 0        prev = prev
     looper numIters prev = do
       (models, dtos, debugInfos) <- prev
-      (newModel, newInfo) <- generatePbeModel solverPath theory pre models
+      (newModel, newInfo) <- generatePbeModel solverPath pre models
       let updatedModels = newModel:models
-          updatedDto    = (genNewDto updatedModels):dtos
+      newDto <- except $ genNewDto updatedModels
+      let updatedDto    = newDto:dtos
           updatedInfos  = newInfo:debugInfos
       looper (numIters - 1) $ return (updatedModels, updatedDto, updatedInfos)
 

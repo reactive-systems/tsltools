@@ -24,6 +24,7 @@ module TSL.Ast( Ast(..)
               , getAstInfo
               , stringifyAst
               , getSignals
+              , replace
               ) where
 
 -------------------------------------------------------------------------------
@@ -244,6 +245,13 @@ getSignals = \case
   Variable  a      -> [a]
   Function  _ args -> concat (map getSignals args)
   Predicate _ args -> concat (map getSignals args)
+
+replace :: (Eq a) => (a, a) -> Ast a -> Ast a
+replace struct@(before, after) = \case
+  Variable v       -> Variable  (replace' v)
+  Function f args  -> Function  (replace' f) $ map (replace struct) args
+  Predicate p args -> Predicate (replace' p) $ map (replace struct) args
+  where replace' x = if x == before then after else x
 
 stringifyAst :: (a -> String) -> Ast a -> String
 stringifyAst stringify = \case
