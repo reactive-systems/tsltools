@@ -65,7 +65,9 @@ data SygusDebugInfo =
   deriving (Show)
 
 temporalAtoms :: [Temporal]
-temporalAtoms = [Next 1]
+-- temporalAtoms = [Next 1, Eventually]
+temporalAtoms = [Eventually]
+-- temporalAtoms = [Next 1]
 
 removePostfix :: String -> String
 removePostfix = unpack . replace postfix "" . pack

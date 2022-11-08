@@ -158,7 +158,6 @@ generateSygusQuery :: Cfg -> Dto -> Either Error String
 generateSygusQuery cfg dto@(Dto theory _ post) =
   if null sygusTargets
     then errSygus $ "Empty Query for " ++ show dto
-    -- else trace ("TRACE:>> " ++ query ++ " <<")$ Right query
     else Right query
   where
     sygusTargets  = getSygusTargets post cfg

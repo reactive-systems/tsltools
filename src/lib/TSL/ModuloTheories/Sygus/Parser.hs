@@ -18,6 +18,8 @@ module TSL.ModuloTheories.Sygus.Parser
 
 import Data.List (intersperse)
 
+import Control.Applicative ((<|>))
+
 import TSL.Error (Error, parseError, errModel)
 
 import TSL.ModuloTheories.Sygus.Common (Expansion (..) , Term (..), Model(..))
@@ -29,6 +31,7 @@ import TSL.ModuloTheories.Sygus.Common (Expansion (..) , Term (..), Model(..))
 import Text.Parsec.String (Parser)
 
 import qualified Text.Parsec as Parsec
+
 
 parens :: Parser a -> Parser a
 parens = Parsec.between lpar rpar
@@ -48,7 +51,7 @@ expansionParser = parens $ expansion
           return $ Expansion sink rule
 
 valueParser :: Parser (Term String)
-valueParser = Value <$> Parsec.many1 nonReserved
+valueParser = Value <$> literalParser
 
 exprParser :: Parser (Term String)
 exprParser = Expression <$> expansionParser
@@ -78,41 +81,53 @@ parseSygusResult input =
     Left err   -> parseError err
     Right term -> return term
 
+example :: String
+example = unlines 
+  [ "sat"
+  , "("
+  , "(define-fun y () Int (- 1))"
+  , "(define-fun x () Int 0)"
+  , ")"
+  ]
+
 nullary :: Parser ()
 nullary = Parsec.string "()" >> return ()
 
+negativeLiteralParser :: Parser String
+negativeLiteralParser = parens innerVal
+  where innerVal = do
+          _       <- Parsec.string "-"
+          _       <- Parsec.space
+          literal <- literalParser
+          return $ "(- " ++ literal ++ ")"
+
+literalParser :: Parser String
+literalParser = negativeLiteralParser <|> Parsec.many1 nonReserved
+
 symbolType :: Parser ()
-symbolType = Parsec.many1 nonReserved >> return ()
-
-symbolParser :: Parser String
-symbolParser = Parsec.many1 nonReserved
-
-modelValueParser :: Parser String
-modelValueParser = symbolParser
+symbolType = literalParser >> return ()
 
 modelParser :: Parser (Model String)
 modelParser = parens modelParserInner
   where modelParserInner = do
           _      <- Parsec.string "define-fun"
-          symbol <- Parsec.space >> symbolParser
+          symbol <- Parsec.space >> literalParser
           _      <- Parsec.space >> nullary
           _      <- Parsec.space >> symbolType
-          value  <- Parsec.space >> modelValueParser
+          value  <- Parsec.space >> literalParser
           return $ Model (symbol, value)
 
 allModelsParser :: Parser [Model String]
 allModelsParser =
   parens $ Parsec.space >> modelParser `Parsec.endBy1` Parsec.space
 
-parseModels :: String -> Either Error (Model String)
+parseModels :: String -> Either Error [Model String]
 parseModels input = case head (lines input) of
-  "unsat"   -> errModel $ "Got UNSAT when trying to parse model."
+  "unsat"   -> errModel $ "Got UNSAT when trying to parse model: " ++ input
   "sat"     ->
       let modelResult = concat $ intersperse " " $ tail $ lines input
           errMsg      = makeErrMsg modelResult
     in case Parsec.parse (allModelsParser <* Parsec.eof) errMsg modelResult of
          Left err     -> parseError err
-         Right models -> if length models == 1
-                            then return $ head models
-                            else errModel $ "Got unexpected number of models: " ++ show models
+         Right models -> return models
   otherwise -> errModel $ "Unexpected model result: " ++ otherwise
