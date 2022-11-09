@@ -20,9 +20,7 @@ module TSL.ModuloTheories.Sygus ( generateSygusAssumptions
 
 import Control.Monad.Trans.Except
 
-import Data.List (isInfixOf)
-
-import Control.Monad (liftM, liftM2)
+import Control.Monad (liftM2)
 
 import Control.Exception(assert)
 
@@ -36,13 +34,12 @@ import TSL.ModuloTheories.Solver (runSygusQuery)
 
 import TSL.ModuloTheories.Debug (IntermediateResults(..))
 
-import TSL.ModuloTheories.Theories (TheorySymbol)
+import TSL.ModuloTheories.Theories (Theory, TheorySymbol, sygus2Supported)
 
 import TSL.ModuloTheories.Sygus.Common ( Temporal(..)
                                        , Term
                                        , Dto (..)
                                        , Model
-                                       , targetPostfix
                                        )
 
 import TSL.ModuloTheories.Sygus.Query (generateSygusQuery)
@@ -57,6 +54,8 @@ import TSL.ModuloTheories.Sygus.Recursion ( generatePbeModels
                                           , findRecursion
                                           , config_SUBQUERY_AST_MAX_SIZE
                                           )
+import Debug.Trace (trace)
+
 -------------------------------------------------------------------------------
 
 data SygusDebugInfo =
@@ -65,9 +64,7 @@ data SygusDebugInfo =
   deriving (Show)
 
 temporalAtoms :: [Temporal]
--- temporalAtoms = [Next 1, Eventually]
-temporalAtoms = [Eventually]
--- temporalAtoms = [Next 1]
+temporalAtoms = [Next 1, Eventually]
 
 buildDto :: TheoryPredicate -> TheoryPredicate -> Dto
 buildDto pre post = Dto theory pre post
@@ -85,8 +82,7 @@ generateUpdates
   -> [Model TheorySymbol]
   -> Dto
   -> ExceptT Error IO ([[Update String]], IntermediateResults)
-generateUpdates solverPath cfg depth models dto =
-  liftM2 (,) updates debugInfo
+generateUpdates solverPath cfg depth models dto = liftM2 (,) updates debugInfo
   where
     query :: Either Error String
     query = generateSygusQuery cfg models dto
@@ -113,27 +109,36 @@ generateAssumption
   -> Dto
   -> Temporal
   -> ExceptT Error IO (String, SygusDebugInfo)
-generateAssumption solverPath cfg dto = \case
-  next@(Next maxAstSize) -> do
-    (updates, debugInfo) <- genUpdates maxAstSize [] dto
-    let assumption = makeAssumption' next updates
-        debugInfo' = NextDebug debugInfo <$> assumption
-    liftM2 (,) assumption debugInfo'
+generateAssumption solverPath cfg dto temporal =
+  if not $ sygus2Supported $ theory dto
+  then except unsupportedError
+  else case temporal of
+    next@(Next maxAstSize) -> do
+      (updates, debugInfo) <- genNextUpdates maxAstSize
+      let assumption = makeAssumption' next updates
+          debugInfo' = NextDebug debugInfo <$> assumption
+      liftM2 (,) assumption debugInfo'
 
-  Eventually -> do
-    pbeResults <- generatePbeModels solverPath dto
-    let (pbeModels, pbeInfos) = unzip pbeResults
+    Eventually -> do
+      pbeResults <- generatePbeModels solverPath dto
+      let (pbeModels, pbeInfos) = unzip pbeResults
 
-    subqueryResults <- mapM (flip (genUpdates config_SUBQUERY_AST_MAX_SIZE) dto) pbeModels
-    let (subqueryUpdates, subqueryInfos) = unzip subqueryResults
+      subqueryResults <- mapM genEventuallyUpdates pbeModels
+      let (subqueryUpdates, subqueryInfos) = unzip subqueryResults
 
-    updates    <- except $ findRecursion subqueryUpdates
-    assumption <- makeAssumption' Eventually updates
-    let debugInfo = EventuallyDebug (zip pbeInfos subqueryInfos) assumption
-    return (assumption, debugInfo)
+      updates    <- except $ findRecursion subqueryUpdates
+      assumption <- makeAssumption' Eventually updates
+      let debugInfo = EventuallyDebug (zip pbeInfos subqueryInfos) assumption
+      return (assumption, debugInfo)
 
   where
-    genUpdates = generateUpdates solverPath cfg 
+    genUpdates depth     = (flip (generateUpdates solverPath cfg depth)) dto
+    genNextUpdates       = (flip genUpdates) []
+    genEventuallyUpdates = genUpdates config_SUBQUERY_AST_MAX_SIZE
+    unsupportedError     = errSygus $
+                             "Theory " ++
+                             show (theory dto) ++ 
+                             " not supported in the Sygus 2 Standard"
     makeAssumption' temporal updates =
       except $ makeAssumption dto temporal updates
 

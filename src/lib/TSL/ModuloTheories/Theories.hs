@@ -22,6 +22,7 @@ module TSL.ModuloTheories.Theories( Theory(..)
                                   , TAst
                                   , TheorySymbol
                                   , readTheory
+                                  , sygus2Supported
                                   , smtSortDecl
                                   , applySemantics
                                   , read2Symbol
@@ -82,6 +83,12 @@ smtSortDecl = \case
   Uf  -> "(declare-sort UF 0)"
   EUf -> "(declare-sort EUF 0)"
   Lia -> ""
+
+sygus2Supported :: Theory -> Bool
+sygus2Supported = \case
+  Uf  -> False
+  EUf -> False
+  Lia -> True
 
 data TAst =
     UfAst  (Ast Uf.UfSymbol)

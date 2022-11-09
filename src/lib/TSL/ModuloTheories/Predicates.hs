@@ -17,7 +17,6 @@ module TSL.ModuloTheories.Predicates( TheoryPredicate(..)
                                        , predInfo
                                        , predSignals
                                        , predReplacedSmt
-                                       , replacePredicate
                                        ) where
 
 -------------------------------------------------------------------------------
@@ -109,17 +108,6 @@ predSignals = \case
   NotPLit p     -> predSignals p
   OrPLit p q    -> predSignals p ++ predSignals q
   AndPLit p q   -> predSignals p ++ predSignals q
-
-replacePredicate
-  :: (TheorySymbol, TheorySymbol)
-  -> TheoryPredicate
-  -> TheoryPredicate
-replacePredicate replacePair = \case
-  PLiteral tast -> PLiteral $ replaceTAst replacePair tast
-  NotPLit p     -> NotPLit $ replace p
-  OrPLit p q    -> OrPLit (replace p) (replace q)
-  AndPLit p q   -> AndPLit (replace p) (replace q)
-  where replace = replacePredicate replacePair
 
 powerset :: [a] -> [[a]]
 powerset xs = filterM (const [True, False]) xs

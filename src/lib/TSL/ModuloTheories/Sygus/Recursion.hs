@@ -34,7 +34,6 @@ import TSL.ModuloTheories.Predicates( TheoryPredicate
                                     , predTheory
                                     , predSignals
                                     , predReplacedSmt
-                                    , replacePredicate
                                     )
 
 import TSL.ModuloTheories.Theories( TheorySymbol

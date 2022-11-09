@@ -116,12 +116,6 @@ loadTSL input =
 -- if this is not possible outputs a respective error on the command line
 -- and exits
 
--- fromTSL :: Maybe FilePath -> String -> IO (Either Error Specification)
--- readTheory :: String -> Either Error Theory
--- specStr :: String
--- tslmt :: Either Error Specification
--- theory :: Either Error Theory
-
 loadTSLMT :: Maybe FilePath -> IO (Theory, Specification, String)
 loadTSLMT input = do
   content <- tryReadContent input

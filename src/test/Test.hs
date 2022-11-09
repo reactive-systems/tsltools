@@ -112,15 +112,15 @@ tests
   :: IO [Test]
 
 tests = do
-  jsTests <- JSWriterTests.tests
+  jsTests    <- JSWriterTests.tests
+  tslmtTests <- ModuloTheoriesTests.tests
   return $
     [ test "QuickCheck: Read Input" qc01
     , test "QuickCheck: Read Output" qc02
     ]
     ++ SplitTests.tests
-    ++ ModuloTheoriesTests.tests
---    ++ DependencyTests.tests
     ++ jsTests
+    ++ tslmtTests
 
   where
     qc01 =

@@ -33,6 +33,8 @@ import Control.Monad.Trans.Except
 
 import Data.Either (isRight)
 
+import System.Directory (doesFileExist)
+
 import Distribution.TestSuite
   ( Progress(..)
   , Test(..)
@@ -146,5 +148,47 @@ consistencyTests = [convert2Cabal (makeTestName "Consistency") hUnitTest]
         , expectedNumAssumptions @=? actualNumAssumptions
         ]
 
-tests :: [Test]
-tests = concat [predicatesTests, cfgTests, consistencyTests]
+sygusTests :: [Test]
+sygusTests =
+  zipWith (\a b -> convert2Cabal (makeTestName ("SyGuS " ++ show a)) b)
+    [0..]
+    testCases
+  where
+    directory = "src/test/regression/ModuloTheories"
+    files     = [ "next_sygus.tslmt"
+                , "eventually_sygus.tslmt"
+                ]
+    paths     = map ((directory ++ "/") ++) files
+    numExpectedAssumptions = [ 1
+                             , 1
+                             ]
+    lengthsMatch = return $ H.TestCase $
+                     (length paths) @=?
+                     (length numExpectedAssumptions)
+    testCases    = (lengthsMatch:) $ 
+                     map makeTestCase $
+                     zip paths numExpectedAssumptions
+
+    makeTestCase (path, numExpected) = do
+      (theory, spec, _)  <- loadTSLMT $ Just path
+      let preds = case predsFromSpec theory spec of
+                    Left err -> error $ "PREDICATES ERROR: " ++ show err
+                    Right ps -> ps
+          cfg   = case cfgFromSpec theory spec of
+                    Left err      -> error $ "CFG ERROR: " ++ show err
+                    Right grammar -> grammar
+          dtos  = buildDtoList preds
+      numActual <- countSuccess $ generateSygusAssumptions cvc5Path cfg dtos
+      return $ H.TestCase $ numExpected @=? numActual
+
+allTests :: [Test]
+allTests = concat [predicatesTests, cfgTests, consistencyTests, sygusTests]
+
+tests :: IO [Test]
+tests = do
+  cvc5Exists <- doesFileExist cvc5Path
+  if cvc5Exists
+    then return allTests
+    else do
+      putStrLn $ "WARNING: CVC5 PATH " ++ cvc5Path ++ " NOT FOUND!"
+      return []
