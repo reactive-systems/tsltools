@@ -20,9 +20,13 @@ module TSL.ModuloTheories.Sygus.Update
 
 import Data.List (transpose)
 
+import Data.Maybe (catMaybes)
+
 import Text.Regex.PCRE.Heavy (scan, re)
 
-import TSL.ModuloTheories.Sygus.Common (Expansion (..) , Term (..))
+import TSL.ModuloTheories.Sygus.Common (Expansion (..)
+                                       , Term (..)
+                                       )
 
 -------------------------------------------------------------------------------
 
@@ -74,19 +78,39 @@ instance (Show a) => Show (Update a) where
     where bracket str  = "[" ++ str ++ "]"
           updateSymbol = "<-"
 
+instance Functor DataSource where
+  fmap f = \case
+    TslValue a         -> TslValue $ f a
+    TslFunction a args -> TslFunction (f a) $ map (fmap f) args
+
+instance Functor Update where
+  fmap f update = Update (f (sink update)) (fmap f (source update))
+
+removeSelfUpdates :: (Eq a) => [[Update a]] -> [[Update a]]
+removeSelfUpdates = catMaybes . (map removeSelves)
+  where removeSelves xs = case catMaybes ((map removeSelfUpdate) xs) of
+                         [] -> Nothing 
+                         ys -> Just ys
+
+        removeSelfUpdate update = case (source update) of
+            TslFunction _ _   -> Just $ update
+            TslValue sinkTerm -> if (sink update) == sinkTerm
+                                    then Nothing
+                                    else Just $ update
+
 term2DataSource :: Term a -> DataSource a
 term2DataSource = \case
   Value value          -> TslValue value
   Expression expansion -> TslValue $ nonterminal expansion
   Function f args      -> TslFunction f $ map term2DataSource args
 
-term2Updates :: Term a -> [[Update a]]
+term2Updates :: (Eq a) => Term a -> [[Update a]]
 term2Updates = \case
   Value _              -> []
-  Expression expansion -> calculateUpdateChain expansion
+  Expression expansion -> removeSelfUpdates $ calculateUpdateChain expansion
   Function _ args      -> map concat $ transpose $ map term2Updates args
 
-calculateUpdateChain :: Expansion a -> [[Update a]]
+calculateUpdateChain :: (Eq a) => Expansion a -> [[Update a]]
 calculateUpdateChain (Expansion dst term) =
   case term of 
     Value      value        -> [[Update dst (TslValue value)]]

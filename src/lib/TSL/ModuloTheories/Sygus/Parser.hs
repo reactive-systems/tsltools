@@ -7,6 +7,7 @@
 -------------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.Sygus.Parser
@@ -18,11 +19,17 @@ module TSL.ModuloTheories.Sygus.Parser
 
 import Data.List (intersperse)
 
+import Data.Text(pack, unpack, replace)
+
 import Control.Applicative ((<|>))
 
 import TSL.Error (Error, parseError, errModel)
 
-import TSL.ModuloTheories.Sygus.Common (Expansion (..) , Term (..), Model(..))
+import TSL.ModuloTheories.Sygus.Common (Expansion (..)
+                                       , Term (..)
+                                       , Model(..)
+                                       , targetPostfix
+                                       )
 
 -------------------------------------------------------------------------------
 
@@ -32,6 +39,9 @@ import Text.Parsec.String (Parser)
 
 import qualified Text.Parsec as Parsec
 
+removePostfix :: String -> String
+removePostfix = unpack . replace postfix "" . pack
+  where postfix = pack targetPostfix
 
 parens :: Parser a -> Parser a
 parens = Parsec.between lpar rpar
@@ -102,7 +112,9 @@ negativeLiteralParser = parens innerVal
           return $ "(- " ++ literal ++ ")"
 
 literalParser :: Parser String
-literalParser = negativeLiteralParser <|> Parsec.many1 nonReserved
+literalParser = do
+  literal <- negativeLiteralParser <|> Parsec.many1 nonReserved
+  return $ removePostfix literal
 
 symbolType :: Parser ()
 symbolType = literalParser >> return ()

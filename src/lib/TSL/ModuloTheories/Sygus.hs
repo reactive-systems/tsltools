@@ -7,7 +7,6 @@
 -------------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
 
 -------------------------------------------------------------------------------
@@ -20,8 +19,6 @@ module TSL.ModuloTheories.Sygus ( generateSygusAssumptions
 -------------------------------------------------------------------------------
 
 import Control.Monad.Trans.Except
-
-import Data.Text(pack, unpack, replace)
 
 import Data.List (isInfixOf)
 
@@ -39,9 +36,12 @@ import TSL.ModuloTheories.Solver (runSygusQuery)
 
 import TSL.ModuloTheories.Debug (IntermediateResults(..))
 
+import TSL.ModuloTheories.Theories (TheorySymbol)
+
 import TSL.ModuloTheories.Sygus.Common ( Temporal(..)
                                        , Term
                                        , Dto (..)
+                                       , Model
                                        , targetPostfix
                                        )
 
@@ -53,7 +53,7 @@ import TSL.ModuloTheories.Sygus.Assumption (makeAssumption)
 
 import TSL.ModuloTheories.Sygus.Update (Update, term2Updates)
 
-import TSL.ModuloTheories.Sygus.Recursion ( generatePbeDtos
+import TSL.ModuloTheories.Sygus.Recursion ( generatePbeModels
                                           , findRecursion
                                           , config_SUBQUERY_AST_MAX_SIZE
                                           )
@@ -69,10 +69,6 @@ temporalAtoms :: [Temporal]
 temporalAtoms = [Eventually]
 -- temporalAtoms = [Next 1]
 
-removePostfix :: String -> String
-removePostfix = unpack . replace postfix "" . pack
-  where postfix = pack targetPostfix
-
 buildDto :: TheoryPredicate -> TheoryPredicate -> Dto
 buildDto pre post = Dto theory pre post
   where theory   = assert theoryEq $ predTheory pre
@@ -86,13 +82,14 @@ generateUpdates
   :: FilePath
   -> Cfg
   -> Int
+  -> [Model TheorySymbol]
   -> Dto
   -> ExceptT Error IO ([[Update String]], IntermediateResults)
-generateUpdates solverPath cfg depth dto =
+generateUpdates solverPath cfg depth models dto =
   liftM2 (,) updates debugInfo
   where
     query :: Either Error String
-    query = generateSygusQuery cfg dto
+    query = generateSygusQuery cfg models dto
 
     result :: ExceptT Error IO String
     result = except query >>= (runSygusQuery solverPath depth)
@@ -118,16 +115,16 @@ generateAssumption
   -> ExceptT Error IO (String, SygusDebugInfo)
 generateAssumption solverPath cfg dto = \case
   next@(Next maxAstSize) -> do
-    (updates, debugInfo) <- genUpdates maxAstSize dto
+    (updates, debugInfo) <- genUpdates maxAstSize [] dto
     let assumption = makeAssumption' next updates
         debugInfo' = NextDebug debugInfo <$> assumption
     liftM2 (,) assumption debugInfo'
 
   Eventually -> do
-    pbeResults <- generatePbeDtos solverPath dto
-    let (pbeDtos, pbeInfos) = unzip pbeResults
+    pbeResults <- generatePbeModels solverPath dto
+    let (pbeModels, pbeInfos) = unzip pbeResults
 
-    subqueryResults <- mapM (genUpdates config_SUBQUERY_AST_MAX_SIZE) pbeDtos
+    subqueryResults <- mapM (flip (genUpdates config_SUBQUERY_AST_MAX_SIZE) dto) pbeModels
     let (subqueryUpdates, subqueryInfos) = unzip subqueryResults
 
     updates    <- except $ findRecursion subqueryUpdates
@@ -136,7 +133,7 @@ generateAssumption solverPath cfg dto = \case
     return (assumption, debugInfo)
 
   where
-    genUpdates depth dto'   = generateUpdates solverPath cfg depth dto'
+    genUpdates = generateUpdates solverPath cfg 
     makeAssumption' temporal updates =
       except $ makeAssumption dto temporal updates
 

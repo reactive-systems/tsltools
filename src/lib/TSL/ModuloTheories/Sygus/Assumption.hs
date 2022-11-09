@@ -16,8 +16,6 @@ module TSL.ModuloTheories.Sygus.Assumption
 
 -------------------------------------------------------------------------------
 
-import Data.Maybe (catMaybes)
-
 import Data.List (intersperse)
 
 import TSL.Error (Error, errSygus)
@@ -30,28 +28,16 @@ import TSL.ModuloTheories.Sygus.Common (Dto(..) , Temporal (..), Term)
 
 import TSL.ModuloTheories.Sygus.Update (Update (..), DataSource(..), term2Updates)
 
--------------------------------------------------------------------------------
+import Debug.Trace (trace)
 
-removeSelfUpdate :: (Eq a) => Update a -> Maybe (Update a)
-removeSelfUpdate update = case (source update) of
-    TslFunction _ _   -> Just $ update
-    TslValue sinkTerm -> if (sink update) == sinkTerm
-                            then Nothing
-                            else Just $ update
+-------------------------------------------------------------------------------
 
 updates2Tsl :: (Eq a, Show a) => [[Update a]] -> String
 updates2Tsl updates = unwords $ intersperse tslAnd depthAssumptions
   where
     tslAnd           = "&&"
     tslNext          = 'X'
-    trueUpdates      = getTrueUpdates $ reverse updates
-    depthAssumptions = zipWith depth2Assumption [0..] trueUpdates
-
-    getTrueUpdates :: (Eq a) => [[Update a]] -> [[Update a]]
-    getTrueUpdates = catMaybes . (map removeSelves)
-      where removeSelves xs = case catMaybes ((map removeSelfUpdate) xs) of
-                             [] -> Nothing 
-                             ys -> Just ys
+    depthAssumptions = zipWith depth2Assumption [0..] $ reverse updates
 
     depth2Assumption :: (Show a) => Int -> [Update a] -> String
     depth2Assumption depth depthUpdates = nexts ++ "(" ++ anded ++ ")"

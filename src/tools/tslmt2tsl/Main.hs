@@ -82,7 +82,7 @@ printAssumption numTabs assumption = do
 printIntermediateResults :: Int -> IntermediateResults -> IO ()
 printIntermediateResults numTabs intermediateResults = do
   cPutOutLn Vivid Blue $ tab "Input:"
-  putStrLn $ tabMore $ problem intermediateResults
+  putStrLn $ tabAll $ problem intermediateResults
   cPutOutLn Vivid Green $ tab "Query:"
   putStrLn $ tabAll $ query intermediateResults
   cPutOutLn Vivid Green $ tab "Result:"
@@ -133,7 +133,7 @@ consistency = (printResults .) . consistencyDebug
 
 sygus :: FilePath -> Cfg -> [TheoryPredicate] -> IO ()
 sygus solverPath cfg preds = printDebug printSygusDebugInfo results
-  where results = sygusDebug solverPath cfg (buildDtoList preds)
+  where results = reverse $ sygusDebug solverPath cfg (buildDtoList preds)
 
 tslmt2tsl
   :: FilePath

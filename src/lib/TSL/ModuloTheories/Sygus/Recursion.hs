@@ -11,7 +11,7 @@
 
 -------------------------------------------------------------------------------
 module TSL.ModuloTheories.Sygus.Recursion
-  ( generatePbeDtos
+  ( generatePbeModels
   , findRecursion
   , config_SUBQUERY_AST_MAX_SIZE
   ) where
@@ -74,13 +74,6 @@ config_NUM_SUBQUERIES = 3
 config_SUBQUERY_AST_MAX_SIZE :: Int
 config_SUBQUERY_AST_MAX_SIZE = 3
 
-model2SmtPred :: (Show a) => Model a -> String
-model2SmtPred (Model (symbol, model)) =
-  parenthize 1 $ filter (/='\"') $ unwords [ "="
-                                           , show symbol
-                                           , show model
-                                           ]
-
 produceModelsQuery :: (Show a) => [[Model a]] -> TheoryPredicate -> String
 produceModelsQuery models pred = query
   where paren1            = parenthize 1
@@ -93,7 +86,7 @@ produceModelsQuery models pred = query
         notTheseModels ms = assertion
                               $ paren1 $ ("not "++)
                               $ paren1 $ unwords $ ("and":)
-                              $ map model2SmtPred ms
+                              $ map show ms
         query             = unlines [ header
                                     , setOption
                                     , declareConstList
@@ -101,29 +94,6 @@ produceModelsQuery models pred = query
                                     , assertion $ pred2Smt pred
                                     , footer
                                     ]
-
-modifyPredicate
-  :: [Model String]
-  -> TheoryPredicate
-  -> Either Error TheoryPredicate
-modifyPredicate models pred = theoryModels >>= (return . foldr modify pred)
-  where
-    sequence' :: [Model (Either e a)] -> Either e [Model a]
-    sequence' = \case
-      []                 -> Right []
-      ((Model (k,v)):xs) -> case k of 
-                      Left err -> Left err
-                      Right k' -> case v of
-                                    Left err -> Left err
-                                    Right v' ->
-                                      fmap ((Model (k', v')):) $ sequence' xs
-
-    theoryModels :: Either Error [Model TheorySymbol]
-    theoryModels =
-        sequence' $ map (fmap (read2Symbol (predTheory pred))) models
-
-    modify :: Model TheorySymbol -> TheoryPredicate -> TheoryPredicate
-    modify (Model replacer) = replacePredicate replacer
 
 generatePbeModel
     :: FilePath
@@ -151,41 +121,46 @@ generatePbeModel solverPath pred prevModels = liftM2 (,) models debugInfo
       parsedModels <- models
       return $ IntermediateResults query runResult (show parsedModels)
 
-generatePbeDtos
+generatePbeModels
   :: FilePath
   -> Dto
-  -> ExceptT Error IO [(Dto, IntermediateResults)]
-generatePbeDtos solverPath (Dto theory pre post) = do
-  (_, dtos, debugInfos) <- looper config_NUM_SUBQUERIES (return nullInit)
-  return $ zip dtos debugInfos
+  -> ExceptT Error IO [([Model TheorySymbol], IntermediateResults)]
+generatePbeModels solverPath (Dto theory pre _) = do
+  (models, debugInfos) <- looper config_NUM_SUBQUERIES (return nullInit)
+  theoryModels         <- except $ sequence $ map sequence $ map (map readModel) models
+  return $ zip theoryModels debugInfos
 
   where
-    nullInit :: ([[Model String]], [Dto], [IntermediateResults])
-    nullInit = ([], [], [])
+    nullInit :: ([[Model String]], [IntermediateResults])
+    nullInit = ([], [])
 
-    genNewDto :: [Model String] -> Either Error Dto
-    genNewDto models = Dto theory <$> (modify pre) <*> (modify post)
-      where modify = modifyPredicate models
+    readModel :: Model String -> Either Error (Model TheorySymbol)
+    readModel (Model (k, v)) =
+      case read2Symbol theory k of
+        Left err -> Left err
+        Right k' -> case read2Symbol theory v of
+                      Left err -> Left err
+                      Right v' -> Right $ Model (k', v')
     
     looper
       :: Int
-      -> ExceptT Error IO ([[Model String]], [Dto], [IntermediateResults])
-      -> ExceptT Error IO ([[Model String]], [Dto], [IntermediateResults])
+      -> ExceptT Error IO ([[Model String]], [IntermediateResults])
+      -> ExceptT Error IO ([[Model String]], [IntermediateResults])
     looper 0        prev = prev
     looper numIters prev = do
-      (models, dtos, debugInfos) <- prev
-      (newModel, newInfo) <- generatePbeModel solverPath pre models
-      newDto <- except $ genNewDto newModel
-      let updatedDto    = newDto:dtos
-          updatedInfos  = newInfo:debugInfos
+      (models, debugInfos) <- prev
+      (newModel, newInfo)  <- generatePbeModel solverPath pre models
+      let updatedInfos  = newInfo:debugInfos
           updatedModels = newModel:models
-      looper (numIters - 1) $ return (updatedModels, updatedDto, updatedInfos)
+      looper (numIters - 1) $ return (updatedModels, updatedInfos)
 
+-- (a -> m b) -> t a -> m (t b)
 findRecursion :: (Eq a, Show a) => [[[Update a]]] -> Either Error [[Update a]]
 findRecursion subqueryUpdates = do
   flattened <- mapM flattenUpdates subqueryUpdates
   extracted <- mapM extractRecursion flattened
-  return [extracted]
+  recursion <- extractRecursion extracted
+  return $ [[recursion]]
   where
     debugUpdates :: String
     debugUpdates = show subqueryUpdates

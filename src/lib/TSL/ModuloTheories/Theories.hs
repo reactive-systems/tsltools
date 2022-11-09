@@ -184,8 +184,6 @@ replaceApply :: (Eq a) => (a -> b) -> a -> b -> a -> b
 replaceApply f toReplace newVersion input =
   if toReplace == input then newVersion else f input
 
--- replace :: (Eq a) => (a, a) -> Ast a -> Ast a
-
 -- FIXME: refactor & combine with function above
 replaceTAst :: (TheorySymbol, TheorySymbol) -> TAst -> TAst
 replaceTAst (UfSymbol before, UfSymbol after) (UfAst ast) = 
@@ -194,3 +192,4 @@ replaceTAst (EUfSymbol before, EUfSymbol after) (EUfAst ast) =
   EUfAst $ replace (before, after) ast
 replaceTAst (LiaSymbol before, LiaSymbol after) (LiaAst ast) = 
   LiaAst $ replace (before, after) ast
+replaceTAst _ _ = error "Invalid theory combo for replaceSmtShow!"

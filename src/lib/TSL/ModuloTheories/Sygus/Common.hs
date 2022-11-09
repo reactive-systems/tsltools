@@ -71,10 +71,23 @@ instance Functor Term where
     Expression e       -> Expression (fmap f e)
     Function func args -> Function (f func) $ map (fmap f) args
 
-newtype Model a = Model (a,a) deriving (Show)
+newtype Model a = Model (a,a)
+
+instance (Show a) => Show (Model a) where
+ show (Model (symbol, model)) = parenthize $
+                                  filter (/='\"') $
+                                  unwords [ "="
+                                          , show symbol
+                                          , show model
+                                          ]
+   where parenthize = ('(':) . (++ ")")
 
 instance Functor Model where
   fmap f (Model (x, y)) = Model (f x, f y)
+
+instance Applicative Model where
+   pure a                           = Model (a,a)
+   (Model (f, g)) <*> (Model (x,y)) = Model (f x, g y)
 
 parenthize :: Int -> String -> String
 parenthize repeats str = lpars ++ str ++ rpars
