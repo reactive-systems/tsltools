@@ -20,3 +20,4 @@ class TheorySymbol a where
   toTsl           :: a -> String
   symbolType      :: a -> String
   isUninterpreted :: a -> Bool
+  makeSignal      :: String -> a

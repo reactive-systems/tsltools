@@ -9,8 +9,9 @@
 -- "Can Reactive Synthesis and Syntax-Guided Synthesis Be Friends?"
 --
 -----------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase     #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TupleSections  #-}
 -----------------------------------------------------------------------------
 
 module Main
@@ -21,13 +22,15 @@ module Main
 
 import Control.Monad.Trans.Except
 
-import System.Exit(die)
+import Data.Maybe (catMaybes)
+
+import System.Exit (die)
 
 import Config (Configuration(..), Flag(..), parseArguments)
 
 import EncodingUtils (initEncoding)
 
-import FileUtils (writeContent, loadTSLMT, tryReadContent)
+import FileUtils (writeContent, loadTSLMT)
 
 import PrintUtils ( Color(..)
                   , ColorIntensity(..)
@@ -36,80 +39,158 @@ import PrintUtils ( Color(..)
 
 import TSL ( Error
            , TheoryPredicate
+           , Cfg
            , cfgFromSpec
            , predsFromSpec
-           , consistencyChecking
+           , generateConsistencyAssumptions
            , consistencyDebug
-           , solveSat
-           , genericError
+           , generateSygusAssumptions
+           , sygusDebug
+           , IntermediateResults (..)
+           , SygusDebugInfo (..)
+           , ConsistencyDebugInfo (..)
+           , buildDtoList
            )
 
 -----------------------------------------------------------------------------
 
-tabuateLn :: Int -> String -> String
-tabuateLn n = unlines . map (tabulate n) . lines
-
 tabulate :: Int -> String -> String
 tabulate n = ((replicate n '\t') ++ )
 
-delWhiteLines :: String -> String
-delWhiteLines = unlines . filter (not . null) . lines
+unError :: (Show a) => Either a b -> b
+unError = \case
+  Left  err -> error $ show err
+  Right val -> val 
 
--- Using TSL.Specification occurs extra overhead,
--- so resorting to strings instead.
-tslmt2tsl :: String -> [String] -> String
-tslmt2tsl tslmtSpec assumptions = assumptions' ++ tslmtSpec
-    where header       = "assume {\n"
-          tailer       = "\n}\n"
-          tabulated    = map (tabulate 1) assumptions
-          assumptions' = header ++ unlines tabulated ++ tailer
+printEnd :: IO ()
+printEnd = cPutOutLn Dull Cyan literal
+  where literal = "\n\n----------------------------------------------------\n\n"
 
-writeOutput :: (Show a) => Maybe FilePath -> Either a String -> IO ()
-writeOutput _ (Left errMsg)      = die $ show errMsg
-writeOutput path (Right content) = writeContent path $ removeDQuote content
-  where removeDQuote = filter (/= '\"')
+printAssumption :: Int -> String -> IO ()
+printAssumption numTabs assumption = do
+  cPutOutLn Vivid Magenta $ (tabulate numTabs) "Assumption: "
+  putStrLn $ (tabulate (numTabs + 1)) assumption
 
-consistency
-  :: (String -> ExceptT Error IO Bool) 
-  -> Either Error [TheoryPredicate]
-  -> IO ()
-consistency satSolver preds = do
-  result <- runExceptT $ (except preds >>= consistencyDebug satSolver)
+printIntermediateResults :: Int -> IntermediateResults -> IO ()
+printIntermediateResults numTabs intermediateResults = do
+  cPutOutLn Vivid Blue $ tab "Input:"
+  putStrLn $ tabAll $ problem intermediateResults
+  cPutOutLn Vivid Green $ tab "Query:"
+  putStrLn $ tabAll $ query intermediateResults
+  cPutOutLn Vivid Green $ tab "Result:"
+  putStrLn $ tabAll $ result intermediateResults
+    where tab     = tabulate numTabs
+          tabMore = tabulate $ numTabs + 1
+          tabAll  = unlines . (map tabMore) . lines
 
-  let printTabRed = cPutOutLn Vivid Red . tabuateLn 1
-      printConsistencyResult = \case
-        Nothing  -> printTabRed "None; predicate is satisfiable."
-        Just ass -> printTabRed ass
-      printTuple (pred, query, result) = do
-        cPutOutLn Vivid Blue "Predicate:"
-        putStrLn $ tabuateLn 1 pred
-        cPutOutLn Vivid Green "SMT Query:"
-        putStrLn $ tabuateLn 1 $ delWhiteLines query
-        cPutOutLn Vivid Green "Assumption:"
-        printConsistencyResult result
-        cPutOutLn Dull Cyan "\n\n----------------------------------------------------\n\n"
+printConsistencyDebugInfo :: ConsistencyDebugInfo -> IO ()
+printConsistencyDebugInfo = \case
+  ConsistencyDebugInfo intermediateResults assumption -> do
+    cPutOutLn Vivid Magenta "Consistency Checking:"
+    printIntermediateResults 0 intermediateResults
+    printAssumption 0 assumption
 
-  case result of 
-    Left  errMsg   -> die $ show errMsg
-    Right cResults -> mapM_ printTuple cResults
+printSygusDebugInfo :: SygusDebugInfo -> IO ()
+printSygusDebugInfo = \case
+  NextDebug info assumption -> do
+    cPutOutLn Vivid Magenta "Sequential Program Synthesis:"
+    printIntermediateResults 0 info
+    printAssumption 0 assumption
+
+  EventuallyDebug infos assumption -> do
+    cPutOutLn Vivid Magenta "Recursive Program Synthesis:"
+    mapM_ printPair infos
+    printAssumption 0 assumption
+
+    where
+      printPair (modelInfo, subqueryInfo) = do
+        cPutOutLn Vivid Magenta $ tabulate 1 "Produce Models:"
+        printIntermediateResults 2 modelInfo
+        cPutOutLn Vivid Magenta $ tabulate 1 "PBE Subquery:"
+        printIntermediateResults 2 subqueryInfo
+
+
+printEither :: (Show e) => (a -> IO ()) -> Either e a -> IO ()
+printEither printer = \case
+  Left err  -> cPutOutLn Vivid Red (show err) >> printEnd 
+  Right val -> printer val >> printEnd
+
+printDebug :: (a -> IO ()) -> [ExceptT Error IO a] -> IO ()
+printDebug printer = 
+  mapM_ ((=<<) (printEither printer) . runExceptT)
+
+consistency :: FilePath -> [TheoryPredicate] -> IO ()
+consistency = (printResults .) . consistencyDebug
+  where printResults = printDebug printConsistencyDebugInfo
+
+sygus :: FilePath -> Cfg -> [TheoryPredicate] -> IO ()
+sygus solverPath cfg preds = printDebug printSygusDebugInfo results
+  where results = reverse $ sygusDebug solverPath cfg (buildDtoList preds)
+
+tslmt2tsl
+  :: FilePath
+  -> String
+  -> Cfg
+  -> [TheoryPredicate]
+  -> IO String
+tslmt2tsl solverPath tslSpec cfg preds = (++ tslSpec) <$> assumptionsBlock
+  where 
+    mkAlwaysAssume :: String -> String
+    mkAlwaysAssume assumptions = unlines ["always assume {"
+                                         , assumptions
+                                         , "}"
+                                         ]
+    
+    extractAssumption :: (Monad m) => ExceptT e m a -> m (Maybe a)
+    extractAssumption result = do
+      either <- runExceptT result
+      return $ case either of
+                 Left  _          -> Nothing
+                 Right assumption -> Just assumption
+
+    extractAssumptions :: (Monad m) => [ExceptT e m String] -> m String
+    extractAssumptions = (fmap (unlines. catMaybes))
+                           . sequence
+                           . (map extractAssumption)
+
+    consistencyAssumptions :: IO String
+    consistencyAssumptions = extractAssumptions $
+                               generateConsistencyAssumptions
+                               solverPath
+                               preds
+
+    sygusAssumptions :: IO String
+    sygusAssumptions = extractAssumptions $
+                         generateSygusAssumptions
+                         solverPath
+                         cfg
+                         (buildDtoList preds)
+
+    assumptionsBlock :: IO String
+    assumptionsBlock = mkAlwaysAssume <$>
+                         ( (++) <$>
+                           consistencyAssumptions <*>
+                           sygusAssumptions
+                         )
 
 main :: IO ()
 main = do
   initEncoding
   Configuration{input, output, flag, solverPath} <- parseArguments
 
+  (theory, spec, specStr) <- loadTSLMT input
+
+  let writeOut  = writeContent output . (filter (/= '\"'))
+      preds     = unError $ predsFromSpec theory spec
+      cfg       = unError $ cfgFromSpec theory spec
+      path      = case solverPath of
+                    Just solverPath' -> solverPath'
+                    Nothing          -> error "Please provide a solver path."
+
   case flag of
-    Nothing            -> error "No flag option not yet supported; please provide a flag."
-    (Just flag')       -> do
-      (theory, spec) <- loadTSLMT input
-      let toOut              = writeOutput output
-      let preds              = predsFromSpec theory spec
-          smtSolver          = case solverPath of
-                                 Just path -> solveSat path
-                                 Nothing   -> error "Please provide a solver path."
-      case flag' of 
-        Predicates  -> toOut $ fmap (unlines . (map show)) preds
-        Grammar     -> toOut $ fmap show $ cfgFromSpec theory spec
-        Consistency -> consistency smtSolver preds
-        Sygus       -> consistency smtSolver preds
-        invalidFlag -> toOut $ genericError $ "Invalid Flag: " ++ show invalidFlag
+    Just Predicates  -> writeOut $ unlines $ map show $ preds
+    Just Grammar     -> writeOut $ show cfg
+    Just Consistency -> consistency path preds
+    Just Sygus       -> sygus path cfg preds
+    Nothing          -> writeOut =<< tslmt2tsl path specStr cfg preds
+    Just invalidFlag -> die $ "Invalid Flag: " ++ show invalidFlag

@@ -1,0 +1,6 @@
+#EUF
+always guarantee {
+    eq a b <-> [x <- y];
+    eq b c <-> [y <- x];
+    eq a c <-> ([x <- y] && [y <- x]);
+}

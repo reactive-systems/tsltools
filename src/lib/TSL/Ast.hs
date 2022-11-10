@@ -23,8 +23,8 @@ module TSL.Ast( Ast(..)
               , fromPredicateTerm
               , getAstInfo
               , stringifyAst
-              , astByDepth
               , getSignals
+              , replace
               ) where
 
 -------------------------------------------------------------------------------
@@ -209,7 +209,8 @@ symbolInfosFromList
     :: (Ast a -> [SymbolInfo a])
     -> [Ast a]
     -> [SymbolInfo a]
-symbolInfosFromList infoGetter = (foldr1 (++)) . (map infoGetter)
+symbolInfosFromList _ [] = []
+symbolInfosFromList infoGetter asts = ((foldr1 (++)) . (map infoGetter)) asts
 
 -- TODO: Better time complexity
 getVarInfos :: Ast a -> [SymbolInfo a]
@@ -245,21 +246,19 @@ getSignals = \case
   Function  _ args -> concat (map getSignals args)
   Predicate _ args -> concat (map getSignals args)
 
--- TODO
--- NOT CORRECT
-astByDepth :: Ast a -> [Ast a]
-astByDepth = \case
-  v@(Variable  _     ) -> [v]
-  f@(Function  _ args) -> f:(concat $ map astByDepth args)
-  p@(Predicate _ args) -> p:(concat $ map astByDepth args)
-
--- levelOrderTraversal :: Int -> Ast a -> Map Int (Ast a) -> Map Int (Ast a)
--- levelOrderTraversal = undefined
+replace :: (Eq a) => (a, a) -> Ast a -> Ast a
+replace struct@(before, after) = \case
+  Variable v       -> Variable  (replace' v)
+  Function f args  -> Function  (replace' f) $ map (replace struct) args
+  Predicate p args -> Predicate (replace' p) $ map (replace struct) args
+  where replace' x = if x == before then after else x
 
 stringifyAst :: (a -> String) -> Ast a -> String
 stringifyAst stringify = \case
   Variable  v      -> stringify v
   Function  f args ->
-    "(" ++ stringify f ++ " " ++ unwords (map (stringifyAst stringify) args) ++ ")"
-  Predicate p args ->
+      case args of 
+        [] -> stringify f
+        _  -> "(" ++ stringify f ++ " " ++ unwords (map (stringifyAst stringify) args) ++ ")"
+  Predicate p args -> 
     "(" ++ stringify p ++ " " ++ unwords (map (stringifyAst stringify) args) ++ ")"

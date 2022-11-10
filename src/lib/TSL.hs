@@ -67,18 +67,23 @@ module TSL
   , simulate
     -- * Error Handling
   , Error
-  , genericError
+  , unwrap
     -- * Modulo Theories
   , Cfg(..)
   , predsFromSpec
   , cfgFromSpec
   , Theory
   , TheoryPredicate
-  , consistencyChecking
-  , consistencyDebug
-  , solveSat
   , readTheory
   , preprocess
+  , generateConsistencyAssumptions
+  , consistencyDebug
+  , ConsistencyDebugInfo (..)
+  , generateSygusAssumptions
+  , sygusDebug
+  , SygusDebugInfo (..)
+  , IntermediateResults (..)
+  , buildDtoList
   ) where
 
 -----------------------------------------------------------------------------
@@ -102,7 +107,7 @@ import TSL.Logic
   , updates
   )
 
-import TSL.Error (Error, genericError)
+import TSL.Error (Error, unwrap)
 
 import TSL.SymbolTable (Kind(..), SymbolTable(..), toCSV)
 
@@ -130,11 +135,19 @@ import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
 
 import TSL.Preprocessor(preprocess)
 
-import TSL.ModuloTheories.ConsistencyChecking(consistencyChecking, consistencyDebug)
+import TSL.ModuloTheories.ConsistencyChecking( generateConsistencyAssumptions
+                                             , consistencyDebug
+                                             , ConsistencyDebugInfo (..)
+                                             )
 import TSL.ModuloTheories.Theories(Theory, readTheory)
-import TSL.ModuloTheories.Solver(solveSat)
 import TSL.ModuloTheories.Cfg(Cfg(..), cfgFromSpec)
 import TSL.ModuloTheories.Predicates(TheoryPredicate, predsFromSpec)
+import TSL.ModuloTheories.Debug (IntermediateResults (..))
+import TSL.ModuloTheories.Sygus ( generateSygusAssumptions
+                                , SygusDebugInfo (..)
+                                , buildDtoList
+                                , sygusDebug
+                                )
 
 import qualified TSL.Writer.CFM.Clash as Clash (implement)
 import qualified TSL.Writer.CFM.Applicative as Applicative (implement)

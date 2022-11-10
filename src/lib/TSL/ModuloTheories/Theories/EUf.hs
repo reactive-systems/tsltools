@@ -42,3 +42,5 @@ instance TheorySymbol EUfSymbol where
     isUninterpreted = \case
       Eq              -> False
       Uninterpreted _ -> True
+
+    makeSignal = Uninterpreted

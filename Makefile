@@ -19,6 +19,7 @@ TSLMT2TSL=tslmt2tsl
 TSLPREPROCESS=tslpreprocess
 
 TOOLS=\
+  ${TSLMT2TSL}\
   ${TSLCHECK}\
   ${TSLSIZE}\
   ${TSLSYM}\
@@ -36,7 +37,6 @@ TOOLS=\
   ${PARSEHOA}\
   ${HOA2CODE}\
   ${TSLSYNTH}\
-  ${TSLMT2TSL}\
   ${TSLPREPROCESS}
 
 STACKPATH=$(shell if [ -d "dist" ]; then echo ""; else stack path | grep local-install-root | sed 's/local-install-root: //'; fi)

@@ -40,6 +40,8 @@ import qualified DependencyTests (tests)
 
 import qualified JSWriterTests (tests)
 
+import qualified ModuloTheoriesTests (tests)
+
 import Test.QuickCheck
   ( Arbitrary
   , Result(..)
@@ -110,14 +112,15 @@ tests
   :: IO [Test]
 
 tests = do
-  jsTests <- JSWriterTests.tests
+  jsTests    <- JSWriterTests.tests
+  tslmtTests <- ModuloTheoriesTests.tests
   return $
     [ test "QuickCheck: Read Input" qc01
     , test "QuickCheck: Read Output" qc02
     ]
     ++ SplitTests.tests
---    ++ DependencyTests.tests
     ++ jsTests
+    ++ tslmtTests
 
   where
     qc01 =

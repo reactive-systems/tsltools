@@ -1,0 +1,5 @@
+#LIA
+always guarantee {
+    [x <- add x int1()];
+    lt x y -> F (lt y x) ;
+}

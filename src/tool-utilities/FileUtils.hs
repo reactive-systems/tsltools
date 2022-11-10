@@ -7,7 +7,8 @@
 -- the executables of tsltools.
 --
 -----------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase    #-}
+{-# LANGUAGE TupleSections #-}
 
 -----------------------------------------------------------------------------
 module FileUtils
@@ -33,13 +34,21 @@ import PrintUtils
   , printErrLn
   )
 
-import TSL (CFM, Error, Specification, Theory, fromCFM, fromTSL, readTheory)
+import TSL ( CFM
+           , Error
+           , Specification
+           , Theory
+           , fromCFM
+           , fromTSL
+           , readTheory
+           , unwrap
+           )
 
 import Control.Monad (unless)
 
 import System.Directory (doesFileExist)
 
-import System.Exit (exitFailure, die)
+import System.Exit (exitFailure)
 
 -----------------------------------------------------------------------------
 -- | Checks if given FilePath belongs to an existing file.
@@ -101,25 +110,20 @@ loadTSL input =
   >>= fromTSL input
   >>= rightOrInvalidInput input
 
------------------------------------------------------------------------------
-
-returnTuple :: Either Error a -> Either Error b -> IO (a, b)
-returnTuple (Left err) _ = die (show err)
-returnTuple _ (Left err) = die (show err)
-returnTuple (Right a) (Right b) = return (a,b)
 
 -----------------------------------------------------------------------------
 -- | 'loadTSLMT' is a helper function which loads and parses a TSLMT file and
 -- if this is not possible outputs a respective error on the command line
 -- and exits
-loadTSLMT :: Maybe FilePath -> IO (Theory, Specification)
+
+loadTSLMT :: Maybe FilePath -> IO (Theory, Specification, String)
 loadTSLMT input = do
   content <- tryReadContent input
   let linesList = lines content
       theory    = readTheory $ head linesList
       specStr   = unlines $ tail linesList -- FIXME: computationally wasteful
   tslmt  <- fromTSL input specStr
-  returnTuple theory tslmt
+  unwrap $ (,,specStr) <$> theory <*> tslmt
 
 -----------------------------------------------------------------------------
 -- | 'loadCFM' is a helper function which loads and parses a CFM file and

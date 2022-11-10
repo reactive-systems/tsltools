@@ -1,0 +1,5 @@
+#UF
+always guarantee {
+    [y <- y] || [y <- x];
+    p x -> X (p y);
+}

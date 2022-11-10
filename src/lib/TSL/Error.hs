@@ -38,6 +38,10 @@ module TSL.Error
   , errFormat
   , errMtParse
   , errSolver
+  , errConsistency
+  , errModel
+  , errSygus
+  , unwrap
   ) where
 
 -----------------------------------------------------------------------------
@@ -48,7 +52,7 @@ import TSL.Expression (ExprPos(..), SrcPos(..))
 
 import Text.Parsec.Error (ParseError)
 
-import System.Exit (exitFailure)
+import System.Exit (exitFailure, die)
 
 import System.IO (hPrint, stderr)
 
@@ -75,6 +79,9 @@ data Error
   | ErrGeneric GenericError
   | ErrMtParse TheoryParseError
   | ErrSolver SolverError
+  | ErrConsistency ConsistencyError
+  | ErrModel ModelError
+  | ErrSygus SygusError
 
 -----------------------------------------------------------------------------
 
@@ -170,26 +177,61 @@ newtype SolverError =
 
 -----------------------------------------------------------------------------
 
+newtype ConsistencyError =
+  ConsistencyError
+    { consistencyErr :: String
+    }
+  deriving (Eq, Ord)
+
+-----------------------------------------------------------------------------
+
+newtype ModelError =
+  ModelError
+    { modelErr :: String
+    }
+  deriving (Eq, Ord)
+
+-----------------------------------------------------------------------------
+
+newtype SygusError =
+  SygusError
+    { sygusErr :: String
+    }
+  deriving (Eq, Ord)
+
+-----------------------------------------------------------------------------
+
 instance Show Error where
   show = \case
-    ErrParse x                   -> show x
-    ErrType TypeError {..}       -> pr "Type Error" errTPos errTMsgs
-    ErrBnd BindingError {..}     -> pr "Binding Error" errBPos errBMsgs
-    ErrDep DependencyError {..}  -> pr "Dependency Error" errDPos errDMsgs
-    ErrSyntax SyntaxError {..}   -> pr "Syntax Error" errSPos errSMsgs
-    ErrRunT RunTimeError {..}    -> pr "Evaluation Error" errRPos errRMsgs
-    ErrCfg ConfigError {..}      -> "\"Error\":\n" ++ fmsg
-    ErrConv ConvError {..}       ->
+    ErrParse x                           -> show x
+    ErrType TypeError {..}               -> pr "Type Error" errTPos errTMsgs
+    ErrBnd BindingError {..}             -> pr "Binding Error" errBPos errBMsgs
+    ErrDep DependencyError {..}          -> pr "Dependency Error" errDPos errDMsgs
+    ErrSyntax SyntaxError {..}           -> pr "Syntax Error" errSPos errSMsgs
+    ErrRunT RunTimeError {..}            -> pr "Evaluation Error" errRPos errRMsgs
+    ErrCfg ConfigError {..}              -> "\"Error\":\n" ++ fmsg
+    ErrConv ConvError {..}               ->
       "\"Conversion Error\": " ++ title ++ "\n" ++ cmsg
-    ErrFormat FormatError {..}   ->
+    ErrFormat FormatError {..}           ->
       "\"Format Error\": Unexpected format" ++ "\n" ++ errFmt
-    ErrGeneric GenericError {..} -> "Error: " ++ errGen
-    ErrMtParse TheoryParseError {..} -> "Modulo Theories Parse Error: " ++ mtRaw
-    ErrSolver SolverError {..} -> "Solver Error: " ++ solverErr
+    ErrGeneric GenericError {..}         -> "Error: " ++ errGen
+    ErrMtParse TheoryParseError {..}     -> "Modulo Theories Parse Error: " ++ mtRaw
+    ErrSolver SolverError {..}           -> "Solver Error: " ++ solverErr
+    ErrConsistency ConsistencyError {..} -> 
+      "SMT Consistency Error: " ++ consistencyErr
+    ErrModel ModelError {..} -> 
+      "Model Error: " ++ modelErr
+    ErrSygus SygusError {..}             -> "Sygus Error: " ++ sygusErr
 
     where
       pr errname pos msgs =
         "\"" ++ errname ++ "\" (" ++ prErrPos pos ++ "):\n" ++ concat msgs
+-----------------------------------------------------------------------------
+
+unwrap :: Either Error a -> IO a
+unwrap = \case
+  Left  err -> die $ show err
+  Right val -> return val
 
 -----------------------------------------------------------------------------
 
@@ -546,5 +588,35 @@ errSolver
 
 errSolver =
   Left . ErrSolver . SolverError
+
+-----------------------------------------------------------------------------
+
+-- | Consistency Error.
+
+errConsistency
+  :: String -> Either Error a
+
+errConsistency =
+  Left . ErrConsistency . ConsistencyError
+
+-----------------------------------------------------------------------------
+
+-- | Model Error.
+
+errModel
+  :: String -> Either Error a
+
+errModel = 
+  Left . ErrModel . ModelError
+
+-----------------------------------------------------------------------------
+
+-- | SyGuS Error.
+
+errSygus
+  :: String -> Either Error a
+
+errSygus =
+  Left . ErrSygus . SygusError
 
 -----------------------------------------------------------------------------

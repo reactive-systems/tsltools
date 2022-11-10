@@ -1,185 +1,163 @@
 -------------------------------------------------------------------------------
 -- |
 -- Module      :  TSL.ModuloTheories.Sygus
--- Description :  Generates SyGuS problems from a Data Transformation Obligation.
+-- Description :  Master module for Sygus
 -- Maintainer  :  Wonhyuk Choi
 
 -------------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE TupleSections     #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.Sygus
-  ( DTO
-  , buildDTO
-  ) where
+module TSL.ModuloTheories.Sygus ( generateSygusAssumptions
+                                , SygusDebugInfo (..)
+                                , buildDtoList
+                                , sygusDebug
+                                ) where
 
 -------------------------------------------------------------------------------
-
-import qualified Data.Set as Set
-
-import Data.List(inits)
-
-import Control.Exception(assert)
 
 import Control.Monad.Trans.Except
 
-import TSL.Error(Error, errSolver)
+import Control.Monad (liftM2)
 
-import TSL.SymbolTable(Kind(..))
+import Control.Exception(assert)
 
-import TSL.Specification(Specification(..))
+import TSL.Error (Error, errSygus)
 
-import TSL.Ast(AstInfo(..), SymbolInfo(..))
+import TSL.ModuloTheories.Cfg (Cfg)
 
-import TSL.ModuloTheories.Cfg(Cfg, outputSignals, productionRules)
+import TSL.ModuloTheories.Predicates (predTheory, TheoryPredicate)
 
-import TSL.ModuloTheories.Predicates( TheoryPredicate
-                                    , predInfo
-                                    , pred2Tsl
-                                    , pred2Smt
-                                    , predTheory
-                                    , predSignals
-                                    , predReplacedSmt
-                                    )
+import TSL.ModuloTheories.Solver (runSygusQuery)
 
-import TSL.ModuloTheories.Theories( Theory
-                                  , TheorySymbol
-                                  , TAst
-                                  , tastByDepth
-                                  , tast2Tsl
-                                  , symbol2Smt
-                                  , symbolType
-                                  , smtSortDecl
-                                  , isUninterpreted
-                                  )
+import TSL.ModuloTheories.Debug (IntermediateResults(..))
 
+import TSL.ModuloTheories.Theories (TheorySymbol, sygus2Supported)
+
+import TSL.ModuloTheories.Sygus.Common ( Temporal(..)
+                                       , Term
+                                       , Dto (..)
+                                       , Model
+                                       )
+
+import TSL.ModuloTheories.Sygus.Query (generateSygusQuery)
+
+import TSL.ModuloTheories.Sygus.Parser (parseSygusResult)
+
+import TSL.ModuloTheories.Sygus.Assumption (makeAssumption)
+
+import TSL.ModuloTheories.Sygus.Update (Update, term2Updates)
+
+import TSL.ModuloTheories.Sygus.Recursion ( generatePbeModels
+                                          , findRecursion
+                                          , config_SUBQUERY_AST_MAX_SIZE
+                                          )
 -------------------------------------------------------------------------------
 
-data Temporal =
-      Next Int
-    | Eventually
-    deriving (Eq)
+data SygusDebugInfo =
+    NextDebug IntermediateResults String
+  | EventuallyDebug [(IntermediateResults, IntermediateResults)] String
+  deriving (Show)
 
-instance Show Temporal where
-  show = \case
-    Next numNext -> replicate numNext 'X'
-    Eventually   -> "F"
+temporalAtoms :: [Temporal]
+temporalAtoms = [Next 1, Eventually]
 
--- | Data Transformation Obligation.
-data DTO = DTO 
-    {   theory        :: Theory
-    ,   preCondition  :: TheoryPredicate
-    ,   postCondition :: TheoryPredicate
-    }
-
-buildDTO :: TheoryPredicate -> TheoryPredicate -> DTO
-buildDTO pre post = DTO theory pre post
+buildDto :: TheoryPredicate -> TheoryPredicate -> Dto
+buildDto pre post = Dto theory pre post
   where theory   = assert theoryEq $ predTheory pre
         theoryEq = (predTheory pre) == (predTheory post)
 
-functionName :: String
-functionName = "function"
+buildDtoList :: [TheoryPredicate] -> [Dto]
+buildDtoList preds = concat $ map buildWith preds
+  where buildWith pred = map (buildDto pred) preds
 
-parenthize :: String -> String
-parenthize str = '(':str ++ ")"
-
-preCond2Sygus :: TheoryPredicate -> String
-preCond2Sygus = assertSmt . pred2Smt
-  where assertSmt smt = parenthize $ "assert " ++ smt
-
--- (constraint (>= (function users) 0))
--- Replace all instances of the TheorySymbol to function application
-postCond2Sygus :: TheorySymbol -> TheoryPredicate -> String
-postCond2Sygus signal postCond = parenthize $ unwords [constraint, clause]
-  where fApplied   = parenthize $ unwords [functionName, show signal]
-        clause     = predReplacedSmt signal fApplied postCond
-        constraint = "constraint"
-
-getSygusTargets :: DTO -> Cfg -> [TheorySymbol]
-getSygusTargets (DTO _ _ post) cfg = Set.toList intersection
-  where outputs      = outputSignals cfg
-        postSignals  = Set.fromList $ predSignals post
-        intersection = Set.intersection outputs postSignals
-
--- | Picks one signal to synthesize SyGuS for.
--- Unfortunately, the current procedure only allows synthesis 
--- of one single function. More info:
--- tsltools/docs/tslmt2tsl-limitations.md#simultaneous-updates
-pickTarget :: [TheorySymbol] -> TheorySymbol
-pickTarget = head
-
-functionGrammar :: TheorySymbol -> Cfg -> String
-functionGrammar = undefined
-
-fixedSizeQuery :: DTO -> Cfg -> String
-fixedSizeQuery dto@(DTO theory pre post) cfg =
-  unlines [declTheory, grammar, preCond, postCond, checkSynth]
-  where
-    synthTarget = pickTarget $ getSygusTargets dto cfg
-    grammar     = functionGrammar synthTarget cfg
-    preCond     = preCond2Sygus  pre
-    postCond    = postCond2Sygus synthTarget post
-    declTheory  = "(set-logic " ++ show theory ++ ")"
-    checkSynth  = "(check-synth)"
-
-recursiveQuery :: DTO -> Cfg -> String
-recursiveQuery = undefined
-
-findRecursion :: [TAst] -> TAst
-findRecursion [] = error "Empty list for recursion!"
-findRecursion _  = undefined
-
-tast2UpdateChain :: TheorySymbol -> TAst -> String
-tast2UpdateChain = undefined
--- (zipWith strConcat nextChains) . tastByDepth
--- where nextChains      = inits $ repeat $ show $ Next 1
---       strConcat s1 s2 = s1 ++ " " ++ s2
-
-sygus2TslAss :: Temporal -> DTO -> TAst -> String
-sygus2TslAss = undefined
--- sygus2TslAss temporal (DTO _ pre post) tast = unwords
---   [ "G("
---   , "("
---   , "(" ++ pred2Tsl pre ++ ")"
---   , "&&"
---   , "(" ++ updateTerm ++ ")"
---   , ")"
---   , "->"
---   , show temporal
---   , "(" ++ pred2Tsl post ++ ")"
---   , ";"
---   ]
---   where
---     updateChain = tast2UpdateChain tast
---     updateTerm  = if (temporal == Eventually)
---                      then updateChain ++ " W " ++ pred2Tsl post
---                      else updateChain
-
--- | A SyGuS Query is based off of:
--- 1) Data Transformation Obligation (the "semantic  constraint") and
--- 2) Context-Free Grammar           (the "syntactic constraint")
-sygusAssumptions
-  :: (Int -> String -> ExceptT Error IO (Maybe TAst))
-  -> [(TheoryPredicate, Temporal)]
+generateUpdates
+  :: FilePath
   -> Cfg
-  -> ExceptT Error IO [String]
-sygusAssumptions sygusSolver preds cfg = undefined
+  -> Int
+  -> [Model TheorySymbol]
+  -> Dto
+  -> ExceptT Error IO ([[Update String]], IntermediateResults)
+generateUpdates solverPath cfg depth models dto = liftM2 (,) updates debugInfo
+  where
+    query :: Either Error String
+    query = generateSygusQuery cfg models dto
 
--- (set-logic LIA)
--- (declare-const vruntime1 Int)
--- (synth-fun function ((vruntime1 Int)) Int
--- 	((I Int))(
--- 		(I Int (
--- 				(+ vruntime1 1)
--- 				(+ I 1)
--- 			)
--- 		)
--- 	)
--- )
--- (assert (= vruntime1 (- 1)))
--- (constraint (forall ((vruntime1 Int))
--- 	(=> (<= vruntime1 4)
--- 	(> (function vruntime1) vruntime1)
--- )))
--- (check-synth)
+    result :: ExceptT Error IO String
+    result = except query >>= (runSygusQuery solverPath depth)
+
+    term :: ExceptT Error IO (Term String)
+    term = do
+        value <- result
+        case parseSygusResult (head (lines value)) of
+          Left err   -> except $ Left err
+          Right term -> return term
+
+    updates :: ExceptT Error IO [[Update String]]
+    updates = term2Updates <$> term
+
+    debugInfo :: ExceptT Error IO IntermediateResults
+    debugInfo = IntermediateResults (show dto) <$> except query <*> result
+
+generateAssumption
+  :: FilePath
+  -> Cfg
+  -> Dto
+  -> Temporal
+  -> ExceptT Error IO (String, SygusDebugInfo)
+generateAssumption solverPath cfg dto temporal =
+  if not $ sygus2Supported $ theory dto
+  then except unsupportedError
+  else case temporal of
+    next@(Next maxAstSize) -> do
+      (updates, debugInfo) <- genNextUpdates maxAstSize
+      let assumption = makeAssumption' next updates
+          debugInfo' = NextDebug debugInfo <$> assumption
+      liftM2 (,) assumption debugInfo'
+
+    Eventually -> do
+      pbeResults <- generatePbeModels solverPath dto
+      let (pbeModels, pbeInfos) = unzip pbeResults
+
+      subqueryResults <- mapM genEventuallyUpdates pbeModels
+      let (subqueryUpdates, subqueryInfos) = unzip subqueryResults
+
+      updates    <- except $ findRecursion subqueryUpdates
+      assumption <- makeAssumption' Eventually updates
+      let debugInfo = EventuallyDebug (zip pbeInfos subqueryInfos) assumption
+      return (assumption, debugInfo)
+
+  where
+    genUpdates depth     = (flip (generateUpdates solverPath cfg depth)) dto
+    genNextUpdates       = (flip genUpdates) []
+    genEventuallyUpdates = genUpdates config_SUBQUERY_AST_MAX_SIZE
+    unsupportedError     = errSygus $
+                             "Theory " ++
+                             show (theory dto) ++ 
+                             " not supported in the Sygus 2 Standard"
+    makeAssumption' temporal updates =
+      except $ makeAssumption dto temporal updates
+
+generateSygusAssumptions
+  :: FilePath
+  -> Cfg
+  -> [Dto]
+  -> [ExceptT Error IO String]
+generateSygusAssumptions solverPath cfg dtos =
+    map (fmap fst) $
+      (generateAssumption solverPath cfg) <$>
+      dtos <*>
+      temporalAtoms
+
+sygusDebug
+  :: FilePath
+  -> Cfg
+  -> [Dto]
+  -> [ExceptT Error IO SygusDebugInfo]
+sygusDebug solverPath cfg dtos =
+    map (fmap snd) $
+      (generateAssumption solverPath cfg) <$>
+      dtos <*>
+      temporalAtoms

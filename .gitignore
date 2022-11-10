@@ -2,6 +2,9 @@ deps
 specs
 local-dev
 *.tsl
+*.sl
+foo*
+bar*
 TODO
 .DS_Store
 tags
@@ -22,6 +25,7 @@ cabal.sandbox.config
 *.prof
 *.aux
 *.hp
+*.pdf
 tsl2tlsf
 tslcheck
 tslsize

@@ -22,6 +22,7 @@ module TSL.ModuloTheories.Theories( Theory(..)
                                   , TAst
                                   , TheorySymbol
                                   , readTheory
+                                  , sygus2Supported
                                   , smtSortDecl
                                   , applySemantics
                                   , read2Symbol
@@ -29,13 +30,16 @@ module TSL.ModuloTheories.Theories( Theory(..)
                                   , tast2Tsl
                                   , tast2Smt
                                   , tastInfo
-                                  , tastByDepth
                                   , tastSignals
+                                  , getAst
                                   , symbol2Tsl
                                   , symbol2Smt
                                   , symbolType
+                                  , symbolTheory
+                                  , makeSignal
                                   , isUninterpreted
                                   , replaceSmtShow
+                                  , replaceTAst
                                   ) where
 -------------------------------------------------------------------------------
 import TSL.Error (Error, errMtParse)
@@ -44,8 +48,8 @@ import TSL.Ast( Ast
               , AstInfo
               , stringifyAst
               , getAstInfo
-              , astByDepth
               , getSignals
+              , replace
               )
 
 import qualified TSL.ModuloTheories.Theories.Base as Base(TheorySymbol(..))
@@ -77,8 +81,14 @@ readTheory other  = errMtParse other
 smtSortDecl :: Theory -> String
 smtSortDecl = \case
   Uf  -> "(declare-sort UF 0)"
-  EUf -> "(declare-sort UF 0)"
+  EUf -> "(declare-sort EUF 0)"
   Lia -> ""
+
+sygus2Supported :: Theory -> Bool
+sygus2Supported = \case
+  Uf  -> False
+  EUf -> False
+  Lia -> True
 
 data TAst =
     UfAst  (Ast Uf.UfSymbol)
@@ -86,11 +96,6 @@ data TAst =
   | LiaAst (Ast Lia.LiaSymbol)
 
 instance Show TAst where show = tast2Smt
-
-tastByDepth :: TAst -> [TAst]
-tastByDepth (UfAst  ast) = map UfAst  $ astByDepth ast 
-tastByDepth (EUfAst ast) = map EUfAst $ astByDepth ast
-tastByDepth (LiaAst ast) = map LiaAst $ astByDepth ast
 
 tastTheory :: TAst -> Theory
 tastTheory (UfAst  _) = Uf
@@ -106,6 +111,11 @@ tast2Smt :: TAst -> String
 tast2Smt (UfAst  ast) = stringifyAst Base.toSmt ast
 tast2Smt (EUfAst ast) = stringifyAst Base.toSmt ast
 tast2Smt (LiaAst ast) = stringifyAst Base.toSmt ast
+
+getAst :: TAst -> Ast TheorySymbol
+getAst (UfAst  ast) = fmap UfSymbol  $ ast
+getAst (EUfAst ast) = fmap EUfSymbol $ ast
+getAst (LiaAst ast) = fmap LiaSymbol $ ast
 
 applySemantics :: Theory -> Ast String -> Either Error TAst
 applySemantics Uf  ast = UfAst  <$> traverse Base.readT ast
@@ -137,6 +147,11 @@ tastSignals = \case
   EUfAst ast -> map EUfSymbol $ getSignals ast
   LiaAst ast -> map LiaSymbol $ getSignals ast
 
+makeSignal :: Theory -> String -> TAst
+makeSignal Uf  signal = UfAst  $ pure (Base.makeSignal signal)
+makeSignal EUf signal = EUfAst $ pure (Base.makeSignal signal)
+makeSignal Lia signal = LiaAst $ pure (Base.makeSignal signal)
+
 symbol2Tsl :: TheorySymbol -> String
 symbol2Tsl (UfSymbol  symbol) = Base.toTsl symbol
 symbol2Tsl (EUfSymbol symbol) = Base.toTsl symbol
@@ -158,7 +173,9 @@ symbolTheory (EUfSymbol _) = EUf
 symbolTheory (LiaSymbol _) = Lia
 
 symbolType :: TheorySymbol -> String
-symbolType = show . symbolTheory
+symbolType (UfSymbol  symbol) = Base.symbolType symbol
+symbolType (EUfSymbol symbol) = Base.symbolType symbol
+symbolType (LiaSymbol symbol) = Base.symbolType symbol
 
 -- FIXME: Not good design pattern
 replaceSmtShow :: TheorySymbol -> TAst -> String -> String
@@ -173,3 +190,13 @@ replaceSmtShow _ _ _ = error "Invalid theory combo for replaceSmtShow!"
 replaceApply :: (Eq a) => (a -> b) -> a -> b -> a -> b
 replaceApply f toReplace newVersion input =
   if toReplace == input then newVersion else f input
+
+-- FIXME: refactor & combine with function above
+replaceTAst :: (TheorySymbol, TheorySymbol) -> TAst -> TAst
+replaceTAst (UfSymbol before, UfSymbol after) (UfAst ast) = 
+  UfAst $ replace (before, after) ast
+replaceTAst (EUfSymbol before, EUfSymbol after) (EUfAst ast) = 
+  EUfAst $ replace (before, after) ast
+replaceTAst (LiaSymbol before, LiaSymbol after) (LiaAst ast) = 
+  LiaAst $ replace (before, after) ast
+replaceTAst _ _ = error "Invalid theory combo for replaceSmtShow!"

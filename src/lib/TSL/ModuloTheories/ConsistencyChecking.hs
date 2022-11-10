@@ -11,20 +11,25 @@
 {-# LANGUAGE TupleSections   #-}
 
 -------------------------------------------------------------------------------
-module TSL.ModuloTheories.ConsistencyChecking( consistencyChecking
+module TSL.ModuloTheories.ConsistencyChecking( generateConsistencyAssumptions
                                              , consistencyDebug
+                                             , ConsistencyDebugInfo (..)
                                              ) where
 
 -------------------------------------------------------------------------------
 
 import Control.Monad.Trans.Except
 
-import TSL.Error(Error)
+import TSL.Error(Error, errConsistency)
 
 import TSL.Ast( AstInfo(..)
               , SymbolInfo(..)
               , deduplicate
               )
+
+import TSL.ModuloTheories.Debug (IntermediateResults(..))
+
+import TSL.ModuloTheories.Solver (solveSat)
 
 import TSL.ModuloTheories.Theories( Theory
                                   , TheorySymbol
@@ -44,37 +49,46 @@ import TSL.ModuloTheories.Predicates( TheoryPredicate(..)
 
 -------------------------------------------------------------------------------
 
-eof :: String
-eof = ";; END OF FILE\n\n"
+pred2Assumption :: TheoryPredicate -> String
+pred2Assumption p = "G " ++ pred2Tsl (NotPLit p) ++ ";"
 
-pred2TslAssumption :: TheoryPredicate -> String
-pred2TslAssumption p = "G " ++ pred2Tsl (NotPLit p) ++ ";"
+data ConsistencyDebugInfo = ConsistencyDebugInfo IntermediateResults String
+  deriving (Show)
+
+generateConsistencyAssumptions
+  :: FilePath
+  -> [TheoryPredicate]
+  -> [ExceptT Error IO String]
+generateConsistencyAssumptions path preds =
+  map ((fmap fst) . (consistencyChecking path)) (enumeratePreds preds)
 
 consistencyDebug
-  :: (String -> ExceptT Error IO Bool)
+  :: FilePath
   -> [TheoryPredicate]
-  -> ExceptT Error IO [(String, String, Maybe String)]
-consistencyDebug satSolver preds = (map assumeOnlyUnsat) <$> zippedResults
-  where
-    preds'                       = enumeratePreds preds
-    queries                      = map pred2SmtQuery preds'
-    zippedResults                = fmap (zip3 preds' queries) $ traverse satSolver queries
-    assumeOnlyUnsat (p, q, res)  =
-      if res then (show p, q, Nothing) else (show p, q, Just (pred2TslAssumption p))
+  -> [ExceptT Error IO ConsistencyDebugInfo]
+consistencyDebug path preds =
+  map ((fmap snd) . (consistencyChecking path)) (enumeratePreds preds)
 
 consistencyChecking
-  :: (String -> ExceptT Error IO Bool)
-  -> [TheoryPredicate]
-  -> ExceptT Error IO [String]
-consistencyChecking satSolver preds = (map pred2TslAssumption) <$> onlyUnsat
+  :: FilePath
+  -> TheoryPredicate
+  -> ExceptT Error IO (String, ConsistencyDebugInfo)
+consistencyChecking solverPath pred = do
+  isSat <- solveSat solverPath query
+  if isSat
+    then except $ errConsistency $ "Predicate " ++ show pred ++ " is satisfiable."
+    else 
+      let assumption          = pred2Assumption pred
+          intermediateResults =
+            IntermediateResults (show pred) query (show isSat)
+          debugInfo           =
+            ConsistencyDebugInfo intermediateResults assumption
+      in return (assumption, debugInfo)
   where
-    checkSat          = satSolver . pred2SmtQuery
-    preds'            = enumeratePreds preds
-    unsatZipFilter    = (map fst . filter (not . snd)) . (zip preds')
-    onlyUnsat         = unsatZipFilter <$> (traverse checkSat preds')
+    query  = pred2SmtQuery pred
 
 pred2SmtQuery :: TheoryPredicate -> String
-pred2SmtQuery p = unlines [smtDeclarations, assertion, checkSat, eof]
+pred2SmtQuery p = unlines [smtDeclarations, assertion, checkSat]
   where
     smtDeclarations   = smtDecls (predTheory p) $ deduplicate $ predInfo p
     assertion         = "(assert " ++ pred2Smt p ++ ")"

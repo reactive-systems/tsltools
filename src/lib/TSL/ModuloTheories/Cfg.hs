@@ -19,6 +19,7 @@ module TSL.ModuloTheories.Cfg
   , cfgFromSpec
   , outputSignals
   , productionRules
+  , extendCfg
   ) where
 
 -------------------------------------------------------------------------------
@@ -89,3 +90,9 @@ outputSignals cfg = Map.keysSet $ grammar cfg
 
 productionRules :: TheorySymbol -> Cfg -> [TAst]
 productionRules ts cfg = Map.findWithDefault [] ts $ grammar cfg
+
+extendCfg :: (TheorySymbol, TAst) -> Cfg -> Cfg
+extendCfg (nonterminal, rule) cfg =
+  case Map.lookup nonterminal (grammar cfg) of
+    Nothing    -> Cfg $ Map.insert nonterminal [rule] (grammar cfg)
+    Just rules -> Cfg $ Map.insert nonterminal (rule:rules) (grammar cfg)
