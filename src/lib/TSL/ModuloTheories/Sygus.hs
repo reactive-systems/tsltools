@@ -34,7 +34,7 @@ import TSL.ModuloTheories.Solver (runSygusQuery)
 
 import TSL.ModuloTheories.Debug (IntermediateResults(..))
 
-import TSL.ModuloTheories.Theories (Theory, TheorySymbol, sygus2Supported)
+import TSL.ModuloTheories.Theories (TheorySymbol, sygus2Supported)
 
 import TSL.ModuloTheories.Sygus.Common ( Temporal(..)
                                        , Term
@@ -54,8 +54,6 @@ import TSL.ModuloTheories.Sygus.Recursion ( generatePbeModels
                                           , findRecursion
                                           , config_SUBQUERY_AST_MAX_SIZE
                                           )
-import Debug.Trace (trace)
-
 -------------------------------------------------------------------------------
 
 data SygusDebugInfo =

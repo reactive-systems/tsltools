@@ -24,27 +24,14 @@ import Control.Monad (liftM2)
 
 import TSL.Error (Error, errSygus)
 
-import TSL.ModuloTheories.Cfg ( Cfg(..)
-                              , outputSignals
-                              , extendCfg
-                              )
-
 import TSL.ModuloTheories.Predicates( TheoryPredicate
                                     , pred2Smt
                                     , predTheory
                                     , predSignals
-                                    , predReplacedSmt
                                     )
 
 import TSL.ModuloTheories.Theories( TheorySymbol
-                                  , TAst
-                                  , Theory
-                                  , tastSignals
-                                  , tast2Smt
                                   , symbolType
-                                  , symbolTheory
-                                  , smtSortDecl
-                                  , makeSignal
                                   , read2Symbol
                                   )
 
@@ -53,17 +40,13 @@ import TSL.ModuloTheories.Solver (runGetModel)
 import TSL.ModuloTheories.Debug (IntermediateResults(..))
 
 import TSL.ModuloTheories.Sygus.Common( Dto (..)
-                                      , Temporal (..)
                                       , Model (..)
-                                      , targetPostfix
                                       , parenthize
                                       )
 
-import TSL.ModuloTheories.Sygus.Update (Update (..), DataSource (..))
+import TSL.ModuloTheories.Sygus.Update (Update (..))
 
 import TSL.ModuloTheories.Sygus.Parser (parseModels)
-
-import Debug.Trace (trace)
 
 -------------------------------------------------------------------------------
 

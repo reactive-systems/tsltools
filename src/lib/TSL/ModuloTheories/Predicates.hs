@@ -47,7 +47,6 @@ import TSL.ModuloTheories.Theories( Theory
                                   , tastInfo
                                   , tastSignals
                                   , replaceSmtShow
-                                  , replaceTAst
                                   )
 
 -------------------------------------------------------------------------------

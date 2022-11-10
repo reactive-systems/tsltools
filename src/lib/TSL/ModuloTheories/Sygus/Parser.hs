@@ -91,15 +91,6 @@ parseSygusResult input =
     Left err   -> parseError err
     Right term -> return term
 
-example :: String
-example = unlines 
-  [ "sat"
-  , "("
-  , "(define-fun y () Int (- 1))"
-  , "(define-fun x () Int 0)"
-  , ")"
-  ]
-
 nullary :: Parser ()
 nullary = Parsec.string "()" >> return ()
 

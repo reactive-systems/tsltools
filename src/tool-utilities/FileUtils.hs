@@ -48,7 +48,7 @@ import Control.Monad (unless)
 
 import System.Directory (doesFileExist)
 
-import System.Exit (exitFailure, die)
+import System.Exit (exitFailure)
 
 -----------------------------------------------------------------------------
 -- | Checks if given FilePath belongs to an existing file.

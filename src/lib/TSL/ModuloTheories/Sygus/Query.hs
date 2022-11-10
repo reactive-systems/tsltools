@@ -28,7 +28,6 @@ import TSL.ModuloTheories.Cfg ( Cfg(..)
 
 import TSL.ModuloTheories.Predicates( TheoryPredicate
                                     , pred2Smt
-                                    , predTheory
                                     , predSignals
                                     , predReplacedSmt
                                     )
@@ -44,13 +43,10 @@ import TSL.ModuloTheories.Theories( TheorySymbol
                                   )
 
 import TSL.ModuloTheories.Sygus.Common( Dto(..)
-                                      , Temporal(..)
                                       , Model
                                       , targetPostfix
                                       , parenthize
                                       )
-
-import Debug.Trace (trace)
 
 -------------------------------------------------------------------------------
 

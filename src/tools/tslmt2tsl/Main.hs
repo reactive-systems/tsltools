@@ -24,15 +24,13 @@ import Control.Monad.Trans.Except
 
 import Data.Maybe (catMaybes)
 
-import Control.Monad (liftM2)
-
 import System.Exit (die)
 
 import Config (Configuration(..), Flag(..), parseArguments)
 
 import EncodingUtils (initEncoding)
 
-import FileUtils (writeContent, loadTSLMT, tryReadContent)
+import FileUtils (writeContent, loadTSLMT)
 
 import PrintUtils ( Color(..)
                   , ColorIntensity(..)
@@ -56,14 +54,8 @@ import TSL ( Error
 
 -----------------------------------------------------------------------------
 
-tabuateLn :: Int -> String -> String
-tabuateLn n = unlines . map (tabulate n) . lines
-
 tabulate :: Int -> String -> String
 tabulate n = ((replicate n '\t') ++ )
-
-delWhiteLines :: String -> String
-delWhiteLines = unlines . filter (not . null) . lines
 
 unError :: (Show a) => Either a b -> b
 unError = \case

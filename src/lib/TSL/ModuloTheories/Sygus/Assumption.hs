@@ -20,15 +20,11 @@ import Data.List (intersperse)
 
 import TSL.Error (Error, errSygus)
 
-import TSL.ModuloTheories.Theories (TheorySymbol, symbol2Tsl)
-
 import TSL.ModuloTheories.Predicates (pred2Tsl)
 
-import TSL.ModuloTheories.Sygus.Common (Dto(..) , Temporal (..), Term)
+import TSL.ModuloTheories.Sygus.Common (Dto(..) , Temporal (..))
 
-import TSL.ModuloTheories.Sygus.Update (Update (..), DataSource(..), term2Updates)
-
-import Debug.Trace (trace)
+import TSL.ModuloTheories.Sygus.Update (Update (..))
 
 -------------------------------------------------------------------------------
 
