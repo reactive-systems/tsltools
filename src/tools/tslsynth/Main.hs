@@ -35,7 +35,7 @@ main ::
 main = do
   initEncoding
 
-  Configuration {input, output, codeTarget, moduleName, functionName, writeHoa} <- parseArguments
+  Configuration {input, codeTarget, writeHoa} <- parseArguments
   let fileBasename = takeBaseName $ fromJust input
 
   -- tslmt2tsl
@@ -89,7 +89,7 @@ callLtlsynt tlsfContents = do
       ltlOuts = prOutputs S.defaultCfg tlsfSpec
       ltlFormulae = prFormulae S.defaultCfg {S.outputMode = S.Fully, S.outputFormat = S.LTLXBA} tlsfSpec
       ltlCommandArgs = [ltlFormulae, ltlIns, ltlOuts]
-  (exitCode, stdout, stderr) <- readProcessWithExitCode "./tlsfSynt.sh" ltlCommandArgs []
+  (exitCode, stdout, _) <- readProcessWithExitCode "./tlsfSynt.sh" ltlCommandArgs []
   if exitCode /= ExitSuccess
     then
       print "TSL spec UNREALIZABLE"
@@ -120,3 +120,4 @@ prOutputs ::
 prOutputs c s = case S.outputs c s of
   Left err -> show err
   Right (x : xr) -> x ++ concatMap ((:) ',' . (:) ' ') xr
+  _              -> error "Uncaught pattern match"
