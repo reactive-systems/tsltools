@@ -75,7 +75,6 @@ module TSL
   , Theory
   , TheoryPredicate
   , readTheory
-  , preprocess
   , generateConsistencyAssumptions
   , consistencyDebug
   , ConsistencyDebugInfo (..)
@@ -132,8 +131,6 @@ import TSL.Simulation (simulate)
 import TSL.TOML (toTOML)
 
 import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
-
-import TSL.Preprocessor(preprocess)
 
 import TSL.ModuloTheories.ConsistencyChecking( generateConsistencyAssumptions
                                              , consistencyDebug

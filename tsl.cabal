@@ -56,7 +56,6 @@ library
 
   other-modules:
     TSL.Ast
-    TSL.Preprocessor
     TSL.ModuloTheories.Cfg
     TSL.ModuloTheories.Predicates
     TSL.ModuloTheories.ConsistencyChecking
