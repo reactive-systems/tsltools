@@ -32,10 +32,12 @@ import Debug.Trace (trace)
 
 -------------------------------------------------------------------------------
 
+tslAnd :: String
+tslAnd = "&&"
+
 updates2Tsl :: (Eq a, Show a) => [[Update a]] -> String
 updates2Tsl updates = unwords $ intersperse tslAnd depthAssumptions
   where
-    tslAnd           = "&&"
     tslNext          = 'X'
     depthAssumptions = zipWith depth2Assumption [0..] $ reverse updates
 
@@ -61,12 +63,11 @@ makeAssumption (Dto _ pre post) temporal updates =
                           , ";"
                           ]
   where
-    tslAnd      = "&&"
     weakUntil   = " W "
     updateChain = updates2Tsl updates
     updateTerm  = let condition = if temporal == Eventually
                                      then weakUntil ++ pred2Tsl post
                                      else ""
-                   in tslAnd ++ updateChain ++ condition
+                   in unwords [tslAnd, updateChain, condition]
     errMsg      =
       "((p x) & [x <- x]) -> X (p x) type assumptions not yet supported."
