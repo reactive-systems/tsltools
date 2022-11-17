@@ -124,6 +124,12 @@ data BinaryFunction
 class Fmt a where
   fmt :: a -> String
 
+instance (Fmt a) => Fmt [a] where
+  fmt = unwords . (map fmt)
+
+instance Fmt Char where
+  fmt = show
+
 instance Fmt Specification where
   fmt (Specification sections) = unlines $ map fmt sections
 
@@ -223,6 +229,8 @@ instance Eq Signal where
    fmt f == g && lhs == lhs' && rhs == rhs'
   (BinaryFunction f lhs rhs) == _ = False
 
+  (UninterpretedFunction f args) == (UninterpretedFunction g args') =
+    f == g && args == args'
   uninterpreted@(UninterpretedFunction _ _) == other = other == uninterpreted
 ---------------------------------------------------------------------------
 -- Lexer
@@ -261,11 +269,17 @@ reserved = Token.reserved lexer
 reservedOp :: String -> Parser ()
 reservedOp = Token.reservedOp lexer
 
-parens :: Parser a -> Parser a
-parens = Token.parens lexer
+parens :: (Show a, Fmt a) => Parser a -> Parser a
+parens = (debugger "PARENS") . Token.parens lexer
 
-braces :: Parser a -> Parser a
-braces = Token.braces lexer
+braces :: (Show a, Fmt a) => Parser a -> Parser a
+braces = (debugger "BRACES") . Token.braces lexer
+-- braces p = do
+--   spaces >> Parsec.string "{"
+--   val <- spaces >> p
+--   spaces >> Parsec.string "}"
+--   spaces
+--   return val
 
 brackets :: Parser a -> Parser a
 brackets = Token.brackets lexer
@@ -319,7 +333,7 @@ data DebugMode =
   | Normal
   | Verbose
 
-debugger :: (Show a) => String -> Parser a -> Parser a
+debugger :: (Show a, Fmt a) => String -> Parser a -> Parser a
 debugger description parser = case debugMode of
   Silent -> parser
   Quiet -> do
@@ -330,21 +344,24 @@ debugger description parser = case debugMode of
    Parsec.parserTrace $ msg val
    return val
   Verbose -> do
-   Parsec.parserTrace $ "\n>>>BEFORE " ++ description ++ "\n\t"
+   Parsec.parserTrace $ "\n>>> BEFORE " ++ description ++ ", Remaining"
    val <- parser
    Parsec.parserTrace $ msg val
-   Parsec.parserTrace $ "\n<<<AFTER " ++ description ++ "\n\t"
+   Parsec.parserTrace $ "\n<<< AFTER " ++ description ++ ", Remaining"
    return val
-  where msg value = '\n':description ++ " : << " ++ show value ++ " >>\n\t"
+  where msg value = "\n{{" ++ description ++ "}}\n" ++
+                    "\n  Format:\n\t" ++ fmt value ++
+                    "\n  Show:\n\t" ++ show value ++
+                    "\n  Remaining"
 
 specParser :: Parser Specification
-specParser = liftM Specification $ sectionParser `sepBy` spaces
+specParser = spaces >> (liftM Specification $ sectionParser `sepBy` spaces)
 
 sectionParser :: Parser Section
 sectionParser = do
   temporalWrapper <- temporalParser
   sectionType     <- sectionTypeParser
-  exprs           <- braces $ exprParser `endBy` semicolon
+  exprs           <- braces $ (debugger "EXPRS IN SECTION") $ exprParser `endBy` semicolon
   return $ Section temporalWrapper sectionType exprs
   where
     temporalParser :: Parser (Maybe TemporalWrapper)
@@ -404,16 +421,19 @@ signalTerm = (debugger "SIGNAL TERM") $ parens signalParser
 
 constantParser :: Parser Signal
 constantParser = do
-  symbol <- identifier
-  _      <- Parsec.string "()" 
-  _      <- spaces
-  return $ Symbol symbol
+  symbol  <- identifier
+  nullary <- Parsec.string "()" 
+  _       <- spaces
+  return $ Symbol $ symbol ++ nullary
 
 functionLiteralParser :: Parser (String, [Signal])
 functionLiteralParser = do
   function <- (debugger "FUNCTION") identifier
-  args     <- (debugger "ARGS") $ signalParser `sepBy1` spaces -- curry or Symbol
+  args     <- (debugger "ARGS") $ many1 argParser
   return (function, args)
+  where argParser =  try constantParser
+                 <|> liftM Symbol (try identifier)
+                 <|> try signalParser
 
 preprocess :: String -> Either Parsec.ParseError Specification
 preprocess input = Parsec.parse (specParser <* Parsec.eof) errMsg input
@@ -428,8 +448,8 @@ parseA parser input =
   case parsed of
     Left err  -> putStrLn $ "FAIL: " ++ show err ++ "\n---\n"
     Right res -> putStrLn $ "SUCCESS!" ++
-                   "\nBEFORE: " ++ input ++
-                   "\nAFTER : " ++ fmt res  ++
+                   "\nBEFORE:\n" ++ input ++
+                   "\nAFTER :\n" ++ fmt res  ++
                    "\n---\n"
   where parsed = Parsec.parse (parser <* Parsec.eof) errMsg input
         errMsg = "\n\nParser Failed! Input was:\n\n" ++
@@ -441,33 +461,39 @@ runTest dir = do
   inputTSL    <- readFile inputPath
   expectedTSL <- readFile expectedPath
   case preprocess inputTSL of
-    Left err     -> die $ "FAIL: " ++ show err ++ "\n---\n"
-    Right res -> putStrLn $ "SUCCESS: FROM\n" ++ inputTSL ++ "\nTO\n\n" ++ fmt res
-    -- Right actual -> case preprocess expectedTSL of
-    --   Left err       -> die $ "FAIL: " ++ show err ++ "\n---\n"
-      -- Right expected -> if actual == expected
-      --   then putStrLn "Success!"
-      --   else die $ "FAIL!!\n" ++ (showParsed "Actual:" actual) ++ (showParsed "Expected:" expected)
-  where inputPath           = dir ++ "/" ++ "input.tsl"
-        expectedPath        = dir ++ "/" ++ "expected.tsl"
-        starter             = "\n>>>\n"
-        ender               = "\n<<<\n"
-        showParsed desc val = unlines [starter, desc, fmt val, show val, ender]
+    Left err     -> die $ "ACTUAL FAIL: " ++ show err ++ "\n---\n"
+    -- Right res -> putStrLn $ "SUCCESS: FROM\n" ++ inputTSL ++ "\nTO\n\n" ++ fmt res
+    Right actual -> case preprocess expectedTSL of
+      Left err       -> die $ "EXPECTED FAIL: " ++ show err ++ "\n---\n"
+      Right expected -> if actual == expected
+        then putStrLn $ success inputTSL actual
+        else die $ "FAIL!!\n" ++ (showParsed "Actual:" actual) ++ (showParsed "Expected:" expected)
+  where inputPath            = dir ++ "/" ++ "input.tsl"
+        expectedPath         = dir ++ "/" ++ "expected.tsl"
+        starter              = "\n>>>\n"
+        ender                = "\n<<<\n"
+        showParsed desc val  = unlines [starter, desc, fmt val, show val, ender]
+        success input actual = (++ "\n\n") $ "Success!" ++ case debugMode of
+          Silent  -> ""
+          Quiet   -> "\n" ++ fmt actual
+          Normal  -> "\nBefore:\n" ++ input ++
+                     "\nAfter:\n" ++ fmt actual
+          Verbose -> "\nBefore:\n" ++ input ++
+                     "\nAfter:\n" ++ fmt actual ++
+                     "\nDebug:\n" ++ show actual
 
 dirs :: [String]
 dirs = map (((dir_base ++ "/") ++) . show) [0..6]
   where dir_base = "/Users/wonhyuk/tsltools/src/test/regression/Preprocess"
 
+ex = "always assume { [m <- ((p u z - x) / (a y))] <-> ( ((f y) = (g z h) ) || (y <= w)); }"
+
+doEx = False
+
 main :: IO ()
-main = mapM_ runTest dirs
+main = if doEx
+          then parseA specParser ex
+          else mapM_ runTest dirs
 
 debugMode :: DebugMode
 debugMode = Silent
-
--- signalParser `sepBy` space
---
--- x = y  : Binary        eq x y 
--- eq x y : Uninterpreted eq [x, y]
---          Uninterpreted eq (Uninterpreted x y)
---
--- Could have an `uncurry` method.
