@@ -9,6 +9,8 @@ import Control.Monad (liftM)
 
 import Numeric (showFFloat)
 
+import System.Directory (listDirectory)
+
 import Text.Parsec.String (Parser)
 
 import Text.Parsec (alphaNum, char, letter, (<|>))
@@ -121,14 +123,14 @@ data BinaryFunction
 -------------------------------------------------------------------------------
 -- Fmt instances
 
-class Fmt a where
+class Show a => Fmt a where
   fmt :: a -> String
 
 instance (Fmt a) => Fmt [a] where
-  fmt = unwords . (map fmt)
+  fmt = concat . (map fmt)
 
 instance Fmt Char where
-  fmt = show
+  fmt c = [c]
 
 instance Fmt Specification where
   fmt (Specification sections) = unlines $ map fmt sections
@@ -221,7 +223,9 @@ instance Eq Predicate where
 instance Eq Signal where
   int@(TSLInt     _) == other = fmt int    == fmt other
   real@(TSLReal   _) == other = fmt real   == fmt other
-  symbol@(Symbol  _) == other = fmt symbol == fmt other
+
+  symbol@(Symbol s) == (UninterpretedFunction f []) = s == f
+  symbol@(Symbol _) == other = fmt symbol == fmt other
 
   (BinaryFunction f lhs rhs) == (BinaryFunction g lhs' rhs') =
    f == g && lhs == lhs' && rhs == rhs'
@@ -236,10 +240,13 @@ instance Eq Signal where
 -- Lexer
 
 binOpNames :: [String]
-binOpNames = ["eq" ,"lt" ,"gt" ,"lte" ,"gte" ,"add" ,"sub" ,"mult" ,"div"]
+binOpNames = ["=" ,"<" ,">" ,"<=" ,">=" ,"+" ,"-" ,"*" ,"/"]
+
+sectionNames :: [String]
+sectionNames = ["initially", "always", "assume", "guarantee"]
 
 temporalOpNames :: [String]
-temporalOpNames = ["R","U","W","X"]
+temporalOpNames = ["R","U","W","X","F"]
 
 tslDef :: Token.LanguageDef a
 tslDef =
@@ -253,12 +260,15 @@ tslDef =
   , Token.caseSensitive   = True
   , Token.opStart         = oneOf "!&|=/+*[-<"
   , Token.opLetter        = oneOf "!&|=/+*[]<->"
-  , Token.reservedNames   = ["initially", "always", "assume", "guarantee"]
-  , Token.reservedOpNames = binOpNames ++ temporalOpNames
+  , Token.reservedNames   = sectionNames ++ temporalOpNames
+  , Token.reservedOpNames = binOpNames
   }
 
 lexer :: Token.GenTokenParser String p Identity
 lexer = Token.makeTokenParser tslDef
+
+whiteSpace :: Parser ()
+whiteSpace = Token.whiteSpace lexer
 
 identifier :: Parser String
 identifier = Token.identifier lexer
@@ -274,12 +284,6 @@ parens = (debugger "PARENS") . Token.parens lexer
 
 braces :: (Show a, Fmt a) => Parser a -> Parser a
 braces = (debugger "BRACES") . Token.braces lexer
--- braces p = do
---   spaces >> Parsec.string "{"
---   val <- spaces >> p
---   spaces >> Parsec.string "}"
---   spaces
---   return val
 
 brackets :: Parser a -> Parser a
 brackets = Token.brackets lexer
@@ -293,24 +297,21 @@ float = Token.float lexer
 semicolon :: Parser ()
 semicolon = Token.semi lexer >> return ()
 
-whiteSpace :: Parser ()
-whiteSpace = Token.whiteSpace lexer
-
 exprOperators :: [[Operator String () Identity Expr]]
 exprOperators =
   [
    [ Prefix  (reservedOp "!"  >> return (Unary Not        )) 
-   , Prefix  (reservedOp "X"  >> return (Unary Next       ))
-   , Prefix  (reservedOp "G"  >> return (Unary Globally   ))
-   , Prefix  (reservedOp "F"  >> return (Unary Eventually )) 
+   , Prefix  (reserved   "X"  >> return (Unary Next       ))
+   , Prefix  (reserved   "G"  >> return (Unary Globally   ))
+   , Prefix  (reserved   "F"  >> return (Unary Eventually )) 
    ]
   ,[ Infix  (reservedOp "&&"  >> return (Binary And       )) AssocLeft
    , Infix  (reservedOp "||"  >> return (Binary Or        )) AssocLeft
    , Infix  (reservedOp "->"  >> return (Binary Implies   )) AssocLeft
    , Infix  (reservedOp "<->" >> return (Binary Iff       )) AssocLeft
-   , Infix  (reservedOp "U"   >> return (Binary Until     )) AssocLeft
-   , Infix  (reservedOp "W"   >> return (Binary WeakUntil )) AssocLeft
-   , Infix  (reservedOp "R"   >> return (Binary Release   )) AssocLeft
+   , Infix  (reserved   "U"   >> return (Binary Until     )) AssocLeft
+   , Infix  (reserved   "W"   >> return (Binary WeakUntil )) AssocLeft
+   , Infix  (reserved   "R"   >> return (Binary Release   )) AssocLeft
    ]
   ]
 
@@ -355,7 +356,7 @@ debugger description parser = case debugMode of
                     "\n  Remaining"
 
 specParser :: Parser Specification
-specParser = spaces >> (liftM Specification $ sectionParser `sepBy` spaces)
+specParser = whiteSpace >> (liftM Specification $ sectionParser `sepBy` spaces)
 
 sectionParser :: Parser Section
 sectionParser = do
@@ -376,13 +377,24 @@ sectionParser = do
 exprParser :: Parser Expr
 exprParser = (debugger "EXPR") $ buildExpressionParser exprOperators exprTerm
 
+exprPrefixParser :: Parser Expr
+exprPrefixParser = prefixParser <*> exprParser
+  where prefixParser :: Parser (Expr -> Expr)
+        prefixParser =  (reservedOp "!"  >> return (Unary Not))
+                    <|> (reserved   "X"  >> return (Unary Next))
+                    <|> (reserved   "G"  >> return (Unary Globally))
+                    <|> (reserved   "F"  >> return (Unary Eventually))
+
 exprTerm :: Parser Expr
 exprTerm = (debugger "EXPR TERM") $ updateTerm
            <|> try (liftM PredicateExpr predicateParser)
            <|> parens exprParser
+           <|> exprPrefixParser
 
 predicateParser :: Parser Predicate
-predicateParser = (debugger "PREDICATE") $ (try interpreted) <|> uninterpreted
+predicateParser = (debugger "PREDICATE") $
+                  (try interpreted)
+                <|> uninterpreted
   where
     uninterpreted :: Parser Predicate
     uninterpreted = liftM (uncurry UninterpretedPredicate) functionLiteralParser
@@ -429,7 +441,7 @@ constantParser = do
 functionLiteralParser :: Parser (String, [Signal])
 functionLiteralParser = do
   function <- (debugger "FUNCTION") identifier
-  args     <- (debugger "ARGS") $ many1 argParser
+  args     <- (debugger "ARGS") $ many argParser
   return (function, args)
   where argParser =  try constantParser
                  <|> liftM Symbol (try identifier)
@@ -446,11 +458,12 @@ preprocess input = Parsec.parse (specParser <* Parsec.eof) errMsg input
 parseA :: (Fmt a) => Parser a -> String -> IO ()
 parseA parser input =
   case parsed of
-    Left err  -> putStrLn $ "FAIL: " ++ show err ++ "\n---\n"
-    Right res -> putStrLn $ "SUCCESS!" ++
-                   "\nBEFORE:\n" ++ input ++
-                   "\nAFTER :\n" ++ fmt res  ++
-                   "\n---\n"
+    Left err  -> die $ "FAIL: " ++ show err ++ "\n---\n"
+    Right res -> case debugMode of
+      Silent -> putStr "SUCCESS!!"
+      _      -> putStrLn $ "SUCCESS!" ++
+        "\nBEFORE:\n" ++ input ++
+        "\nAFTER :\n" ++ fmt res  ++ "\n---\n" ++ show res ++ "\n---\n"
   where parsed = Parsec.parse (parser <* Parsec.eof) errMsg input
         errMsg = "\n\nParser Failed! Input was:\n\n" ++
                    (unlines (map ('\t':) (lines input)))
@@ -462,7 +475,6 @@ runTest dir = do
   expectedTSL <- readFile expectedPath
   case preprocess inputTSL of
     Left err     -> die $ "ACTUAL FAIL: " ++ show err ++ "\n---\n"
-    -- Right res -> putStrLn $ "SUCCESS: FROM\n" ++ inputTSL ++ "\nTO\n\n" ++ fmt res
     Right actual -> case preprocess expectedTSL of
       Left err       -> die $ "EXPECTED FAIL: " ++ show err ++ "\n---\n"
       Right expected -> if actual == expected
@@ -482,18 +494,36 @@ runTest dir = do
                      "\nAfter:\n" ++ fmt actual ++
                      "\nDebug:\n" ++ show actual
 
-dirs :: [String]
-dirs = map (((dir_base ++ "/") ++) . show) [0..6]
+unitTestDirs :: [FilePath]
+unitTestDirs = map (((dir_base ++ "/") ++) . show) [0..6]
   where dir_base = "/Users/wonhyuk/tsltools/src/test/regression/Preprocess"
 
-ex = "always assume { [m <- ((p u z - x) / (a y))] <-> ( ((f y) = (g z h) ) || (y <= w)); }"
+unitTests :: IO ()
+unitTests = mapM_ runTest unitTestDirs
+
+specDirs :: IO [FilePath]
+specDirs = do
+  fileNames <- listDirectory dir_base
+  return $ map ((dir_base ++ "/") ++) $ filter (not . (flip elem) blackList) fileNames
+  where dir_base  = "/Users/wonhyuk/tsltools/src/test/res/specs"
+        blackList = [ "Caching.tsl"
+                    , "NoteButton.tsl"
+                    ]
+
+specTests :: IO ()
+specTests = do
+  paths <- specDirs
+  files <- mapM readFile paths
+  mapM_ (parseA specParser) files
+
+ex = "assume { const1() = const2(); const2() = const1(); }"
 
 doEx = False
 
 main :: IO ()
 main = if doEx
           then parseA specParser ex
-          else mapM_ runTest dirs
+          else unitTests >> specTests
 
 debugMode :: DebugMode
 debugMode = Silent
