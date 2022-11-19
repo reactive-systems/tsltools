@@ -190,5 +190,5 @@ tests = do
   if cvc5Exists
     then return allTests
     else do
-      putStrLn $ "WARNING: CVC5 PATH " ++ cvc5Path ++ " NOT FOUND!"
+      -- putStrLn $ "WARNING: CVC5 PATH " ++ cvc5Path ++ " NOT FOUND!"
       return []
