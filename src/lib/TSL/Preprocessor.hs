@@ -34,6 +34,7 @@ import Text.Parsec
   , oneOf
   , try
   , spaces
+  , notFollowedBy
   )
 
 import qualified Text.Parsec as Parsec
@@ -180,13 +181,18 @@ instance Fmt BinaryOp where
     WeakUntil -> "W"
     Release   -> "R"
 
+numSign :: (Ord a, Num a) => a -> String
+numSign x = if x <= 0 then "Neg" else ""
+
 instance Fmt Signal where
   fmt = \case
-    TSLInt  s                      -> "int"  ++ show s ++ "()"
-    TSLReal s                      -> "real" ++ (showFFloat Nothing s "") ++ "()"
-    Symbol  s                      -> s
-    BinaryFunction f lhs rhs       -> parenthize $ unwords [fmt f, fmt lhs, fmt rhs]
-    UninterpretedFunction f args   -> parenthize $ unwords $ f:(map fmt args)
+    TSLInt  s                     -> "int"  ++ numSign s ++ show (abs s) ++ "()"
+    TSLReal s                     ->
+      "real" ++ numSign s ++ (showFFloat Nothing (abs s) "") ++ "()"
+    Symbol  s                     -> s
+    BinaryFunction f lhs rhs      -> parenthize $ unwords [fmt f, fmt lhs, fmt rhs]
+    UninterpretedFunction f []    -> f
+    UninterpretedFunction f args  -> parenthize $ unwords $ f:(map fmt args)
 
 instance Fmt BinaryFunction where
   fmt = \case
@@ -411,6 +417,7 @@ constantParser = do
 functionLiteralParser :: Parser (String, [Signal])
 functionLiteralParser = do
   function <- identifier
+  _        <- notFollowedBy integer
   args     <- many argParser
   return (function, args)
   where argParser =  try constantParser
