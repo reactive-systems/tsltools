@@ -69,5 +69,3 @@ tests =
         if isJust jsHintPath
           then return $ map Test $ map (jsTestTemplate dirPath) paths
           else return []
-
-

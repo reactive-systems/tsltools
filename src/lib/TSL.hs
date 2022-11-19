@@ -68,6 +68,8 @@ module TSL
     -- * Error Handling
   , Error
   , unwrap
+    -- * Preprocessor
+  , preprocess
     -- * Modulo Theories
   , Cfg(..)
   , predsFromSpec
@@ -75,7 +77,6 @@ module TSL
   , Theory
   , TheoryPredicate
   , readTheory
-  , preprocess
   , generateConsistencyAssumptions
   , consistencyDebug
   , ConsistencyDebugInfo (..)
@@ -133,7 +134,7 @@ import TSL.TOML (toTOML)
 
 import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
 
-import TSL.Preprocessor(preprocess)
+import TSL.Preprocessor (preprocess)
 
 import TSL.ModuloTheories.ConsistencyChecking( generateConsistencyAssumptions
                                              , consistencyDebug

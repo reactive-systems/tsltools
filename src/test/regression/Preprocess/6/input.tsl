@@ -1,0 +1,4 @@
+initially guarantee {
+    (f y) = (g z h);
+    p (f (func1 x y) x (func2 yz));
+}

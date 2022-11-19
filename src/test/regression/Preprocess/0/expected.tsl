@@ -1,0 +1,4 @@
+assume {
+    eq const1() const2();
+    eq const2() const1();
+}

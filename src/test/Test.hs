@@ -42,6 +42,8 @@ import qualified JSWriterTests (tests)
 
 import qualified ModuloTheoriesTests (tests)
 
+import qualified PreprocessorTests (tests)
+
 import Test.QuickCheck
   ( Arbitrary
   , Result(..)
@@ -112,16 +114,17 @@ tests
   :: IO [Test]
 
 tests = do
-  jsTests    <- JSWriterTests.tests
-  tslmtTests <- ModuloTheoriesTests.tests
+  jsTests           <- JSWriterTests.tests
+  preprocessorTests <- PreprocessorTests.tests
+  tslmtTests        <- ModuloTheoriesTests.tests
   return $
     [ test "QuickCheck: Read Input" qc01
     , test "QuickCheck: Read Output" qc02
     ]
     ++ SplitTests.tests
     ++ jsTests
+    ++ preprocessorTests
     ++ tslmtTests
-
   where
     qc01 =
       quickCheckResult propReadInput >>= \case

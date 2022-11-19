@@ -62,7 +62,7 @@ configParser = Configuration
 configParserInfo :: ParserInfo Configuration
 configParserInfo = info (configParser <**> helper)
   (  fullDesc
-  <> header "tslpreprocess - desugars some basic constructs for tsl specifications"
+  <> header "tslpreprocess - desugars basic constructs for tsl specifications"
   )
 
 parseArguments :: IO Configuration

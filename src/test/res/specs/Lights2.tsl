@@ -14,13 +14,13 @@ always assume {
     -> F timeout) ;
   ([system.startNewTimer <- hour1()] -> F timeout) ;
   ([system.startNewTimer <- min20()]
-    -> F timeout)
+    -> F timeout);
  }
 always guarantee {
     room.somebodyLeaves && room.empty
     -> ([system.startNewTimer <- hour2()]
     && F ( room.somebodyEnters
-        || (timeout && F (room.light.off W room.somebodyEnters))))
+        || (timeout && F (room.light.off W room.somebodyEnters))));
 
   
 }

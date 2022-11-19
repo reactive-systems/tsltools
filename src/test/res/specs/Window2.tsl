@@ -14,7 +14,7 @@ always assume {
   ([room.warnlight.control <- turnOn()] -> [room.warnlight.control <- turnOff()] R room.warnlight.on) ;
   ([room.warnlight.control <- turnOff()] -> [room.warnlight.control <- turnOn()] R room.warnlight.off) ;
   ([system.startNewTimer <- min20()]
-    -> F timeout)
+    -> F timeout);
  }
 always guarantee {
   
@@ -23,6 +23,6 @@ always guarantee {
   && F ( room.window.opened
       || (F ( ( (tooHigh room.co2Level -> room.warnlight.on) 
               && (! tooHigh room.co2Level -> room.warnlight.off))
-            W room.window.opened))))
+            W room.window.opened))));
   
 }

@@ -44,9 +44,7 @@ import Distribution.TestSuite
 
 import Test.HUnit ((@=?))
 
-import TSL ( Error
-           , TheoryPredicate
-           , Cfg (..)
+import TSL ( Cfg (..)
            , cfgFromSpec
            , predsFromSpec
            , consistencyDebug
@@ -54,7 +52,7 @@ import TSL ( Error
            , buildDtoList
            )
 
-import FileUtils (writeContent, loadTSLMT, tryReadContent)
+import FileUtils (loadTSLMT)
 
 -----------------------------------------------------------------------------
 
@@ -189,6 +187,6 @@ tests = do
   cvc5Exists <- doesFileExist cvc5Path
   if cvc5Exists
     then return allTests
-    else do
-      putStrLn $ "WARNING: CVC5 PATH " ++ cvc5Path ++ " NOT FOUND!"
-      return []
+    else do { putStrLn $ "WARNING: CVC5 PATH " ++ cvc5Path ++ " NOT FOUND!";
+              return []
+            }

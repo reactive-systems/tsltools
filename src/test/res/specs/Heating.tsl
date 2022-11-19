@@ -11,6 +11,6 @@ always assume {
 always guarantee {
   
   gt outside.temperature room.temperature
-    -> F room.heating.off
+    -> F room.heating.off;
   
 }

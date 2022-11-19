@@ -9,11 +9,11 @@ always assume {
   (([ room.light <- turnOn() ] || ([ room.light <- toggle() ] && room.light.off))
     -> X F (([ room.light <- turnOff() ] || [ room.light <- toggle() ]) R room.light.on)) ;
   (([ room.light <- turnOff() ] || ([ room.light <- toggle() ] && room.light.on))
-    -> X F (([ room.light <- turnOn() ] || [ room.light <- toggle() ]) R room.light.off))
+    -> X F (([ room.light <- turnOn() ] || [ room.light <- toggle() ]) R room.light.off));
  }
 always guarantee {
   
 bright outside.brightness
-    -> (lightswitch.toggled && room.light.off -> X F (room.light.on W (lightswitch.toggled || room.empty)))
+    -> (lightswitch.toggled && room.light.off -> X F (room.light.on W (lightswitch.toggled || room.empty)));
   
 }
