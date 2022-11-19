@@ -17,10 +17,7 @@ import           Control.Monad                  ( filterM
                                                 )
 import           Control.Monad.Reader           ( Reader )
 import qualified Control.Monad.Reader          as Reader
-import           Data.Char                      ( isUpper
-                                                , toLower
-                                                , toUpper
-                                                )
+import           Data.Char                      ( toUpper )
 import           Data.List                      ( isPrefixOf )
 import qualified Data.Map                      as Map
 import           Data.Maybe                     ( catMaybes

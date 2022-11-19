@@ -13,10 +13,24 @@ implementHoa = withConfig config
 
 config :: ImpConfig
 config = ImpConfig
-  { impAnd        = "and"
+  { -- binary functions
+    impAdd        = "+"
+  , impSub        = "-"
+  , impMult       = "*"
+  , impDiv        = "/"
+    -- binary comparators
+  , impEq         = "=="
+  , impNeq        = "!="
+  , impLt         = "<"
+  , impGt         = ">"
+  , impLte        = "<="
+  , impGte        = ">="
+    -- logic
+  , impAnd        = "and"
   , impTrue       = "True"
   , impFalse      = "False"
-  , impNot        = \s -> "not (" ++ s ++ ")"
+  , impNot        = "not "
+    -- language constructs
   , impIf         = "if"
   , impElif       = "elif"
   , impCondition  = id
@@ -25,5 +39,4 @@ config = ImpConfig
   , impIndent     = \n -> replicate (2 * n) ' '
   , impBlockStart = ":"
   , impBlockEnd   = ""
-  , impEqual      = \x y -> x ++ " == " ++ y
   }
