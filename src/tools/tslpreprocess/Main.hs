@@ -27,11 +27,14 @@ import EncodingUtils (initEncoding)
 
 import FileUtils (writeContent, tryReadContent)
 
------------------------------------------------------------------------------
+import TSL (preprocess)
 
+-----------------------------------------------------------------------------
 main :: IO ()
 main = do
   initEncoding
   Configuration{input, output} <- parseArguments
   content <- tryReadContent input
-  return ()
+  case preprocess content of 
+    Left  errMsg    -> die $ show errMsg
+    Right processed -> writeContent output $ show processed

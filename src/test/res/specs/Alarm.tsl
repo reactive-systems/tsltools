@@ -13,12 +13,12 @@ always assume {
   (F between t.pm7 t.pm8) ;
   (F ! between t.pm7 t.pm8) ;
   ([alarm.control <- turnOn()] -> [alarm.control <- turnOff()] R alarm) ;
-  ([alarm.control <- turnOff()] -> [alarm.control <- turnOn()] R !alarm)
+  ([alarm.control <- turnOff()] -> [alarm.control <- turnOn()] R !alarm);
  }
 always guarantee {
   
   bed.enter
     -> F ( (between t.pm7 t.pm8 -> room.shades.closed)
-        W (alarm && F ((! bright outside.brightness -> room.shades.closed) W bed.exit)))
+        W (alarm && F ((! bright outside.brightness -> room.shades.closed) W bed.exit)));
   
 }

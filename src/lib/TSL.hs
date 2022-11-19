@@ -68,6 +68,8 @@ module TSL
     -- * Error Handling
   , Error
   , unwrap
+    -- * Preprocessor
+  , preprocess
     -- * Modulo Theories
   , Cfg(..)
   , predsFromSpec
@@ -131,6 +133,8 @@ import TSL.Simulation (simulate)
 import TSL.TOML (toTOML)
 
 import TSL.CFM (CFM, fromCFM, statistics, symbolTable)
+
+import TSL.Preprocessor (preprocess)
 
 import TSL.ModuloTheories.ConsistencyChecking( generateConsistencyAssumptions
                                              , consistencyDebug

@@ -51,7 +51,7 @@ tests =
          c <- readFile $ joinPath [dirPath, hoaFilepath]
          let hoa = parse c
          let code = either id (implementHoa JS) hoa
-         (exitCode,stdout,stderr) <- readProcessWithExitCode "jshint" ["/dev/stdin"] code
+         (exitCode, stdout, _) <- readProcessWithExitCode "jshint" ["/dev/stdin"] code
          return $ case exitCode of
            ExitSuccess -> Finished Pass
            ExitFailure _ -> 

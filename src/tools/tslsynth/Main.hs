@@ -42,7 +42,7 @@ main = do
   content <- tryReadContent input
   case preprocess (content ++ "\n") of
     Left errMsg -> die $ show errMsg
-    Right processed -> writeFile "tmp.tsl" processed
+    Right processed -> writeFile "tmp.tsl" $ show processed
 
   -- tsl2tlsf
   spec <- loadTSL (Just "tmp.tsl")
