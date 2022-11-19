@@ -76,7 +76,7 @@ unitTests = map runTest testNums
     dir = "src/test/regression/Preprocess/"
 
     testNums :: [Int]
-    testNums = [0..6]
+    testNums = [0..7]
 
     mkInputPath :: Int -> FilePath
     mkInputPath i = combine dir $ combine (show i) "input.tsl"
