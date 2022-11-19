@@ -115,16 +115,16 @@ tests
 
 tests = do
   jsTests           <- JSWriterTests.tests
-  tslmtTests        <- ModuloTheoriesTests.tests
   preprocessorTests <- PreprocessorTests.tests
+  tslmtTests        <- ModuloTheoriesTests.tests
   return $
     [ test "QuickCheck: Read Input" qc01
     , test "QuickCheck: Read Output" qc02
     ]
     ++ SplitTests.tests
     ++ jsTests
-    ++ tslmtTests
     ++ preprocessorTests
+    ++ tslmtTests
   where
     qc01 =
       quickCheckResult propReadInput >>= \case

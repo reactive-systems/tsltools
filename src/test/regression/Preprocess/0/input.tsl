@@ -1,0 +1,4 @@
+assume {
+    const1() = const2();
+    const2() = const1();
+}

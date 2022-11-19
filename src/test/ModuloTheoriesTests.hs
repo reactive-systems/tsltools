@@ -185,11 +185,11 @@ allTests :: [Test]
 allTests = concat [predicatesTests, cfgTests, consistencyTests, sygusTests]
 
 tests :: IO [Test]
-tests = return [convert2Cabal cvc5Path $ return $ H.TestCase $ H.assertBool cvc5Path True]
--- tests = do
---   cvc5Exists <- doesFileExist cvc5Path
---   if cvc5Exists
---     then return allTests
---     else do
---       putStrLn $ "WARNING: CVC5 PATH " ++ cvc5Path ++ " NOT FOUND!"
---       return []
+tests = do
+  cvc5Exists <- doesFileExist cvc5Path
+  return [convert2Cabal (show cvc5Exists) $ return $ H.TestCase $ H.assertBool (show cvc5Exists) True]
+  -- if cvc5Exists
+  --   then return allTests
+  --   else do
+  --     putStrLn $ "WARNING: CVC5 PATH " ++ cvc5Path ++ " NOT FOUND!"
+  --     return []
