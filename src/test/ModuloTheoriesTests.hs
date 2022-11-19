@@ -186,9 +186,11 @@ allTests = concat [predicatesTests, cfgTests, consistencyTests, sygusTests]
 
 tests :: IO [Test]
 tests = do
+  putStrLn $ "PATH: " ++ cvc5Path
   cvc5Exists <- doesFileExist cvc5Path
+  putStrLn $ "EXISTS: " ++ cvc5Exists
   if cvc5Exists
     then return allTests
     else do
-      -- putStrLn $ "WARNING: CVC5 PATH " ++ cvc5Path ++ " NOT FOUND!"
+      putStrLn $ "WARNING: CVC5 PATH " ++ cvc5Path ++ " NOT FOUND!"
       return []
