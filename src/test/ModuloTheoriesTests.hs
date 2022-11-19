@@ -44,9 +44,7 @@ import Distribution.TestSuite
 
 import Test.HUnit ((@=?))
 
-import TSL ( Error
-           , TheoryPredicate
-           , Cfg (..)
+import TSL ( Cfg (..)
            , cfgFromSpec
            , predsFromSpec
            , consistencyDebug
@@ -54,7 +52,7 @@ import TSL ( Error
            , buildDtoList
            )
 
-import FileUtils (writeContent, loadTSLMT, tryReadContent)
+import FileUtils (loadTSLMT)
 
 -----------------------------------------------------------------------------
 
