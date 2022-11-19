@@ -182,7 +182,7 @@ instance Fmt BinaryOp where
     Release   -> "R"
 
 numSign :: (Ord a, Num a) => a -> String
-numSign x = if x <= 0 then "Neg" else ""
+numSign x = if x < 0 then "Neg" else ""
 
 instance Fmt Signal where
   fmt = \case
