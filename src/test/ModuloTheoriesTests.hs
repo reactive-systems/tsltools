@@ -188,7 +188,7 @@ tests :: IO [Test]
 tests = do
   putStrLn $ "PATH: " ++ cvc5Path
   cvc5Exists <- doesFileExist cvc5Path
-  putStrLn $ "EXISTS: " ++ cvc5Exists
+  putStrLn $ "EXISTS: " ++ show cvc5Exists
   if cvc5Exists
     then return allTests
     else do
