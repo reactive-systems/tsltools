@@ -157,9 +157,10 @@ isTSLMTLiteral :: String -> [CG.Term] -> Bool
 isTSLMTLiteral s args = null args && (isReal s || isInt s)
 
 replaceTSLMTLiteral :: String -> String
-replaceTSLMTLiteral s | isReal s  = drop 4 s
-                      | isInt s   = drop 3 s
+replaceTSLMTLiteral s | isReal s  = replaceNeg $ drop 4 s
+                      | isInt s   = replaceNeg $ drop 3 s
                       | otherwise = s
+  where replaceNeg x = if "Neg" `isPrefixOf` x then "-" ++ drop 3 x else x
 
 isReal :: String -> Bool
 isReal s = "real" `isPrefixOf` s
