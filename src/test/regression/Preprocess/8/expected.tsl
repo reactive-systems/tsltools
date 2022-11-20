@@ -1,0 +1,3 @@
+always guarantee {
+    [y <- (add x realNeg3.14())];
+}
