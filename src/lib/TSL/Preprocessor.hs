@@ -35,6 +35,7 @@ import Text.Parsec
   , try
   , spaces
   , notFollowedBy
+  , (<?>)
   )
 
 import qualified Text.Parsec as Parsec
@@ -296,7 +297,12 @@ integer :: Parser Integer
 integer = Token.integer lexer
 
 float :: Parser Double
-float = Token.float lexer
+float = lexeme floating <?> "float"
+  where lexeme p = do { x <- p; whiteSpace; return x  }
+        floating = do {f <- lexeme sign; f <$> Token.float lexer }
+        sign     =  (char '-' >> return negate)
+                <|> (char '+' >> return id)
+                <|> return id
 
 semicolon :: Parser ()
 semicolon = Token.semi lexer >> return ()
