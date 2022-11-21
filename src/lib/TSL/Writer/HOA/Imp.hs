@@ -144,7 +144,7 @@ writeTermApp f args
     replaceTSLMTBinOp f x1 x2
   | otherwise = do
     ImpConfig {..} <- Reader.ask
-    impFuncApp f <$> mapM writeTerm args
+    impFuncApp f <$> mapM writeTermNoParens args
 
 
 -- | HELPERS
