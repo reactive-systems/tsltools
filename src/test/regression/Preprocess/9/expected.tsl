@@ -1,0 +1,3 @@
+always guarantee {
+    [y <- (f int1() realNeg1.0() real0.47() realNeg3.14() int47())];
+}

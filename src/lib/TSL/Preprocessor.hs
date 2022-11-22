@@ -34,7 +34,6 @@ import Text.Parsec
   , oneOf
   , try
   , spaces
-  , notFollowedBy
   , (<?>)
   )
 
@@ -293,16 +292,22 @@ braces = Token.braces lexer
 brackets :: Parser a -> Parser a
 brackets = Token.brackets lexer
 
+lexeme :: Parser a -> Parser a
+lexeme parser = do
+  x <- parser
+  _ <- whiteSpace
+  return x
+
+sign :: (Num a) => Parser (a -> a)
+sign =  (char '-' >> return negate)
+    <|> (char '+' >> return id)
+    <|> return id
+
 integer :: Parser Integer
-integer = Token.integer lexer
+integer = lexeme (sign <*> Token.natural lexer) <?> "integer"
 
 float :: Parser Double
-float = lexeme floating <?> "float"
-  where lexeme p = do { x <- p; whiteSpace; return x  }
-        floating = do {f <- lexeme sign; f <$> Token.float lexer }
-        sign     =  (char '-' >> return negate)
-                <|> (char '+' >> return id)
-                <|> return id
+float = lexeme (sign <*> Token.float lexer) <?> "float"
 
 semicolon :: Parser ()
 semicolon = Token.semi lexer >> return ()
@@ -405,28 +410,28 @@ updateTerm = brackets $ do
 signalParser :: Parser Signal
 signalParser = buildExpressionParser binaryFunctions signalTerm
 
-signalTerm :: Parser Signal
-signalTerm =  parens signalParser
-          <|> try (liftM TSLReal float)
-          <|> liftM TSLInt integer
-          <|> try constantParser
-          <|> try (liftM (uncurry UninterpretedFunction) functionLiteralParser)
-          <|> liftM Symbol identifier
+literalParser :: Parser Signal
+literalParser = (try realParser) <|> intParser <|> constantParser
+  where intParser      = liftM TSLInt  integer
+        realParser     = liftM TSLReal float
+        constantParser = do
+          symbol  <- identifier
+          nullary <- Parsec.string "()" 
+          _       <- spaces
+          return $ Symbol $ symbol ++ nullary
 
-constantParser :: Parser Signal
-constantParser = do
-  symbol  <- identifier
-  nullary <- Parsec.string "()" 
-  _       <- spaces
-  return $ Symbol $ symbol ++ nullary
+signalTerm :: Parser Signal
+signalTerm = parens signalParser
+         <|> try literalParser
+         <|> try (liftM (uncurry UninterpretedFunction) functionLiteralParser)
+         <|> liftM Symbol identifier
 
 functionLiteralParser :: Parser (String, [Signal])
 functionLiteralParser = do
   function <- identifier
-  _        <- notFollowedBy integer
   args     <- many argParser
   return (function, args)
-  where argParser =  try constantParser
+  where argParser =  try literalParser
                  <|> liftM Symbol (try identifier)
                  <|> try signalParser
 
