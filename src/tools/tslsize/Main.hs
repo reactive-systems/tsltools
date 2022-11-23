@@ -1,46 +1,40 @@
 ----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+{-# LANGUAGE RecordWildCards #-}
+
+-----------------------------------------------------------------------------
+
 -- |
 -- Module      :  Main
 -- Maintainer  :  Felix Klein
 --
 -- Returns the size of a TSL formula induced by a TSL specification.
---
------------------------------------------------------------------------------
-
-{-# LANGUAGE RecordWildCards #-}
-
------------------------------------------------------------------------------
-
 module Main
-  ( main
-  ) where
+  ( main,
+  )
+where
 
 -----------------------------------------------------------------------------
-
-import EncodingUtils (initEncoding)
 
 import ArgParseUtils (parseMaybeFilePath)
-
-import PrintUtils (Color(..), ColorIntensity(..), cPutOut, cPutOutLn)
-
+import EncodingUtils (initEncoding)
 import FileUtils (loadTSL)
-
-import TSL (Specification(..), size, toFormula)
-
+import PrintUtils (Color (..), ColorIntensity (..), cPutOut, cPutOutLn)
 import System.FilePath.Posix (takeFileName)
+import TSL (Specification (..), size, toFormula)
 
 -----------------------------------------------------------------------------
 
-main
-  :: IO ()
-
+main ::
+  IO ()
 main = do
   initEncoding
 
-  input <- parseMaybeFilePath
-            ("tslsize", "Returns the size of a TSL formula induced by a TSL specification.")
+  input <-
+    parseMaybeFilePath
+      ("tslsize", "Returns the size of a TSL formula induced by a TSL specification.")
 
-  Specification{..} <- loadTSL input
+  Specification {..} <- loadTSL input
 
   case input of
     Just file -> do

@@ -1,45 +1,38 @@
 ----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+{-# LANGUAGE LambdaCase #-}
+
+-----------------------------------------------------------------------------
+
 -- |
 -- Module      :  Main
 -- Maintainer  :  Philippe Heim
 --
 -- Allows to play against a strategies.
---
------------------------------------------------------------------------------
-
-{-# LANGUAGE LambdaCase #-}
-
------------------------------------------------------------------------------
-
 module Main
-  ( main
-  ) where
+  ( main,
+  )
+where
 
 -----------------------------------------------------------------------------
 
 import EncodingUtils (initEncoding)
-
-import PrintUtils
-  ( Color(..)
-  , ColorIntensity(..)
-  , cPrintErrLn
-  , cPutErr
-  , cPutErrLn
-  )
-
 import FileUtils (tryReadFile)
-
-import TSL (simulate)
-
+import PrintUtils
+  ( Color (..),
+    ColorIntensity (..),
+    cPrintErrLn,
+    cPutErr,
+    cPutErrLn,
+  )
 import System.Environment (getArgs)
-
 import System.Exit (exitFailure, exitSuccess)
+import TSL (simulate)
 
 -----------------------------------------------------------------------------
 
-main
-  :: IO ()
-
+main ::
+  IO ()
 main = do
   initEncoding
 
@@ -54,10 +47,9 @@ main = do
         Right simulate -> do
           simulate
           exitSuccess
-        Left err       -> do
+        Left err -> do
           cPrintErrLn Vivid Red err
           exitFailure
-
     _ -> do
       cPutErr Vivid Yellow "Usage: "
       cPutErrLn Vivid White "tslplay <tsl-file> <cfm-file>"

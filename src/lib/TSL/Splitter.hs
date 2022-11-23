@@ -1,82 +1,69 @@
 -----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
+
+-----------------------------------------------------------------------------
+
 -- |
 -- Module      :  Splitter
 -- Maintainer  :  Gideon Geier
 --
 -- 'Splitter' implements algorithms to split TSL specifications into
 -- independent subspecifications.
---
------------------------------------------------------------------------------
-
-{-# LANGUAGE NamedFieldPuns  #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections   #-}
-
------------------------------------------------------------------------------
-
 module TSL.Splitter
-  ( split
-  , splitAssumptions
-  ) where
+  ( split,
+    splitAssumptions,
+  )
+where
 
 -----------------------------------------------------------------------------
-
-import TSL.SymbolTable (IdRec(..), Kind(..), SymbolTable(..), symbolTable)
-
-import TSL.Specification (Specification(..))
-
-import TSL.Logic (Formula(..), inputs, outputs, symbols)
-
-import Data.Maybe (fromJust)
-
-import Data.Set as Set
-  ( Set
-  , disjoint
-  , elems
-  , empty
-  , fromList
-  , intersection
-  , union
-  , unions
-  )
-
-import Data.List (elemIndex, partition)
 
 import Data.Array as Array (listArray, (!))
-
-import Data.Ix (range)
-
 import Data.Graph.Inductive.Graph (LEdge, Node, mkGraph)
-
 import Data.Graph.Inductive.PatriciaTree
-
 import Data.Graph.Inductive.Query.DFS
+import Data.Ix (range)
+import Data.List (elemIndex, partition)
+import Data.Maybe (fromJust)
+import Data.Set as Set
+  ( Set,
+    disjoint,
+    elems,
+    empty,
+    fromList,
+    intersection,
+    union,
+    unions,
+  )
+import TSL.Logic (Formula (..), inputs, outputs, symbols)
+import TSL.Specification (Specification (..))
+import TSL.SymbolTable (IdRec (..), Kind (..), SymbolTable (..), symbolTable)
 
 -----------------------------------------------------------------------------
-
 
 getInOutputs :: Formula Int -> Set Int
 getInOutputs fml = inputs fml `union` outputs fml
 
 -----------------------------------------------------------------------------
+
 -- | Create symboltable for specification part
 cleanSymboltable :: Specification -> Specification
-cleanSymboltable spec@Specification{..} =
-  let
-    vars = elems . Set.unions $ map symbols (assumptions ++ guarantees)
+cleanSymboltable spec@Specification {..} =
+  let vars = elems . Set.unions $ map symbols (assumptions ++ guarantees)
 
-    -- mapping from old to new variables ((index in vars) + 1)
-    old2new :: Int -> Int
-    old2new = (+1) . fromJust . (`elemIndex` vars)
+      -- mapping from old to new variables ((index in vars) + 1)
+      old2new :: Int -> Int
+      old2new = (+ 1) . fromJust . (`elemIndex` vars)
 
-    records = map (\x -> updateRec old2new (symtable symboltable ! x)) vars
-    table = list2array records
-  in
-    spec
-      { assumptions = map (fmap old2new) assumptions
-      , guarantees  = map (fmap old2new) guarantees
-      , symboltable = symbolTable table
-      }
+      records = map (\x -> updateRec old2new (symtable symboltable ! x)) vars
+      table = list2array records
+   in spec
+        { assumptions = map (fmap old2new) assumptions,
+          guarantees = map (fmap old2new) guarantees,
+          symboltable = symbolTable table
+        }
   where
     list2array l = Array.listArray (1, length l) l
 
@@ -84,12 +71,12 @@ cleanSymboltable spec@Specification{..} =
 
 -- | Update the identifiers in one symboltable record
 updateRec :: (Int -> Int) -> IdRec -> IdRec
-updateRec dict rec@IdRec{idArgs, idDeps, idBindings} =
+updateRec dict rec@IdRec {idArgs, idDeps, idBindings} =
   rec
-  { idArgs = dict <$> idArgs
-  , idDeps = dict <$> idDeps
-  , idBindings = (dict <$>) <$> idBindings
-  }
+    { idArgs = dict <$> idArgs,
+      idDeps = dict <$> idDeps,
+      idBindings = (dict <$>) <$> idBindings
+    }
 
 -----------------------------------------------------------------------------
 
@@ -100,14 +87,12 @@ splitFormulas formulas parts = map fst formulaParts
     formulaParts = foldr insertFormula zippedParts formulas
     zippedParts = map ([],) parts
 
-
 insertFormula :: Formula Int -> [([Formula Int], Set Int)] -> [([Formula Int], Set Int)]
-insertFormula formula   []                        = [([formula], empty)]
-insertFormula formula ((formulas,variableSet):xr)
-                          = if not $ disjoint (getInOutputs formula) variableSet
-                            then (formula:formulas,variableSet):xr
-                            else (formulas,variableSet):insertFormula formula xr
-
+insertFormula formula [] = [([formula], empty)]
+insertFormula formula ((formulas, variableSet) : xr) =
+  if not $ disjoint (getInOutputs formula) variableSet
+    then (formula : formulas, variableSet) : xr
+    else (formulas, variableSet) : insertFormula formula xr
 
 -----------------------------------------------------------------------------
 
@@ -115,41 +100,33 @@ insertFormula formula ((formulas,variableSet):xr)
 -- assumptions and guarantees. This algorithm preserves equisynthesizeability
 -- as long as for a given specification [assumptions] -> [guarantees]
 -- [assumptions] -> bot is unrealizable.
-
 split :: Specification -> [Specification]
-split spec@Specification{assumptions, guarantees} =
-  let
-    decRelProps = decompRelProps spec
-    graph = buildGraph (elems decRelProps) preEdges
-    preEdges = map (elems . (intersection decRelProps) . getInOutputs) (assumptions ++ guarantees)
-    connectedComponents = map Set.fromList $ components graph
-    (freeAssumptions, boundAssumptions) = partition (null . (intersection decRelProps) . getInOutputs) assumptions
-    splittedGuarantees = splitFormulas guarantees connectedComponents
-    splittedAssumptions  = splitFormulas boundAssumptions connectedComponents
-  in
-    fmap cleanSymboltable $ buildSpecs $ addFreeAssumptions freeAssumptions $ filter (not . null . snd) $ zip (splittedAssumptions ++ repeat []) splittedGuarantees
+split spec@Specification {assumptions, guarantees} =
+  let decRelProps = decompRelProps spec
+      graph = buildGraph (elems decRelProps) preEdges
+      preEdges = map (elems . (intersection decRelProps) . getInOutputs) (assumptions ++ guarantees)
+      connectedComponents = map Set.fromList $ components graph
+      (freeAssumptions, boundAssumptions) = partition (null . (intersection decRelProps) . getInOutputs) assumptions
+      splittedGuarantees = splitFormulas guarantees connectedComponents
+      splittedAssumptions = splitFormulas boundAssumptions connectedComponents
+   in fmap cleanSymboltable $ buildSpecs $ addFreeAssumptions freeAssumptions $ filter (not . null . snd) $ zip (splittedAssumptions ++ repeat []) splittedGuarantees
   where
-    buildSpecs  = map (\(a,g) -> spec{assumptions = a, guarantees = g})
-
+    buildSpecs = map (\(a, g) -> spec {assumptions = a, guarantees = g})
 
 -----------------------------------------------------------------------------
 
 -- | 'splitAssumptions' splits assumptions into specifications of the form
 -- (a1 /\ a2) -> false, such that if any of the subspecifications is realizable
 -- the whole specification is realizable by assumption violation.
-
 splitAssumptions :: Specification -> [Specification]
-splitAssumptions spec@Specification{assumptions} =
-  let
-    graph = buildGraph ((elems . inputs) (And assumptions)) preEdges
-    preEdges = map (elems . inputs) assumptions
-    connectedComponents = map Set.fromList $ components graph
-    splittedAssumptions  = splitFormulas assumptions connectedComponents
-  in
-    cleanSymboltable <$> buildSpecs splittedAssumptions
+splitAssumptions spec@Specification {assumptions} =
+  let graph = buildGraph ((elems . inputs) (And assumptions)) preEdges
+      preEdges = map (elems . inputs) assumptions
+      connectedComponents = map Set.fromList $ components graph
+      splittedAssumptions = splitFormulas assumptions connectedComponents
+   in cleanSymboltable <$> buildSpecs splittedAssumptions
   where
-    buildSpecs  = map (\a -> spec{assumptions = a, guarantees = [FFalse]})
-
+    buildSpecs = map (\a -> spec {assumptions = a, guarantees = [FFalse]})
 
 -----------------------------------------------------------------------------
 
@@ -157,42 +134,33 @@ splitAssumptions spec@Specification{assumptions} =
 -- of assumption - guarantee specification pairs. It then adds the assumptions
 -- such that [not added] and [added], [assumptions], [guarantees] do not share
 -- any propositions.
-
 addFreeAssumptions :: [Formula Int] -> [([Formula Int], [Formula Int])] -> [([Formula Int], [Formula Int])]
 addFreeAssumptions freeAssumptions specs =
-  let
-    assumptionsInputs = map inputs freeAssumptions
-    preEdges = map elems assumptionsInputs
-    graph = buildGraph (elems (Set.unions assumptionsInputs)) preEdges
-    assumptionParts = Set.fromList <$> components graph
-    freeAssumptionsSplit = splitFormulas freeAssumptions assumptionParts
-  in
-    map (addFreeAssumpt freeAssumptionsSplit) specs
+  let assumptionsInputs = map inputs freeAssumptions
+      preEdges = map elems assumptionsInputs
+      graph = buildGraph (elems (Set.unions assumptionsInputs)) preEdges
+      assumptionParts = Set.fromList <$> components graph
+      freeAssumptionsSplit = splitFormulas freeAssumptions assumptionParts
+   in map (addFreeAssumpt freeAssumptionsSplit) specs
   where
     addFreeAssumpt :: [[Formula Int]] -> ([Formula Int], [Formula Int]) -> ([Formula Int], [Formula Int])
     addFreeAssumpt freeAssumptionParts (assmpts, guars) =
-      let
-        props = Set.unions $ map getInOutputs (assmpts ++ guars)
-        matchAssmpt = concat $ filter (not . disjoint props . Set.unions . (map getInOutputs)) freeAssumptionParts
-      in
-        (matchAssmpt ++ assmpts, guars)
+      let props = Set.unions $ map getInOutputs (assmpts ++ guars)
+          matchAssmpt = concat $ filter (not . disjoint props . Set.unions . (map getInOutputs)) freeAssumptionParts
+       in (matchAssmpt ++ assmpts, guars)
 
 -----------------------------------------------------------------------------
 
 -- | 'decompRelProps' implements an algorithm to find propositions relevant for
 -- decomposition. Those are all outputs and all inputs that can be influenced
 -- by outputs.
-
 decompRelProps :: Specification -> Set Int
 decompRelProps spec =
-  let
-    (out, inp) = partition (\x -> stKind table x == Output) $ range $ stBounds table
-    table = symboltable spec
-    graph = buildGraph (out++inp) preEdges
-    preEdges = map (elems . getInOutputs) (assumptions spec)
-
-  in
-    Set.fromList $ udfs out graph
+  let (out, inp) = partition (\x -> stKind table x == Output) $ range $ stBounds table
+      table = symboltable spec
+      graph = buildGraph (out ++ inp) preEdges
+      preEdges = map (elems . getInOutputs) (assumptions spec)
+   in Set.fromList $ udfs out graph
 
 -----------------------------------------------------------------------------
 
@@ -201,15 +169,14 @@ decompRelProps spec =
 -- component. E.g. buildGraph [1,2,3,4,5,6] [[1,2,3],[3,5],[4,6]]
 -- will result in a graph that has six nodes and the connected components
 -- [1,2,3,5] and [4,6].
-
 buildGraph :: [Int] -> [[Int]] -> Gr () ()
 buildGraph intNodes intOutputs =
-        mkGraph (map intToNode intNodes) (concatMap buildEdges intOutputs)
-    where
-        intToNode n = (n, ())
+  mkGraph (map intToNode intNodes) (concatMap buildEdges intOutputs)
+  where
+    intToNode n = (n, ())
 
-        buildEdges :: [Node] -> [LEdge ()]
-        buildEdges []     = []
-        buildEdges (x:xr) = map (tupToEdge x) xr -- ++ buildEdges xr
-        tupToEdge :: Node -> Node -> LEdge ()
-        tupToEdge a b = (a,b,())
+    buildEdges :: [Node] -> [LEdge ()]
+    buildEdges [] = []
+    buildEdges (x : xr) = map (tupToEdge x) xr -- ++ buildEdges xr
+    tupToEdge :: Node -> Node -> LEdge ()
+    tupToEdge a b = (a, b, ())

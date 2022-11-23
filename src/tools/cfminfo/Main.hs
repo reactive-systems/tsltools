@@ -1,44 +1,38 @@
 ----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+{-# LANGUAGE NamedFieldPuns #-}
+
+-----------------------------------------------------------------------------
+
 -- |
 -- Module      :  Main
 -- Maintainer  :  Felix Klein
 --
 -- Returns some statistical numbers of a CFM.
---
------------------------------------------------------------------------------
-
-{-# LANGUAGE NamedFieldPuns #-}
-
------------------------------------------------------------------------------
-
 module Main
-  ( main
-  ) where
+  ( main,
+  )
+where
 
 -----------------------------------------------------------------------------
-
-import EncodingUtils (initEncoding)
 
 import ArgParseUtils (parseMaybeFilePath)
-
+import EncodingUtils (initEncoding)
 import FileUtils (loadCFM)
-
-import PrintUtils (Color(..), ColorIntensity(..), cPutOut, cPutOutLn)
-
-import TSL (statistics)
-
+import PrintUtils (Color (..), ColorIntensity (..), cPutOut, cPutOutLn)
 import System.FilePath.Posix (takeFileName)
+import TSL (statistics)
 
 -----------------------------------------------------------------------------
 
-main
-  :: IO ()
-
+main ::
+  IO ()
 main = do
   initEncoding
 
-  input <- parseMaybeFilePath
-             ("cfminfo", "Returns some statistical numbers of a CFM.")
+  input <-
+    parseMaybeFilePath
+      ("cfminfo", "Returns some statistical numbers of a CFM.")
 
   cfm <- loadCFM input
 
@@ -50,13 +44,14 @@ main = do
       cPutOutLn Vivid White ":"
     Nothing -> return ()
 
-  cPutOutLn Vivid White $ unlines
-    [ "inputs:     " ++ show nI
-    , "outputs:    " ++ show nO
-    , "predicates: " ++ show nP
-    , "functions:  " ++ show nF
-    , "cells:      " ++ show nC
-    , "vertices:   " ++ show nV
-    ]
+  cPutOutLn Vivid White $
+    unlines
+      [ "inputs:     " ++ show nI,
+        "outputs:    " ++ show nO,
+        "predicates: " ++ show nP,
+        "functions:  " ++ show nF,
+        "cells:      " ++ show nC,
+        "vertices:   " ++ show nV
+      ]
 
 -----------------------------------------------------------------------------

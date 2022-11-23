@@ -1,45 +1,44 @@
 ----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+
 -- |
 -- Module      :  Main
 -- Maintainer  :  Felix Klein
 --
 -- Transforms TSL specifications into TLSF specifications.
---
------------------------------------------------------------------------------
-
 module Main
-  ( main
-  ) where
+  ( main,
+  )
+where
 
 -----------------------------------------------------------------------------
-
-import EncodingUtils (initEncoding)
 
 import ArgParseUtils (parseMaybeFilePath)
-
+import EncodingUtils (initEncoding)
 import FileUtils (loadTSL)
-
-import TSL (toTLSF)
-
 import System.FilePath (takeBaseName)
+import TSL (toTLSF)
 
 -----------------------------------------------------------------------------
 
-main
-  :: IO ()
-
+main ::
+  IO ()
 main = do
   initEncoding
 
-  input <- parseMaybeFilePath
-            ("tsl2tlsf", "Transforms TSL specifications into TLSF specifications.")
+  input <-
+    parseMaybeFilePath
+      ("tsl2tlsf", "Transforms TSL specifications into TLSF specifications.")
 
   spec <- loadTSL input
 
-  putStrLn $ toTLSF (
-      case input of
-        Nothing   -> "STDIN"
-        Just file -> takeBaseName file
-    ) spec
+  putStrLn $
+    toTLSF
+      ( case input of
+          Nothing -> "STDIN"
+          Just file -> takeBaseName file
+      )
+      spec
 
 -----------------------------------------------------------------------------

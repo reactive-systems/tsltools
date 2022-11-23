@@ -59,7 +59,7 @@ main = do
       else do
         print hoaOutput
         error "unrealizable spec?"
-  --error $ tslCoreGen $ fromJust input
+  -- error $ tslCoreGen $ fromJust input
 
   if writeHoa /= ""
     then writeFile writeHoa hoaContents
@@ -120,4 +120,4 @@ prOutputs ::
 prOutputs c s = case S.outputs c s of
   Left err -> show err
   Right (x : xr) -> x ++ concatMap ((:) ',' . (:) ' ') xr
-  _              -> error "Uncaught pattern match"
+  _ -> error "Uncaught pattern match"

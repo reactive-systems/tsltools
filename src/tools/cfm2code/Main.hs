@@ -1,39 +1,34 @@
 ----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+{-# LANGUAGE NamedFieldPuns #-}
+
+-----------------------------------------------------------------------------
+
 -- |
 -- Module      :  Main
 -- Maintainer  :  Felix Klein
 --
 -- Generates code from a TSL control flow model.
---
------------------------------------------------------------------------------
-
-{-# LANGUAGE NamedFieldPuns #-}
-
------------------------------------------------------------------------------
-
 module Main
-  ( main
-  ) where
+  ( main,
+  )
+where
 
 -----------------------------------------------------------------------------
 
-import Config (Configuration(..), parseArguments)
-
+import Config (Configuration (..), parseArguments)
 import EncodingUtils (initEncoding)
-
 import FileUtils (loadCFM, writeContent)
-
 import TSL (implement)
 
 -----------------------------------------------------------------------------
 
-main
-  :: IO ()
-
+main ::
+  IO ()
 main = do
   initEncoding
 
-  Configuration{input, output, codeTarget, moduleName, functionName} <- parseArguments
+  Configuration {input, output, codeTarget, moduleName, functionName} <- parseArguments
 
   cfm <- loadCFM input
 

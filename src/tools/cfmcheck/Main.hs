@@ -1,4 +1,9 @@
 ----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+{-# LANGUAGE NamedFieldPuns #-}
+
+-----------------------------------------------------------------------------
+
 -- |
 -- Module      :  Main
 -- Maintainer  :  Felix Klein
@@ -6,75 +11,65 @@
 -- Checks for correct labels and structure of a CFM represented as an
 -- AIGER circuit, which initally has been created from a TSL
 -- specification.
---
------------------------------------------------------------------------------
-
-{-# LANGUAGE NamedFieldPuns #-}
-
------------------------------------------------------------------------------
-
 module Main
-  ( main
-  ) where
+  ( main,
+  )
+where
 
 -----------------------------------------------------------------------------
-
-import EncodingUtils (initEncoding)
 
 import Data.Semigroup ((<>))
-import Options.Applicative
-
-import PrintUtils
-  ( Color(..)
-  , ColorIntensity(..)
-  , cPutMessageInput
-  , cPutOut
-  , cPutOutLn
-  , printErrLn
-  )
-
+import EncodingUtils (initEncoding)
 import FileUtils (readContent)
-
-import TSL (fromCFM)
-
+import Options.Applicative
+import PrintUtils
+  ( Color (..),
+    ColorIntensity (..),
+    cPutMessageInput,
+    cPutOut,
+    cPutOutLn,
+    printErrLn,
+  )
 import System.Directory (doesDirectoryExist, doesFileExist)
-
 import System.Exit (exitFailure, exitSuccess)
+import TSL (fromCFM)
 
 -----------------------------------------------------------------------------
 
 newtype Configuration = Configuration
   { input :: Maybe [FilePath]
-  } deriving (Eq, Ord)
+  }
+  deriving (Eq, Ord)
 
 configParser :: Parser Configuration
-configParser = Configuration
-  <$> optional (some (strArgument (metavar "FILES...")))
+configParser =
+  Configuration
+    <$> optional (some (strArgument (metavar "FILES...")))
 
 configParserInfo :: ParserInfo Configuration
-configParserInfo = info (configParser <**> helper)
-  (  fullDesc
-  <> header "cfmcheck - checks for correct labels and structure of a CFM created from a TSL specification"
-  )
+configParserInfo =
+  info
+    (configParser <**> helper)
+    ( fullDesc
+        <> header "cfmcheck - checks for correct labels and structure of a CFM created from a TSL specification"
+    )
 
 -----------------------------------------------------------------------------
 
-main
-  :: IO ()
-
+main ::
+  IO ()
 main = do
   initEncoding
 
-  Configuration{input} <- execParser configParserInfo
+  Configuration {input} <- execParser configParserInfo
 
   valid <- case input of
-    Nothing    -> checkInput Nothing
+    Nothing -> checkInput Nothing
     Just files -> and <$> mapM checkFile files
 
   if valid
-  then exitSuccess
-  else exitFailure
-
+    then exitSuccess
+    else exitFailure
   where
     checkInput input = do
       content <- readContent input
@@ -83,7 +78,7 @@ main = do
           cPutMessageInput Red "invalid" input
           printErrLn err
           return False
-        Right _  -> do
+        Right _ -> do
           cPutMessageInput Green "valid" input
           return True
 

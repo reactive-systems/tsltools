@@ -53,8 +53,10 @@ printHOALines hoa@HOA {..} =
               ( [strInd s]
                   ++ [": {"]
                   ++ ["\n on: {"]
-              ) :
-            zipWith (curry printEdge) (filterDupes' (toList $ edges s)) [1 ..] ++ ["}"] ++ ["},"]
+              )
+              : zipWith (curry printEdge) (filterDupes' (toList $ edges s)) [1 ..]
+              ++ ["}"]
+              ++ ["},"]
 
           -- take only one transition for each edge between states
           filterDupes' = id
@@ -87,7 +89,7 @@ printHOALines hoa@HOA {..} =
                       conditional = if preds == [] then "True" else intercalate (" and ") preds
                       body = indent 4 ++ intercalate (indent 4) (((["actions: ["] ++ map (wrap "\'" "\',") (map updateToAssignment (upds)) ++ ["],"]) ++ [stateUpdate]))
                    in "t" ++ show n ++ show num ++ ":\n {description: \'" ++ conditional ++ "\'," ++ body
-             in --add zip below
+             in -- add zip below
                 concatMap (\x -> indent 2 ++ predUpdToCode x) (zip predUpds [1 ..])
 
           printStateConj :: FiniteBounds HOA => [State] -> String

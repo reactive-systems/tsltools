@@ -1,45 +1,40 @@
 -----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+
 -- |
 -- Module      :  TSL.Parser.Utils
 -- Maintainer  :  Felix Klein
 --
 -- Functions shared among the different parsers.
---
------------------------------------------------------------------------------
-
 module TSL.Parser.Utils
-  ( stringParser
-  , identifier
-  , positionParser
-  , getPos
-  , ch
-  ) where
+  ( stringParser,
+    identifier,
+    positionParser,
+    getPos,
+    ch,
+  )
+where
 
 -----------------------------------------------------------------------------
-
-import TSL.Expression (ExprPos(..), SrcPos(..))
-
-import TSL.Parser.Data (globalDef)
 
 import Control.Monad (void)
-
 import Data.Functor.Identity (Identity)
-
+import TSL.Expression (ExprPos (..), SrcPos (..))
+import TSL.Parser.Data (globalDef)
 import Text.Parsec
-  ( ParsecT
-  , Stream
-  , anyChar
-  , char
-  , getPosition
-  , many
-  , noneOf
-  , sourceColumn
-  , sourceLine
-  , (<|>)
+  ( ParsecT,
+    Stream,
+    anyChar,
+    char,
+    getPosition,
+    many,
+    noneOf,
+    sourceColumn,
+    sourceLine,
+    (<|>),
   )
-
 import Text.Parsec.String (Parser)
-
 import Text.Parsec.Token (identLetter, identStart)
 
 -----------------------------------------------------------------------------
@@ -48,16 +43,13 @@ import Text.Parsec.Token (identLetter, identStart)
 -- quotation marks inside the string have to be escabed by a
 -- backslash.  The string may contain special characters like new line
 -- or tabs.
-
-stringParser
-  :: Parser String
-
+stringParser ::
+  Parser String
 stringParser = do
   void $ char '"'
   xs <- many character
   void $ char '"'
   return $ concat xs
-
   where
     character =
       escaped <|> nonescaped
@@ -67,7 +59,7 @@ stringParser = do
       c <- anyChar
       case c of
         '"' -> return [c]
-        _   -> return [d,c]
+        _ -> return [d, c]
 
     nonescaped = do
       c <- noneOf "\""
@@ -79,14 +71,12 @@ stringParser = do
 -- by 'Text.Parser.Token', which additionally stores the starting
 -- source position and the ending source position. The parser @wp@ is
 -- assumed to parse the subsequent whitespace after the identifier.
-
-identifier
-  :: ParsecT String u Identity () -> ParsecT String u Identity (String, ExprPos)
-
+identifier ::
+  ParsecT String u Identity () -> ParsecT String u Identity (String, ExprPos)
 identifier wp = positionParser wp $ do
   x <- identStart globalDef
   xr <- many $ identLetter globalDef
-  return (x:xr)
+  return (x : xr)
 
 -----------------------------------------------------------------------------
 
@@ -94,11 +84,11 @@ identifier wp = positionParser wp $ do
 -- additionally returns the starting and ending source positions of
 -- the result parsed by @p@. The parser @wp@ is assumed to parse the
 -- subsequent whitespace after @p@ has been invoked.
-
-positionParser
-  :: (Stream s m t) => ParsecT s u m () -> ParsecT s u m a
-     -> ParsecT s u m (a,ExprPos)
-
+positionParser ::
+  (Stream s m t) =>
+  ParsecT s u m () ->
+  ParsecT s u m a ->
+  ParsecT s u m (a, ExprPos)
 positionParser wp p = do
   x <- getPos
   e <- p
@@ -109,19 +99,16 @@ positionParser wp p = do
 -----------------------------------------------------------------------------
 
 -- | Return the current position of the parser in the source file.
-
-getPos
- :: (Stream s m t) => ParsecT s u m SrcPos
-
+getPos ::
+  (Stream s m t) => ParsecT s u m SrcPos
 getPos = do
   x <- getPosition
   return $ SrcPos (sourceLine x) (sourceColumn x - 1)
 
 -----------------------------------------------------------------------------
 
-ch
-  :: Char -> Parser ()
-
+ch ::
+  Char -> Parser ()
 ch = void . char
 
 -----------------------------------------------------------------------------

@@ -1,37 +1,35 @@
 ----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+
 -- |
 -- Module      :  Main
 -- Maintainer  :  Marvin Stenger
 --
 -- Resolves TSL specifications with imports into plain TSL specifications.
---
------------------------------------------------------------------------------
-
 module Main
-  ( main
-  ) where
+  ( main,
+  )
+where
 
 -----------------------------------------------------------------------------
-
-import EncodingUtils (initEncoding)
 
 import ArgParseUtils (parseMaybeFilePath)
-
+import EncodingUtils (initEncoding)
 import FileUtils (loadTSL)
-
 import TSL (toTSL)
 
 -----------------------------------------------------------------------------
 
-main
-  :: IO ()
+main ::
+  IO ()
+main =
+  do
+    initEncoding
 
-main = do
-  initEncoding
-
-  parseMaybeFilePath
-    ("tslresolve", "Resolves TSL specifications with imports into plain TSL specifications.")
-  >>= loadTSL
-  >>= (putStrLn . toTSL)
+    parseMaybeFilePath
+      ("tslresolve", "Resolves TSL specifications with imports into plain TSL specifications.")
+    >>= loadTSL
+    >>= (putStrLn . toTSL)
 
 -----------------------------------------------------------------------------

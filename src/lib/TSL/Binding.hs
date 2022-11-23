@@ -1,32 +1,30 @@
 -----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards #-}
+
+-----------------------------------------------------------------------------
+
 -- |
 -- Module      :  TSL.Binding
 -- Maintainer  :  Felix Klein
 --
 -- A data type to store an identifier bound to an expression.
---
------------------------------------------------------------------------------
-
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE RecordWildCards #-}
-
------------------------------------------------------------------------------
-
 module TSL.Binding
-  ( Binding(..)
-  , BoundExpr(..)
-  ) where
+  ( Binding (..),
+    BoundExpr (..),
+  )
+where
 
 -----------------------------------------------------------------------------
-
-import TSL.Expression (Expr, ExprPos)
 
 import Control.Arrow (first)
+import TSL.Expression (Expr, ExprPos)
 
 -----------------------------------------------------------------------------
 
-data BoundExpr a =
-    GuardedBinding [Expr a]
+data BoundExpr a
+  = GuardedBinding [Expr a]
   | PatternBinding (Expr a) (Expr a)
   | SetBinding (Expr a)
   | RangeBinding (Expr a) (Int -> Int) (Expr a) (Int -> Int)
@@ -35,9 +33,9 @@ data BoundExpr a =
 
 instance Functor BoundExpr where
   fmap f = \case
-    GuardedBinding xs    -> GuardedBinding $ map (fmap f) xs
-    PatternBinding x y   -> PatternBinding (fmap f x) $ fmap f y
-    SetBinding x         -> SetBinding $ fmap f x
+    GuardedBinding xs -> GuardedBinding $ map (fmap f) xs
+    PatternBinding x y -> PatternBinding (fmap f x) $ fmap f y
+    SetBinding x -> SetBinding $ fmap f x
     RangeBinding x g y h -> RangeBinding (fmap f x) g (fmap f y) h
 
 -----------------------------------------------------------------------------
@@ -48,24 +46,22 @@ instance Functor BoundExpr where
 -- binding also containts the source position of the bound identifier
 -- as well as possible arguments in case the bindings represents a
 -- function.
-
-data Binding a =
-  Binding
-    { bIdent :: a
-    , bArgs :: [(a, ExprPos)]
-    , bPos :: ExprPos
-    , bVal :: BoundExpr a
-    }
+data Binding a = Binding
+  { bIdent :: a,
+    bArgs :: [(a, ExprPos)],
+    bPos :: ExprPos,
+    bVal :: BoundExpr a
+  }
 
 -----------------------------------------------------------------------------
 
 instance Functor Binding where
-  fmap f Binding{..} =
+  fmap f Binding {..} =
     Binding
-      { bIdent = f bIdent
-      , bArgs = map (first f) bArgs
-      , bPos = bPos
-      , bVal = fmap f bVal
+      { bIdent = f bIdent,
+        bArgs = map (first f) bArgs,
+        bPos = bPos,
+        bVal = fmap f bVal
       }
 
 -----------------------------------------------------------------------------

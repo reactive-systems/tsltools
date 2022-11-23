@@ -1,91 +1,86 @@
 ----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
+
+-----------------------------------------------------------------------------
+
 -- |
 -- Module      :  Main
 -- Maintainer  :  Felix Klein
 --
 -- Checks TSL specifications to be in a valid format.
---
------------------------------------------------------------------------------
-
-{-# LANGUAGE LambdaCase     #-}
-{-# LANGUAGE NamedFieldPuns #-}
-
------------------------------------------------------------------------------
-
 module Main
-  ( main
-  ) where
+  ( main,
+  )
+where
 
 -----------------------------------------------------------------------------
-
-import EncodingUtils (initEncoding)
 
 import Data.Semigroup ((<>))
-import Options.Applicative
-
-import PrintUtils
-  ( Color(..)
-  , ColorIntensity(..)
-  , cPutMessageInput
-  , cPutOut
-  , cPutOutLn
-  , printErrLn
-  )
-
+import EncodingUtils (initEncoding)
 import FileUtils (readContent)
-
-import TSL (fromTSL)
-
+import Options.Applicative
+import PrintUtils
+  ( Color (..),
+    ColorIntensity (..),
+    cPutMessageInput,
+    cPutOut,
+    cPutOutLn,
+    printErrLn,
+  )
 import System.Directory (doesDirectoryExist, doesFileExist)
-
 import System.Exit (exitFailure, exitSuccess)
+import TSL (fromTSL)
 
 -----------------------------------------------------------------------------
 
 newtype Configuration = Configuration
   { input :: Maybe [FilePath]
-  } deriving (Eq, Ord)
+  }
+  deriving (Eq, Ord)
 
 configParser :: Parser Configuration
-configParser = Configuration
-  <$> optional (some (strArgument (metavar "FILES...")))
+configParser =
+  Configuration
+    <$> optional (some (strArgument (metavar "FILES...")))
 
 configParserInfo :: ParserInfo Configuration
-configParserInfo = info (configParser <**> helper)
-  (  fullDesc
-  <> header "tslcheck - checks TSL specifications to be in a valid format"
-  )
+configParserInfo =
+  info
+    (configParser <**> helper)
+    ( fullDesc
+        <> header "tslcheck - checks TSL specifications to be in a valid format"
+    )
 
 -----------------------------------------------------------------------------
 
-main
-  :: IO ()
-
+main ::
+  IO ()
 main = do
   initEncoding
 
-  Configuration{input} <- execParser configParserInfo
+  Configuration {input} <- execParser configParserInfo
 
   valid <- case input of
-    Nothing    -> checkInput Nothing
+    Nothing -> checkInput Nothing
     Just files -> and <$> mapM checkFile files
 
   if valid
-  then exitSuccess
-  else exitFailure
-
+    then exitSuccess
+    else exitFailure
   where
     checkInput input =
       readContent input
-      >>= fromTSL input
-      >>= \case
-        Left err -> do
-          cPutMessageInput Red "invalid" input
-          printErrLn err
-          return False
-        Right _  -> do
-          cPutMessageInput Green "valid" input
-          return True
+        >>= fromTSL input
+        >>= \case
+          Left err -> do
+            cPutMessageInput Red "invalid" input
+            printErrLn err
+            return False
+          Right _ -> do
+            cPutMessageInput Green "valid" input
+            return True
 
     checkFile file = do
       let input = Just file

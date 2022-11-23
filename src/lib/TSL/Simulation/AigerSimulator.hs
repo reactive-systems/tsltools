@@ -1,4 +1,10 @@
 -------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards #-}
+
+-------------------------------------------------------------------------------
+
 -- |
 -- Module      :  TSL.Simulation.AigerSimulator
 -- Description :  A simple AIGER simulator
@@ -6,101 +12,93 @@
 --
 -- This module provides functionalities to evaluate AIGER circuits on
 -- sequences of inputs, i.e. functionalities to simulate AIGER circuits.
---
--------------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE RecordWildCards #-}
-
--------------------------------------------------------------------------------
 module TSL.Simulation.AigerSimulator
-  ( NormCircuit(inputs, outputs, latches, inputName, outputName)
-  , State
-  , Input
-  , Output
-  , normalize
-  , simStep
-  ) where
+  ( NormCircuit (inputs, outputs, latches, inputName, outputName),
+    State,
+    Input,
+    Output,
+    normalize,
+    simStep,
+  )
+where
 
 -------------------------------------------------------------------------------
-import TSL.Aiger as Aiger
-  ( Circuit(..)
-  , Gate
-  , Input
-  , Invertible(..)
-  , Latch
-  , Output
-  , Wire
-  )
-
-import Data.Either (lefts, rights)
-import Data.List (find)
-
-import Data.Map.Strict as Map (Map, fromList, (!))
 
 import Control.Exception (assert)
+import Data.Either (lefts, rights)
+import Data.List (find)
+import Data.Map.Strict as Map (Map, fromList, (!))
+import TSL.Aiger as Aiger
+  ( Circuit (..),
+    Gate,
+    Input,
+    Invertible (..),
+    Latch,
+    Output,
+    Wire,
+  )
 
 -----------------------------------------------------------------------------
+
 -- | 'NormCircuit' defines an intermediate tree-shaped representation of the
 -- AIGER circuit, that can be evaluated in an recursive manner. Hereby a
 -- 'CircuitTree' is the evaluation-tree (of an output or latch input). The
 -- leafs of such an evaluation-tree are consequently latches or inputs of the
 -- circuit.
-
-data NormCircuit i o =
-  NormCircuit
-    {
-    -- | The inputs of the circuit
-      inputs :: [Input]
+data NormCircuit i o = NormCircuit
+  { -- | The inputs of the circuit
+    inputs :: [Input],
     -- | The outputs of the circuit
-    , outputs :: [Output]
+    outputs :: [Output],
     -- | The latches of the circuit
-    , latches :: [Latch]
+    latches :: [Latch],
     -- | Assigns each output its evaluation tree
-    , outputCir :: Output -> CircuitTree
+    outputCir :: Output -> CircuitTree,
     -- | Assigns each latch its evaluation tree
-    , latchCir :: Latch -> CircuitTree
+    latchCir :: Latch -> CircuitTree,
     -- | A labeling for the inputs
-    , inputName :: Input -> i
+    inputName :: Input -> i,
     -- | A labeling for the outputs
-    , outputName :: Output -> o
-    }
+    outputName :: Output -> o
+  }
 
 data CircuitTree
-  -- | Input (leaf) of the evaluation-tree in form of an input
-  = Inp Input
-  -- | Input (leaf) of the evaluation-tree in form of a latch
-  | InpL Latch
-  -- | AND-Gate of the evaluation-tree
-  | AG CircuitTree CircuitTree
-  -- | NOT-Gate of the evaluation-tree
-  | NG CircuitTree
-  -- | Constant-TRUE value
-  | CT
+  = -- | Input (leaf) of the evaluation-tree in form of an input
+    Inp Input
+  | -- | Input (leaf) of the evaluation-tree in form of a latch
+    InpL Latch
+  | -- | AND-Gate of the evaluation-tree
+    AG CircuitTree CircuitTree
+  | -- | NOT-Gate of the evaluation-tree
+    NG CircuitTree
+  | -- | Constant-TRUE value
+    CT
 
 -------------------------------------------------------------------------------
+
 -- | 'normalize' transforms a 'Circuit' into a normalized 'NormCircuit'.
 -- ASSUMPTIONS:
 -- - The aiger circuit contains no logic loops
-
 normalize ::
-     (String -> Either err i)
-  -> (String -> Either err o)
-  -> Circuit
-  -> Either err (NormCircuit i o)
+  (String -> Either err i) ->
+  (String -> Either err o) ->
+  Circuit ->
+  Either err (NormCircuit i o)
 normalize renameInput renameOutput aig =
   case (lefts renamedInputs, lefts renamedOutputs) of
-    (e:_, _) -> Left e
-    ([], e:_) -> Left e
-    ([], []) -> Right
-      NormCircuit
-        { inputs = Aiger.inputs aig
-        , outputs = Aiger.outputs aig
-        , latches = Aiger.latches aig
-        , outputCir = iwire2ct . Aiger.outputWire aig
-        , latchCir = iwire2ct . Aiger.latchInput aig
-        , inputName = lookup $ rights renamedInputs
-        , outputName = lookup $ rights renamedOutputs
-        }
+    (e : _, _) -> Left e
+    ([], e : _) -> Left e
+    ([], []) ->
+      Right
+        NormCircuit
+          { inputs = Aiger.inputs aig,
+            outputs = Aiger.outputs aig,
+            latches = Aiger.latches aig,
+            outputCir = iwire2ct . Aiger.outputWire aig,
+            latchCir = iwire2ct . Aiger.latchInput aig,
+            inputName = lookup $ rights renamedInputs,
+            outputName = lookup $ rights renamedOutputs
+          }
   where
     renamedInputs = rename (Aiger.inputs aig) (Aiger.inputName aig) renameInput
     renamedOutputs =
@@ -109,15 +107,16 @@ normalize renameInput renameOutput aig =
     rename :: [a] -> (a -> b) -> (b -> Either err c) -> [Either err (a, c)]
     rename xs toStr rnm =
       map
-        (\x ->
-           case rnm (toStr x) of
-             Left err -> Left err
-             Right v  -> Right (x, v))
+        ( \x ->
+            case rnm (toStr x) of
+              Left err -> Left err
+              Right v -> Right (x, v)
+        )
         xs
     --
     lookup :: Eq a => [(a, b)] -> a -> b
     lookup [] _ = assert False undefined
-    lookup ((k, v):xr) a =
+    lookup ((k, v) : xr) a =
       if k == a
         then v
         else lookup xr a
@@ -137,7 +136,7 @@ normalize renameInput renameOutput aig =
             (iwire2ct $ Aiger.gateInputB aig g)
         Nothing ->
           case isInputWire w of
-            Just i  -> Inp i
+            Just i -> Inp i
             Nothing -> maybe CT InpL (isLatchOutput w)
     --
     isInputWire :: Wire -> Maybe Input
@@ -151,8 +150,8 @@ normalize renameInput renameOutput aig =
       find (\l -> w == Aiger.latchOutput aig l) (Aiger.latches aig)
 
 -------------------------------------------------------------------------------
--- | Aliases for intermediate states and in- and output assignments
 
+-- | Aliases for intermediate states and in- and output assignments
 type State = Latch -> Bool
 
 type Inputs = Input -> Bool
@@ -160,28 +159,29 @@ type Inputs = Input -> Bool
 type Outputs = Output -> Bool
 
 -------------------------------------------------------------------------------
+
 -- | 'simStep' computes given a state and an input, the next state and the
 -- output of a 'NormCircuit'
-
 simStep :: NormCircuit i o -> State -> Inputs -> (State, Outputs)
 simStep NormCircuit {..} state inpt =
   -- The following is needed to avoid that the mapping functions are
   -- evaluated in a lazy manner each step
   let latchMap = functionToMap latches $ \l -> eval (latchCir l) state inpt
       outputMap = functionToMap outputs $ \o -> eval (outputCir o) state inpt
-  in ((!) latchMap, (!) outputMap)
+   in ((!) latchMap, (!) outputMap)
   where
     functionToMap :: Ord a => [a] -> (a -> b) -> Map a b
     functionToMap keys f = Map.fromList $ fmap (\k -> (k, f k)) keys
 
 -------------------------------------------------------------------------------
+
 -- | 'eval' computes the result of a 'CircuitTree' when evaluated on some
 -- latch and input assignment
 eval :: CircuitTree -> State -> Inputs -> Bool
 eval ct state inpt =
   case ct of
-    Inp i  -> inpt i
+    Inp i -> inpt i
     InpL l -> state l
     AG x y -> eval x state inpt && eval y state inpt
-    NG x   -> not $ eval x state inpt
-    CT     -> True
+    NG x -> not $ eval x state inpt
+    CT -> True
