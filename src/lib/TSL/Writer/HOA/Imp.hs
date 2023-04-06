@@ -46,26 +46,26 @@ data ImpConfig = ImpConfig
 
 withConfig :: ImpConfig -> H.HOA -> String
 withConfig config hoa =
-  let prog = CG.codegen hoa in Reader.runReader (writeProgram prog) config
+  let prog = CG.codegen hoa in Reader.runReader (writeProgram False prog) config --TODO: make the False a flag for indicating counterstrategy
 
 -- | WRITE PROGRAM TO STRING
 type Imp a = Reader ImpConfig a
 
-writeProgram :: CG.Program -> Imp String
-writeProgram (CG.Program stateTransList) = do
+writeProgram :: Bool -> CG.Program -> Imp String
+writeProgram isCounterStrat (CG.Program stateTransList) = do
   lines <-
-    concat <$> zipWithM writeStateTrans (False : repeat True) stateTransList
+    concat <$> zipWithM (writeStateTrans isCounterStrat) (False : repeat True) stateTransList
   return $ intercalate "\n" $ discardEmptyLines lines
   where
     discardEmptyLines lines =
       filter (\l -> not (null l) && not (all isSpace l)) lines
 
-writeStateTrans :: Bool -> CG.StateTrans -> Imp [String]
-writeStateTrans useElif (CG.StateTrans state transList) = do
+writeStateTrans :: Bool -> Bool -> CG.StateTrans -> Imp [String]
+writeStateTrans isCounterStrat useElif (CG.StateTrans state transList) = do
   ImpConfig {..} <- Reader.ask
   let opIf = if useElif then impElif else impIf
 
-  innerLines <- concat <$> zipWithM writeTrans (False : repeat True) transList
+  innerLines <- concat <$> zipWithM (writeTrans isCounterStrat) (False : repeat True) transList
 
   return $
     [ opIf
@@ -76,8 +76,8 @@ writeStateTrans useElif (CG.StateTrans state transList) = do
       ++ map (impIndent 1 ++) innerLines
       ++ [impBlockEnd]
 
-writeTrans :: Bool -> CG.Trans -> Imp [String]
-writeTrans useElif (CG.Trans ps us target) = do
+writeTrans :: Bool -> Bool -> CG.Trans -> Imp [String]
+writeTrans isCounterStrat useElif (CG.Trans ps us target) = do
   ImpConfig {..} <- Reader.ask
   let opIf = if useElif then impElif else impIf
 
@@ -85,10 +85,11 @@ writeTrans useElif (CG.Trans ps us target) = do
   us' <- mapM writeUpdate us
   let condition = intercalate (" " ++ impAnd ++ " ") ps'
       assignments = map (impIndent 1 ++) us'
-
+      (condition', assignments') =
+        if isCounterStrat then (intercalate " && " assignments, ["  " ++ condition]) else (condition, assignments)
   return $
-    [opIf ++ " " ++ impCondition condition ++ impBlockStart]
-      ++ assignments
+    [opIf ++ " " ++ impCondition condition' ++ impBlockStart]
+      ++ assignments'
       ++ [impIndent 1 ++ impAssign "currentState" target]
       ++ [impBlockEnd]
 
@@ -138,12 +139,12 @@ writeTermApp :: String -> [CG.Term] -> Imp String
 writeTermApp f args
   | isTSLMTLiteral f args = return $ replaceTSLMTLiteral f
   | isTSLMTBinOp f args = do
-      args' <- mapM writeTerm args
-      let [x1, x2] = args'
-      replaceTSLMTBinOp f x1 x2
+    args' <- mapM writeTerm args
+    let [x1, x2] = args'
+    replaceTSLMTBinOp f x1 x2
   | otherwise = do
-      ImpConfig {..} <- Reader.ask
-      impFuncApp f <$> mapM writeTermNoParens args
+    ImpConfig {..} <- Reader.ask
+    impFuncApp f <$> mapM writeTermNoParens args
 
 -- | HELPERS
 pickIfOrElif :: Bool -> Imp String
