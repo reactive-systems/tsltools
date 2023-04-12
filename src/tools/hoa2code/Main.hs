@@ -29,9 +29,9 @@ main ::
 main = do
   initEncoding
 
-  Configuration {input, codeTarget} <- parseArguments
+  Configuration {input, codeTarget, isCounterStrat} <- parseArguments
   c <- readFile $ fromJust input
   let hoa = parse c
-  putStrLn $ either id (implementHoa codeTarget) hoa
+  putStrLn $ either id (implementHoa isCounterStrat codeTarget) hoa
 
 -- cfm <- loadCFM input

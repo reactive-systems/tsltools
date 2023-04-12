@@ -44,9 +44,9 @@ data ImpConfig = ImpConfig
     impBlockEnd :: String
   }
 
-withConfig :: ImpConfig -> H.HOA -> String
-withConfig config hoa =
-  let prog = CG.codegen hoa in Reader.runReader (writeProgram False prog) config --TODO: make the False a flag for indicating counterstrategy
+withConfig :: ImpConfig -> Bool -> H.HOA -> String
+withConfig config isCounterStrat hoa =
+  let prog = CG.codegen hoa in Reader.runReader (writeProgram isCounterStrat prog) config --TODO: make the False a flag for indicating counterstrategy
 
 -- | WRITE PROGRAM TO STRING
 type Imp a = Reader ImpConfig a

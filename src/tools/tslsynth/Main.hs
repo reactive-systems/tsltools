@@ -66,7 +66,7 @@ main = do
     else return ()
 
   let hoa = parse hoaContents
-  putStrLn $ either id (implementHoa codeTarget) hoa
+  putStrLn $ either id (implementHoa False codeTarget) hoa
 
 {-
 TODO figure out how the realizableCommand should work

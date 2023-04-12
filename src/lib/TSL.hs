@@ -179,13 +179,13 @@ type FunctionName = String
 -----------------------------------------------------------------------------
 
 implementHoa ::
-  CodeTarget -> H.HOA -> String
-implementHoa = \case
-  Python -> Python.implementHoa
-  XState -> XState.implementHoa
-  JS -> JS.implementHoa
+  Bool -> CodeTarget -> H.HOA -> String
+implementHoa isCounter = \case 
+  Python -> Python.implementHoa isCounter
+  XState -> XState.implementHoa 
+  JS -> JS.implementHoa isCounter
   _ -> error "Unsupported language target for given format"
-
+  
 -- | Generates code for a specific target from a CFM. The function
 -- uses the given module name to generate a module that exports a
 -- single function with the given function name.

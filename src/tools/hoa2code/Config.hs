@@ -27,6 +27,7 @@ import System.Directory (doesFileExist)
 import System.Exit (exitFailure)
 import System.FilePath (takeBaseName)
 import TSL (CodeTarget (..))
+import Data.Bool (bool)
 
 -----------------------------------------------------------------------------
 
@@ -41,11 +42,14 @@ data Configuration = Configuration
     output :: Maybe FilePath,
     -- | Target code type to generate.
     codeTarget :: CodeTarget,
+    -- | Counter strategy generation, used for debugging unrealizable 
+    -- specifications.
+    isCounterStrat :: Bool,
     -- | The name of the generated module.
     moduleName :: String,
     -- | Name of the synthesized signal function that is exported by
     -- the module.
-    functionName :: String
+    functionName :: String 
   }
   deriving (Eq, Ord)
 
@@ -78,6 +82,11 @@ configParser =
             <|> flag' JS (long "js" <> help "generates code for JS backend")
             <|> flag' XState (long "xstate" <> help "generates code for xstate diagrams")
         )
+    <*> switch
+      ( long "counter-strat"
+          <> help "generates a counter strategy from an hoa file; type 'counter-strat' to enable"
+      )
+  
     <*> option
       str
       ( long "module-name"

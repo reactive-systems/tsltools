@@ -10,7 +10,7 @@ import TSL.Writer.HOA.Imp
     withConfig,
   )
 
-implementHoa :: H.HOA -> String
+implementHoa :: Bool -> H.HOA -> String
 implementHoa = withConfig config
 
 config :: ImpConfig
