@@ -117,27 +117,27 @@ toCSV SymbolTable {..} =
       im = IM.fromList $ zip ts [0, 1 .. length ts - 1]
       ir = IM.fromList $ zip (map fst es) [0, 1 .. length es - 1]
       sc = not $ null $ mapMaybe srcPath $ mapMaybe (idPos . snd) es
-   in csvFormat
-        $ ( filter
-              (/= "")
-              [ "Id",
-                "Name",
-                "Type",
-                "Kind",
-                "Depends",
-                "Position",
-                if sc then "Source" else "",
-                "Arguments"
-              ]
-              :
-          )
-        $ map
-          ( printEntry
-              sc
-              (\i -> assert (IM.member i ir) (ir IM.! i))
-              (\i -> assert (IM.member i im) (im IM.! i))
-          )
-          es
+   in csvFormat $
+        ( filter
+            (/= "")
+            [ "Id",
+              "Name",
+              "Type",
+              "Kind",
+              "Depends",
+              "Position",
+              if sc then "Source" else "",
+              "Arguments"
+            ]
+            :
+        )
+          $ map
+            ( printEntry
+                sc
+                (\i -> assert (IM.member i ir) (ir IM.! i))
+                (\i -> assert (IM.member i im) (im IM.! i))
+            )
+            es
   where
     cmp (_, ir1@(idKind -> k1)) (_, ir2@(idKind -> k2))
       | k1 /= k2 = compare k1 k2

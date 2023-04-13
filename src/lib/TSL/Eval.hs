@@ -570,24 +570,24 @@ vNextN _ (VBoolean True) = VBoolean True
 vNextN _ (VBoolean False) = VBoolean False
 vNextN (VInt n) (VTSL x)
   | n < 0 =
-      VError undefined $
-        "Negative next-operator chain ["
-          ++ show n
-          ++ "]"
+    VError undefined $
+      "Negative next-operator chain ["
+        ++ show n
+        ++ "]"
   | otherwise = VTSL $ (!! n) $ iterate Next x
 vNextN (VInt n) (VPTerm x)
   | n < 0 =
-      VError undefined $
-        "Negative next-operator chain: ["
-          ++ show n
-          ++ "]"
+    VError undefined $
+      "Negative next-operator chain: ["
+        ++ show n
+        ++ "]"
   | otherwise = VTSL $ (!! n) $ iterate Next $ Check x
 vNextN (VInt n) (VSTerm (Signal x))
   | n < 0 =
-      VError undefined $
-        "Negative next-operator chain: ["
-          ++ show n
-          ++ "]"
+    VError undefined $
+      "Negative next-operator chain: ["
+        ++ show n
+        ++ "]"
   | otherwise = VTSL $ (!! n) $ iterate Next $ cb x
 vNextN _ _ = assert False undefined
 
@@ -608,24 +608,24 @@ vPreviousN ::
 vPreviousN _ (VBoolean False) = VBoolean False
 vPreviousN (VInt n) (VTSL x)
   | n < 0 =
-      VError undefined $
-        "Negative next-operator chain ["
-          ++ show n
-          ++ "]"
+    VError undefined $
+      "Negative next-operator chain ["
+        ++ show n
+        ++ "]"
   | otherwise = VTSL $ (!! n) $ iterate Previous x
 vPreviousN (VInt n) (VPTerm x)
   | n < 0 =
-      VError undefined $
-        "Negative next-operator chain: ["
-          ++ show n
-          ++ "]"
+    VError undefined $
+      "Negative next-operator chain: ["
+        ++ show n
+        ++ "]"
   | otherwise = VTSL $ (!! n) $ iterate Previous $ Check x
 vPreviousN (VInt n) (VSTerm (Signal x))
   | n < 0 =
-      VError undefined $
-        "Negative next-operator chain: ["
-          ++ show n
-          ++ "]"
+    VError undefined $
+      "Negative next-operator chain: ["
+        ++ show n
+        ++ "]"
   | otherwise = VTSL $ (!! n) $ iterate Previous $ cb x
 vPreviousN _ _ = assert False undefined
 
@@ -649,30 +649,30 @@ vGloballyR _ _ (VBoolean False) = VBoolean False
 vGloballyR (VInt n) (VInt m) (VTSL x)
   | n > m = VBoolean True
   | n >= 0 && m >= 0 =
-      VTSL $
-        (!! n) $
-          iterate Next $
-            foldl (\a _ -> And [x, Next a]) x [0, 1 .. m - n - 1]
+    VTSL $
+      (!! n) $
+        iterate Next $
+          foldl (\a _ -> And [x, Next a]) x [0, 1 .. m - n - 1]
   | otherwise =
-      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
+    VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vGloballyR (VInt n) (VInt m) (VPTerm x)
   | n > m = VBoolean True
   | n >= 0 && m >= 0 =
-      VTSL $
-        (!! n) $
-          iterate Next $
-            foldl (\a _ -> And [Check x, Next a]) (Check x) [0, 1 .. m - n - 1]
+    VTSL $
+      (!! n) $
+        iterate Next $
+          foldl (\a _ -> And [Check x, Next a]) (Check x) [0, 1 .. m - n - 1]
   | otherwise =
-      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
+    VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vGloballyR (VInt n) (VInt m) (VSTerm (Signal x))
   | n > m = VBoolean True
   | n >= 0 && m >= 0 =
-      VTSL $
-        (!! n) $
-          iterate Next $
-            foldl (\a _ -> And [cb x, Next a]) (cb x) [0, 1 .. m - n - 1]
+    VTSL $
+      (!! n) $
+        iterate Next $
+          foldl (\a _ -> And [cb x, Next a]) (cb x) [0, 1 .. m - n - 1]
   | otherwise =
-      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
+    VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vGloballyR _ _ _ = assert False undefined
 
 -----------------------------------------------------------------------------
@@ -695,30 +695,30 @@ vFinallyR _ _ (VBoolean False) = VBoolean False
 vFinallyR (VInt n) (VInt m) (VTSL x)
   | n > m = VBoolean False
   | n >= 0 && m >= 0 =
-      VTSL $
-        (!! n) $
-          iterate Next $
-            foldl (\a _ -> Or [x, Next a]) x [0, 1 .. m - n - 1]
+    VTSL $
+      (!! n) $
+        iterate Next $
+          foldl (\a _ -> Or [x, Next a]) x [0, 1 .. m - n - 1]
   | otherwise =
-      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
+    VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vFinallyR (VInt n) (VInt m) (VPTerm x)
   | n > m = VBoolean False
   | n >= 0 && m >= 0 =
-      VTSL $
-        (!! n) $
-          iterate Next $
-            foldl (\a _ -> Or [Check x, Next a]) (Check x) [0, 1 .. m - n - 1]
+    VTSL $
+      (!! n) $
+        iterate Next $
+          foldl (\a _ -> Or [Check x, Next a]) (Check x) [0, 1 .. m - n - 1]
   | otherwise =
-      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
+    VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vFinallyR (VInt n) (VInt m) (VSTerm (Signal x))
   | n > m = VBoolean False
   | n >= 0 && m >= 0 =
-      VTSL $
-        (!! n) $
-          iterate Next $
-            foldl (\a _ -> Or [cb x, Next a]) (cb x) [0, 1 .. m - n - 1]
+    VTSL $
+      (!! n) $
+        iterate Next $
+          foldl (\a _ -> Or [cb x, Next a]) (cb x) [0, 1 .. m - n - 1]
   | otherwise =
-      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
+    VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vFinallyR _ _ _ = assert False undefined
 
 -----------------------------------------------------------------------------
@@ -741,30 +741,30 @@ vHistoricallyR _ _ (VBoolean False) = VBoolean False
 vHistoricallyR (VInt n) (VInt m) (VTSL x)
   | n > m = VBoolean False
   | n >= 0 && m >= 0 =
-      VTSL $
-        (!! n) $
-          iterate Previous $
-            foldl (\a _ -> Or [x, Previous a]) x [0, 1 .. m - n - 1]
+    VTSL $
+      (!! n) $
+        iterate Previous $
+          foldl (\a _ -> Or [x, Previous a]) x [0, 1 .. m - n - 1]
   | otherwise =
-      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
+    VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vHistoricallyR (VInt n) (VInt m) (VPTerm x)
   | n > m = VBoolean False
   | n >= 0 && m >= 0 =
-      VTSL $
-        (!! n) $
-          iterate Previous $
-            foldl (\a _ -> Or [Check x, Previous a]) (Check x) [0, 1 .. m - n - 1]
+    VTSL $
+      (!! n) $
+        iterate Previous $
+          foldl (\a _ -> Or [Check x, Previous a]) (Check x) [0, 1 .. m - n - 1]
   | otherwise =
-      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
+    VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vHistoricallyR (VInt n) (VInt m) (VSTerm (Signal x))
   | n > m = VBoolean False
   | n >= 0 && m >= 0 =
-      VTSL $
-        (!! n) $
-          iterate Previous $
-            foldl (\a _ -> Or [cb x, Previous a]) (cb x) [0, 1 .. m - n - 1]
+    VTSL $
+      (!! n) $
+        iterate Previous $
+          foldl (\a _ -> Or [cb x, Previous a]) (cb x) [0, 1 .. m - n - 1]
   | otherwise =
-      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
+    VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vHistoricallyR _ _ _ = assert False undefined
 
 -----------------------------------------------------------------------------
@@ -787,30 +787,30 @@ vOnceR _ _ (VBoolean False) = VBoolean False
 vOnceR (VInt n) (VInt m) (VTSL x)
   | n > m = VBoolean False
   | n >= 0 && m >= 0 =
-      VTSL $
-        (!! n) $
-          iterate Previous $
-            foldl (\a _ -> Or [x, Previous a]) x [0, 1 .. m - n - 1]
+    VTSL $
+      (!! n) $
+        iterate Previous $
+          foldl (\a _ -> Or [x, Previous a]) x [0, 1 .. m - n - 1]
   | otherwise =
-      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
+    VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vOnceR (VInt n) (VInt m) (VPTerm x)
   | n > m = VBoolean False
   | n >= 0 && m >= 0 =
-      VTSL $
-        (!! n) $
-          iterate Previous $
-            foldl (\a _ -> Or [Check x, Previous a]) (Check x) [0, 1 .. m - n - 1]
+    VTSL $
+      (!! n) $
+        iterate Previous $
+          foldl (\a _ -> Or [Check x, Previous a]) (Check x) [0, 1 .. m - n - 1]
   | otherwise =
-      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
+    VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vOnceR (VInt n) (VInt m) (VSTerm (Signal x))
   | n > m = VBoolean False
   | n >= 0 && m >= 0 =
-      VTSL $
-        (!! n) $
-          iterate Previous $
-            foldl (\a _ -> Or [cb x, Previous a]) (cb x) [0, 1 .. m - n - 1]
+    VTSL $
+      (!! n) $
+        iterate Previous $
+          foldl (\a _ -> Or [cb x, Previous a]) (cb x) [0, 1 .. m - n - 1]
   | otherwise =
-      VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
+    VError undefined $ "Invalid range: [" ++ show n ++ ":" ++ show m ++ "]"
 vOnceR _ _ _ = assert False undefined
 
 -----------------------------------------------------------------------------

@@ -65,15 +65,15 @@ getCores :: Specification -> [Query]
 getCores tsl@Specification {guarantees = g} =
   concatMap
     ( \indices ->
-        fmap (\spec -> spec {guarantees = addMissingUpdates (guarantees spec)})
-          $ ( \specs ->
-                if length specs == 1
-                  then specs
-                  else []
-            )
-          $ Prelude.filter
-            (not . null . guarantees)
-            (split (tsl {guarantees = choose indices}))
+        fmap (\spec -> spec {guarantees = addMissingUpdates (guarantees spec)}) $
+          ( \specs ->
+              if length specs == 1
+                then specs
+                else []
+          )
+            $ Prelude.filter
+              (not . null . guarantees)
+              (split (tsl {guarantees = choose indices}))
     )
     (sortedPowerSet $ length g)
   where
@@ -83,12 +83,12 @@ getCores tsl@Specification {guarantees = g} =
     addMissingUpdates choosen =
       let otherUpdates =
             Or $
-              TTrue
-                : Set.toList
-                  ( Set.difference
-                      (getPossibleUpdates (And g) (unions $ fmap outputs choosen))
-                      (Set.map (uncurry Update) $ updates (And g))
-                  )
+              TTrue :
+              Set.toList
+                ( Set.difference
+                    (getPossibleUpdates (And g) (unions $ fmap outputs choosen))
+                    (Set.map (uncurry Update) $ updates (And g))
+                )
        in choosen ++ [otherUpdates]
     --
     getPossibleUpdates :: Ord c => Formula c -> Set c -> Set (Formula c)

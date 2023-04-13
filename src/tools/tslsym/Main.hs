@@ -40,10 +40,10 @@ main = do
 
       (h, ts, upd)
         | fullTable =
-            (h', ts', if noPositions then rmSLast else id)
+          (h', ts', if noPositions then rmSLast else id)
         | otherwise =
-            let (h'' : ts'') = rmSpaces [] (h' : ts')
-             in (h'', ts'', if noPositions then rmLast . rmLast else rmLast)
+          let (h'' : ts'') = rmSpaces [] (h' : ts')
+           in (h'', ts'', if noPositions then rmLast . rmLast else rmLast)
 
   header $ upd h
   sep $ upd h

@@ -156,10 +156,10 @@ prCircuitImpl Circuit {..} =
     -- TODO: No idea if this is correct
     prWire' x
       | Circuit.wire x <= length inputs =
-          let minusedOne = Circuit.wire x - 1
-           in case minusedOne >= 0 of
-                True -> "cin" ++ show minusedOne
-                False -> "cin0"
+        let minusedOne = Circuit.wire x - 1
+         in case minusedOne >= 0 of
+              True -> "cin" ++ show minusedOne
+              False -> "cin0"
       -- False -> "cinNeg" ++ (show $ abs $ minusedOne)
       | otherwise = 'w' : show x
 

@@ -53,8 +53,8 @@ printHOALines hoa@HOA {..} =
               ( [strInd s]
                   ++ [": {"]
                   ++ ["\n on: {"]
-              )
-              : zipWith (curry printEdge) (filterDupes' (toList $ edges s)) [1 ..]
+              ) :
+            zipWith (curry printEdge) (filterDupes' (toList $ edges s)) [1 ..]
               ++ ["}"]
               ++ ["},"]
 

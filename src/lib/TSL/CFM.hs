@@ -331,26 +331,26 @@ symbolTable cfm@CFM {..} =
         Right t
           | termName t == "true" || termName t == "false" -> transitive is ws xr
           | otherwise ->
-              let ti = fromList $ termInputWires t
-               in transitive
-                    (insert (sourceId (Right t)) is)
-                    (insert x ws)
-                    (toList $ difference (ti `union` fromList xr) ws)
+            let ti = fromList $ termInputWires t
+             in transitive
+                  (insert (sourceId (Right t)) is)
+                  (insert x ws)
+                  (toList $ difference (ti `union` fromList xr) ws)
 
     -- \| Updates the term ids to redirect the removed, redundant
     -- entries.
 
     upd =
-      (\x y -> fromMaybe y $ IM.lookup y x)
-        $ IM.fromList
-        $ concatMap
-          ((\xs -> map (,head xs) xs) . map (sourceId . Right))
-        $ groupBy ((==) `on` termName)
-        $ sortBy (compare `on` termName)
-        $ filter ((/= "false") . termName)
-        $ filter
-          ((/= "true") . termName)
-          terms
+      (\x y -> fromMaybe y $ IM.lookup y x) $
+        IM.fromList $
+          concatMap
+            ((\xs -> map (,head xs) xs) . map (sourceId . Right))
+            $ groupBy ((==) `on` termName) $
+              sortBy (compare `on` termName) $
+                filter ((/= "false") . termName) $
+                  filter
+                    ((/= "true") . termName)
+                    terms
 
     -- \| Updates ids to appear in sorted order
 
@@ -721,29 +721,30 @@ inferTypes cfm@CFM {..} = do
     -- \| Assigns each wire a type.
 
     wireType' =
-      (!) $ runSTArray $ do
-        -- create a new array, initally assigning each wire some type
-        a <- newArray (0, length wires - 1) Boolean
-        -- update every wire by a poly type with the same index
-        mapM_
-          (\w -> writeArray a w $ Poly w)
-          [0, 1 .. length wires - 1]
-        -- update circuit inputs by a Boolean type
-        mapM_ (\i -> writeArray a (wire $ controlInputWire i) Boolean) $
-          Circuit.inputs control
-        -- check whether the constants 'true' and 'false' are used and
-        -- assign them a boolean type
-        mapM_ (\i -> writeArray a (wire $ termOutputWire i) Boolean) $
-          filter knownConstant terms
+      (!) $
+        runSTArray $ do
+          -- create a new array, initally assigning each wire some type
+          a <- newArray (0, length wires - 1) Boolean
+          -- update every wire by a poly type with the same index
+          mapM_
+            (\w -> writeArray a w $ Poly w)
+            [0, 1 .. length wires - 1]
+          -- update circuit inputs by a Boolean type
+          mapM_ (\i -> writeArray a (wire $ controlInputWire i) Boolean) $
+            Circuit.inputs control
+          -- check whether the constants 'true' and 'false' are used and
+          -- assign them a boolean type
+          mapM_ (\i -> writeArray a (wire $ termOutputWire i) Boolean) $
+            filter knownConstant terms
 
-        -- update the type assignment until we reach a fixpoint, which
-        -- must exist as we always join equally typed wires to the
-        -- minimal type; note that it suffices to iterate over the terms
-        -- only, since model inputs cannot influence the type table
-        -- actively.
-        infer a $ fromList wires
-        -- compress the index range
-        compressed a
+          -- update the type assignment until we reach a fixpoint, which
+          -- must exist as we always join equally typed wires to the
+          -- minimal type; note that it suffices to iterate over the terms
+          -- only, since model inputs cannot influence the type table
+          -- actively.
+          infer a $ fromList wires
+          -- compress the index range
+          compressed a
 
     -- \| Indicates that a given term is one of the known constants
     -- (true, false)
@@ -811,10 +812,10 @@ inferTypes cfm@CFM {..} = do
     infer a s
       | size s == 0 = return ()
       | otherwise =
-          -- update every component with the given wire as input
-          foldM (inferWire a) (deleteAt 0 s) (wireTargets $ elemAt 0 s)
-            -- do so until the types for every wire stabilized
-            >>= infer a
+        -- update every component with the given wire as input
+        foldM (inferWire a) (deleteAt 0 s) (wireTargets $ elemAt 0 s)
+          -- do so until the types for every wire stabilized
+          >>= infer a
 
     -- \| Infers equal types with respect to the given component.
 

@@ -53,10 +53,11 @@ import TSL
 -- If the file does not exists, function exits with an error mesage.
 checkFile :: FilePath -> IO ()
 checkFile file =
-  (>>=) (doesFileExist file) $ flip unless $ do
-    cPutErr Vivid Red "Not found: "
-    cPutErrLn Vivid White file
-    exitFailure
+  (>>=) (doesFileExist file) $
+    flip unless $ do
+      cPutErr Vivid Red "Not found: "
+      cPutErrLn Vivid White file
+      exitFailure
 
 -----------------------------------------------------------------------------
 

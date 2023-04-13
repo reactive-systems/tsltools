@@ -452,8 +452,8 @@ prCircuitImpl Circuit {..} =
 
     prWire' x
       | Circuit.wire x <= length inputs =
-          "controlIn"
-            ++ show (Circuit.wire x - 1)
+        "controlIn"
+          ++ show (Circuit.wire x - 1)
       | otherwise = 'w' : show x
 
     polarized b i c = \case

@@ -315,16 +315,16 @@ inferType t e = case expr e of
         gets (IM.lookup i . scopes . spec) >>= \case
           Nothing
             | tslFn tR -> do
-                tS <- liftToSignalLevel tR
-                checkExprType e tS t'
+              tS <- liftToSignalLevel tR
+              checkExprType e tS t'
             | otherwise -> case tR of
-                TTSL -> checkExprType e (TSignal TBoolean) t'
-                TBoolean -> checkExprType e (TSignal TBoolean) t'
-                TPoly j -> do
-                  p <- newP
-                  update j $ TSignal p
-                  checkExprType e (TSignal p) t'
-                _ -> checkExprType e tR t'
+              TTSL -> checkExprType e (TSignal TBoolean) t'
+              TBoolean -> checkExprType e (TSignal TBoolean) t'
+              TPoly j -> do
+                p <- newP
+                update j $ TSignal p
+                checkExprType e (TSignal p) t'
+              _ -> checkExprType e tR t'
           Just () -> checkExprType e tR t'
       Just b -> case b of
         GuardedBinding _ -> do
@@ -483,25 +483,25 @@ vt (TSet t) (TSet t') =
 vt TNumber TNumber = return $ Just TNumber
 vt (TFml a b) (TFml a' b')
   | onSignalLevel (TFml a b) || onSignalLevel (TFml a' b') =
-      liftToSignalLevel (TFml a b) >>= \case
-        TFml a1 b1 ->
-          liftToSignalLevel (TFml a' b') >>= \case
-            TFml a2 b2 ->
-              vt a1 a2 >>= \case
-                Nothing -> return Nothing
-                Just aT ->
-                  vt b1 b2 >>= \case
-                    Nothing -> return Nothing
-                    Just bT -> return $ Just $ TFml aT bT
-            _ -> assert False undefined
-        _ -> assert False undefined
+    liftToSignalLevel (TFml a b) >>= \case
+      TFml a1 b1 ->
+        liftToSignalLevel (TFml a' b') >>= \case
+          TFml a2 b2 ->
+            vt a1 a2 >>= \case
+              Nothing -> return Nothing
+              Just aT ->
+                vt b1 b2 >>= \case
+                  Nothing -> return Nothing
+                  Just bT -> return $ Just $ TFml aT bT
+          _ -> assert False undefined
+      _ -> assert False undefined
   | otherwise =
-      vt a a' >>= \case
-        Nothing -> return Nothing
-        Just aT ->
-          vt b b' >>= \case
-            Nothing -> return Nothing
-            Just bT -> return $ Just $ TFml aT bT
+    vt a a' >>= \case
+      Nothing -> return Nothing
+      Just aT ->
+        vt b b' >>= \case
+          Nothing -> return Nothing
+          Just bT -> return $ Just $ TFml aT bT
 vt _ _ = return Nothing
 
 -----------------------------------------------------------------------------

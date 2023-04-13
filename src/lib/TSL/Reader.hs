@@ -291,8 +291,8 @@ symtable RD.Specification {..} =
               idDeps =
                 if
                     | member i so -> case IM.lookup i oa of
-                        Just xs -> i : xs
-                        Nothing -> ds
+                      Just xs -> i : xs
+                      Nothing -> ds
                     | otherwise -> ds,
               idKind = case IM.lookup i scopes of
                 Just () -> Internal
@@ -301,8 +301,8 @@ symtable RD.Specification {..} =
                   | member i si -> Input
                   | predicate t -> Predicate
                   | otherwise -> case t of
-                      TSignal {} -> Constant
-                      _ -> Function
+                    TSignal {} -> Constant
+                    _ -> Function
             }
 
     predicate = \case
@@ -325,7 +325,7 @@ symtable RD.Specification {..} =
     key f
       | IM.null names = 0
       | otherwise =
-          fst $ fst $ fromJust $ f names
+        fst $ fst $ fromJust $ f names
 
 -----------------------------------------------------------------------------
 

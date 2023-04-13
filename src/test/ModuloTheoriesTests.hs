@@ -90,9 +90,10 @@ predicatesTests = [convert2Cabal (makeTestName "Predicates") hUnitTest]
 
     hUnitTest = do
       (theory, spec, _) <- loadTSLMT $ Just path
-      return $ H.TestCase $ case predsFromSpec theory spec of
-        Right preds -> expectedNumPreds @=? length preds
-        Left errMsg -> H.assertFailure $ show errMsg
+      return $
+        H.TestCase $ case predsFromSpec theory spec of
+          Right preds -> expectedNumPreds @=? length preds
+          Left errMsg -> H.assertFailure $ show errMsg
 
 cfgTests :: [Test]
 cfgTests = [convert2Cabal (makeTestName "CFG") hUnitTest]

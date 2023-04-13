@@ -95,13 +95,13 @@ sortedPowerSet n = powerSetB n n
       | n < 1 = [empty]
       | n == 1 = empty : [fromList [i] | i <- [0 .. bound - 1]]
       | otherwise =
-          let sub = powerSetB (n - 1) bound
-              subNew =
-                concatMap
-                  (\s -> [insert i s | i <- [0 .. bound - 1], notMember i s])
-                  (Prelude.filter (\s -> size s == n - 1) sub)
-              new = toList (fromList subNew)
-           in sub ++ new
+        let sub = powerSetB (n - 1) bound
+            subNew =
+              concatMap
+                (\s -> [insert i s | i <- [0 .. bound - 1], notMember i s])
+                (Prelude.filter (\s -> size s == n - 1) sub)
+            new = toList (fromList subNew)
+         in sub ++ new
 
 -------------------------------------------------------------------------------
 

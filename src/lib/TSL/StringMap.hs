@@ -72,12 +72,12 @@ insert s i = \case
   Leaf (e, v)
     | e == s -> Leaf (s, i)
     | otherwise -> case e of
-        [] -> Node (Just v, [(head s, Leaf (tail s, i))])
-        (x : xr) -> case s of
-          [] -> Node (Just i, [(x, Leaf (xr, v))])
-          (y : yr)
-            | x == y -> Node (Nothing, [(x, insert yr i (Leaf (xr, v)))])
-            | otherwise -> Node (Nothing, [(x, Leaf (xr, v)), (y, Leaf (yr, i))])
+      [] -> Node (Just v, [(head s, Leaf (tail s, i))])
+      (x : xr) -> case s of
+        [] -> Node (Just i, [(x, Leaf (xr, v))])
+        (y : yr)
+          | x == y -> Node (Nothing, [(x, insert yr i (Leaf (xr, v)))])
+          | otherwise -> Node (Nothing, [(x, Leaf (xr, v)), (y, Leaf (yr, i))])
   Node (v, xs) -> case s of
     [] -> Node (Just i, xs)
     (x : xr) -> Node (v, add x xr i xs)
@@ -117,7 +117,7 @@ remove str = \case
     del' x xr a (c, m)
       | x /= c = (c, m) : a
       | otherwise = case remove xr m of
-          Empty -> a
-          y -> (c, y) : a
+        Empty -> a
+        y -> (c, y) : a
 
 -----------------------------------------------------------------------------

@@ -19,6 +19,7 @@ where
 -----------------------------------------------------------------------------
 
 import Control.Monad (unless)
+import Data.Bool (bool)
 import Data.Char (toLower, toUpper)
 import Data.Semigroup ((<>))
 import Options.Applicative
@@ -27,7 +28,6 @@ import System.Directory (doesFileExist)
 import System.Exit (exitFailure)
 import System.FilePath (takeBaseName)
 import TSL (CodeTarget (..))
-import Data.Bool (bool)
 
 -----------------------------------------------------------------------------
 
@@ -42,14 +42,14 @@ data Configuration = Configuration
     output :: Maybe FilePath,
     -- | Target code type to generate.
     codeTarget :: CodeTarget,
-    -- | Counter strategy generation, used for debugging unrealizable 
+    -- | Counter strategy generation, used for debugging unrealizable
     -- specifications.
     isCounterStrat :: Bool,
     -- | The name of the generated module.
     moduleName :: String,
     -- | Name of the synthesized signal function that is exported by
     -- the module.
-    functionName :: String 
+    functionName :: String
   }
   deriving (Eq, Ord)
 
@@ -84,9 +84,9 @@ configParser =
         )
     <*> switch
       ( long "counter-strat"
+          <> short 's'
           <> help "generates a counter strategy from an hoa file; type 'counter-strat' to enable"
       )
-  
     <*> option
       str
       ( long "module-name"
