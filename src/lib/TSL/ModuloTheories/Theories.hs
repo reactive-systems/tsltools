@@ -19,6 +19,7 @@
 -- a new theory, but it achieves type safety.
 module TSL.ModuloTheories.Theories
   ( Theory (..),
+    tUninterpretedFunctions,
     TAst,
     TheorySymbol,
     readTheory,
@@ -66,6 +67,9 @@ data Theory
   | EUf
   | Lia
   deriving (Eq)
+
+tUninterpretedFunctions :: Theory
+tUninterpretedFunctions = Uf
 
 instance Show Theory where
   show = \case

@@ -81,6 +81,7 @@ module TSL
     cfgFromSpec,
     Theory,
     TheoryPredicate,
+    tUninterpretedFunctions,
     readTheory,
     generateConsistencyAssumptions,
     consistencyDebug,
@@ -134,7 +135,7 @@ import TSL.ModuloTheories.Sygus
     generateSygusAssumptions,
     sygusDebug,
   )
-import TSL.ModuloTheories.Theories (Theory, readTheory)
+import TSL.ModuloTheories.Theories (Theory (..), readTheory, tUninterpretedFunctions)
 import TSL.Preprocessor (preprocess)
 import TSL.Reader (fromTSL)
 import TSL.Simulation (simulate)

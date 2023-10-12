@@ -29,7 +29,7 @@ import Data.Map.Strict as Map (fromListWith, keys, (!))
 import Data.Maybe (fromJust)
 import Data.Set as Set (elems, fromList, union)
 import TSL.Logic (Formula (..), tslFormula)
-import TSL.Specification (Specification (..))
+import qualified TSL.Specification as S
 import TSL.SymbolTable (stName)
 
 -----------------------------------------------------------------------------
@@ -105,12 +105,12 @@ formulas2dependencies formulas =
 -- a set of guarantees and their assumptions
 -- out of a list of 'Specification's
 specifications2dependencies ::
-  [Specification] -> DependencyRepresentation
+  [S.Specification] -> DependencyRepresentation
 specifications2dependencies specs =
-  let assumptionss = map (extract assumptions) specs
-      guaranteess = map (extract guarantees) specs
+  let assumptionss = map (extract S.assumptions) specs
+      guaranteess = map (extract S.guarantees) specs
    in formulas2dependencies $ zip assumptionss guaranteess
   where
-    extract :: (Specification -> [Formula Int]) -> Specification -> [Formula String]
-    extract getFormulas spec@Specification {symboltable} =
+    extract :: (S.Specification -> [Formula Int]) -> S.Specification -> [Formula String]
+    extract getFormulas spec@S.Specification {symboltable} =
       map (fmap (stName symboltable)) $ getFormulas spec
