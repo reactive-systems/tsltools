@@ -17,14 +17,17 @@ where
 -----------------------------------------------------------------------------
 
 import Config (Configuration (..), parseArguments)
+import Control.Monad (unless)
 import Data.List (isPrefixOf)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, isJust)
 import EncodingUtils (initEncoding)
 import FileUtils (loadTSL, tryReadContent)
 import Hanoi (parse)
 import qualified Syfco as S
+import System.Directory (findExecutable)
 import System.Exit
 import System.FilePath.Posix (takeBaseName)
+import System.IO (hPutStrLn, stderr)
 import System.Process (readProcessWithExitCode)
 import TSL (implementHoa, preprocess, toTLSF)
 
@@ -33,6 +36,12 @@ import TSL (implementHoa, preprocess, toTLSF)
 main ::
   IO ()
 main = do
+  -- check if ltlsynt is available on path
+  ltlsyntAvailable <- isLtlsyntAvailable
+  unless ltlsyntAvailable $ do
+    hPutStrLn stderr "'ltlsynt' is not found."
+    exitFailure
+
   initEncoding
 
   Configuration {input, codeTarget, writeHoa} <- parseArguments
@@ -95,6 +104,11 @@ callLtlsynt tlsfContents = do
       print "TSL spec UNREALIZABLE"
         >> return "UNREALIZABLE"
     else return stdout
+
+isLtlsyntAvailable :: IO Bool
+isLtlsyntAvailable = do
+  m <- findExecutable "ltlsynt"
+  return $ isJust m
 
 prFormulae ::
   S.Configuration -> S.Specification -> String
